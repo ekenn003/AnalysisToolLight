@@ -30,12 +30,12 @@ class CutFlow(object):
 ## ___________________________________________________________
 class VH4Mu(AnalysisBase):
     def __init__(self, **kwargs):
-        filenames = []
-        inputFileList = kwargs.pop(inputFileList, [])
-        with open('inputFileList','r') as f:
-            for line in f.readlines():
-                self.filenames += glob.glob(line.strip())
-        super(VH4Mu, self).__init__(filenames = filenames, **kwargs)
+        #filenames = []
+        #with open('inputFileList','r') as f:
+        #    for line in f.readlines():
+        #        self.filenames += glob.glob(line.strip())
+        #super(VH4Mu, self).__init__(filenames = filenames, **kwargs)
+        super(VH4Mu, self).__init__(**kwargs)
         #############################
         # Initialise event counters #
         #############################
@@ -120,8 +120,8 @@ class VH4Mu(AnalysisBase):
 
         # diumuon
         diMuP4 = mu0.P4() + mu1.P4()
-        self.fillVar('hDiMuPt', diMuP4.Pt(), weight)
-        self.fillVar('hDiMuInvMass', diMuP4.M(), weight)
+        self.histograms['hDiMuPt'].Fill(diMuP4.Pt(), weight)
+        self.histograms['hDiMuInvMass'].Fill(diMuP4.M(), weight)
         
 
 

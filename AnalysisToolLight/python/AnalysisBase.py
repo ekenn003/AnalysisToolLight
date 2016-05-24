@@ -20,7 +20,7 @@ class AnalysisBase(object):
         self.luminame  = kwargs.pop('luminame', 'AC1Blumi')
         self.output    = kwargs.pop('output', 'ana.root')
 
-        inputFileList = kwargs.pop(inputFileList, [])
+        inputFileList = kwargs.pop('inputFileList', '')
         with open('inputFileList','r') as f:
             for line in f.readlines():
                 self.filenames += glob.glob(line.strip())
