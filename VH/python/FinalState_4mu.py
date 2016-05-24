@@ -2,9 +2,9 @@
 import glob
 import itertools
 import argparse
-from collections import OrderedDict
 import ROOT
-from AnalysisBase import main as analysisBaseMain
+from collections import OrderedDict
+from AnalysisToolLight.AnalysisToolLight.AnalysisBase import main as analysisBaseMain
 from AnalysisToolLight.AnalysisToolLight.AnalysisBase import AnalysisBase
 
 ## ___________________________________________________________
@@ -135,12 +135,15 @@ class VH4Mu(AnalysisBase):
             self.histograms['hEfficiencies'].SetBinContent(i+1, self.cutflow.count(name))
             self.histograms['hEfficiencies'].GetXaxis().SetBinLabel(i+1, name)
 
-## ___________________________________________________________
-if __name__ == "__main__":
-    status = main()
-    sys.exit(status)
 
+## ___________________________________________________________
 # actually execute the analysis
 def main(argv=None):
     args = analysisBaseMain(argv)
     VH4Mu(inputFileList = args.inputFileList).analyze()
+
+## ___________________________________________________________
+# checks if this was run from the command line
+if __name__ == "__main__":
+    status = main()
+    sys.exit(status)

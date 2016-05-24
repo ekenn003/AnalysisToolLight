@@ -108,9 +108,4 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     args = parse_command_line(argv)
-
-## ___________________________________________________________
-# checks if this was run from the command line
-if __name__ == "__main__":
-    status = main()
-    sys.exit(status)
+    return args
