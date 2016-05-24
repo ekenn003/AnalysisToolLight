@@ -21,7 +21,6 @@ class AnalysisBase(object):
         self.infoname  = 'AC1Binfo'
 
         self.output    = args.outputFileName
-
         # put file names into a list called self.filenames
         inputFileList = args.inputFileList
         with open(inputFileList,'r') as f:
@@ -35,24 +34,18 @@ class AnalysisBase(object):
         self.nevents   = 0
         # things we will check in the first file
         self.isdata = True
-        self.tauDiscrims = []
         # get the summed weights of processed entries (add up all lumi_sumweights in AC1Blumi)
         for f, fname in enumerate(self.filenames):
             tfile = ROOT.TFile(fname)
             print 'Adding file ' + str(f+1) + ': ' + fname
             lumitree = tfile.Get('{0}/{1}'.format(self.treedir, self.luminame))
+            infotree = tfile.Get('{0}/{1}'.format(self.treedir, self.infoname))
             self.sumweight += lumitree.lumi_sumweights
-            self.nevents   += lumitree.lumi_eventsprocessed
-            if f == 0:
-                infotree = tfile.Get('{0}/{1}'.format(self.treedir, self.infoname))
-                self.isdata = infotree.isdata
-                tauDiscList = str(infotree.taudiscriminators)
-                print str(tauDiscList)
-#                self.tauDiscrims = tauDiscList.split()
+            self.nevents += infotree.nevents
+            self.isdata = infotree.isdata
 
 
-
-#        for disc in self.tauDiscrims: print disc
+        print 'Number of events found: ' + str(self.nevents)
 
         # initialize output file
         self.outfile = ROOT.TFile(self.output,'RECREATE')
@@ -69,16 +62,20 @@ class AnalysisBase(object):
         Iterate over each input file and row in trees.
         Calls the perEventAction method (which is overridden in the derived class).
         '''
+        eventsprocessed = 0
         # Iterate over each input file
-        for f,fname in enumerate(self.filenames):
+        for f, fname in enumerate(self.filenames):
             tfile = ROOT.TFile(fname)
             tree = tfile.Get('{0}/{1}'.format(self.treedir,self.treename))
             # Iterate over each event
             for row in tree:
+                eventsprocessed += 1
+                if eventsprocessed%1000==0: print 'Processing event ' + str(eventsprocessed) + '/' + str(self.nevents)
                 # Load collections
                 #self.vertices  = [Vertex(row, i) for i in range(row.primvertex_count)]
                 self.muons     = [Muon(row, i) for i in range(row.muon_count)]
                 self.electrons = [Electron(row, i) for i in range(row.electron_count)]
+                self.taus      = [Tau(row, i) for i in range(row.tau_count)]
 
                 # Calls the perEventAction method (which is overridden in the derived class)
                 self.perEventAction()
@@ -90,23 +87,15 @@ class AnalysisBase(object):
     ## _______________________________________________________
     def perEventAction(self):
         '''
-        Action taken every event. Must be overriden.
+        Dummy function for action taken every event. Must be overriden.
         Each physics object is available via:
                self.muons
                self.electrons
                ...
-        Call the fill method to store the event.
         '''
-
-        self.fill()
+        pass
 
 
-    ## _______________________________________________________
-    def fill(self):
-        '''
-        Determines the event weight and fills the histogram accordingly. (overridden in derived class)
-        '''
-        weight = 1.
 
     ## _______________________________________________________
     def endJob(self):

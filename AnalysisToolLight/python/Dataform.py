@@ -329,7 +329,6 @@ class Tau(JettyObject):
     # constructors/helpers
     def __init__(self, tree, entry):
        super(Tau, self).__init__(tree, 'tau', entry)
-    def ListAvailableTauDiscriminators(self):          return self.infotree
 
     # methods
     def Dz(self):       return self._get('dz')
@@ -352,76 +351,17 @@ class Tau(JettyObject):
     def PUCorrPtSum(self):           return self._get('puCorrPtSum')
 
     # tau ids
-    #disc
-    def TauDiscriminator(self, discname):
-        if 
-
-
-    'againstElectronVLooseMVA6',
-    'againstElectronLooseMVA6',
-    'againstElectronMediumMVA6',
-    'againstElectronTightMVA6',
-    'againstElectronVTightMVA6',
-    'againstElectronMVA6category',
-    'againstElectronMVA6raw',
-    'againstMuonLoose3',
-    'againstMuonTight3',
-    'byLoosePileupWeightedIsolation3Hits',
-    'byMediumPileupWeightedIsolation3Hits',
-    'byTightPileupWeightedIsolation3Hits',
-    'byPileupWeightedIsolationRaw3Hits',
-    'byLooseCombinedIsolationDeltaBetaCorr3Hits',
-    'byMediumCombinedIsolationDeltaBetaCorr3Hits',
-    'byTightCombinedIsolationDeltaBetaCorr3Hits',
-    'byCombinedIsolationDeltaBetaCorrRaw3Hits',
-    'byLooseCombinedIsolationDeltaBetaCorr3HitsdR03',
-    'byMediumCombinedIsolationDeltaBetaCorr3HitsdR03',
-    'byTightCombinedIsolationDeltaBetaCorr3HitsdR03',
-    'byVLooseIsolationMVA3newDMwLT',
-    'byLooseIsolationMVA3newDMwLT',
-    'byMediumIsolationMVA3newDMwLT',
-    'byTightIsolationMVA3newDMwLT',
-    'byVTightIsolationMVA3newDMwLT',
-    'byVVTightIsolationMVA3newDMwLT',
-    'byIsolationMVA3newDMwLTraw',
-    # BDT based tau ID discriminator based on isolation Pt sums plus tau lifetime information, trained on 1-prong and 3-prong tau candidates
-    'byVLooseIsolationMVA3oldDMwLT',
-    'byLooseIsolationMVA3oldDMwLT',
-    'byMediumIsolationMVA3oldDMwLT',
-    'byTightIsolationMVA3oldDMwLT',
-    'byVTightIsolationMVA3oldDMwLT',
-    'byVVTightIsolationMVA3oldDMwLT',
-    'byIsolationMVA3oldDMwLTraw',
-    'byLooseIsolationMVArun2v1DBoldDMwLT',
-    'byMediumIsolationMVArun2v1DBoldDMwLT',
-    'byTightIsolationMVArun2v1DBoldDMwLT',
-    'byVTightIsolationMVArun2v1DBoldDMwLT',
-    'byLooseIsolationMVArun2v1DBdR03oldDMwLT',
-    'byMediumIsolationMVArun2v1DBdR03oldDMwLT',
-    'byTightIsolationMVArun2v1DBdR03oldDMwLT',
-    'byVTightIsolationMVArun2v1DBdR03oldDMwLT',
-    'byLooseIsolationMVArun2v1DBnewDMwLT',
-    'byMediumIsolationMVArun2v1DBnewDMwLT',
-    'byTightIsolationMVArun2v1DBnewDMwLT',
-    'byVTightIsolationMVArun2v1DBnewDMwLT',
-    'byLooseIsolationMVArun2v1PWoldDMwLT',
-    'byMediumIsolationMVArun2v1PWoldDMwLT',
-    'byTightIsolationMVArun2v1PWoldDMwLT',
-    'byVTightIsolationMVArun2v1PWoldDMwLT',
-    'byLooseIsolationMVArun2v1PWdR03oldDMwLT',
-    'byMediumIsolationMVArun2v1PWdR03oldDMwLT',
-    'byTightIsolationMVArun2v1PWdR03oldDMwLT',
-    'byVTightIsolationMVArun2v1PWdR03oldDMwLT',
-    'byLooseIsolationMVArun2v1PWnewDMwLT',
-    'byMediumIsolationMVArun2v1PWnewDMwLT',
-    'byTightIsolationMVArun2v1PWnewDMwLT',
-    'byVTightIsolationMVArun2v1PWnewDMwLT',
-    'decayModeFinding',
-    'decayModeFindingNewDMs',
-
-
-
-
+    def TauDiscriminator(self, discname): 
+        result = False
+        try:
+            result = self._get('tdisc_'+discname)
+        except AttributeError:
+            print 'Tau discriminator "' + discname + '" not available.'
+            print 'Available discriminators are:'
+            for x in self.tree.GetListOfBranches():
+                if 'tau_tdisc_' in x.GetName(): print '    ' + x.GetName()[10:]
+            print '\n'
+            raise
 
 
 ## ___________________________________________________________
