@@ -30,8 +30,8 @@ class CutFlow(object):
 
 ## ___________________________________________________________
 class VH4Mu(AnalysisBase):
-    def __init__(self, **kwargs):
-        super(VH4Mu, self).__init__(**kwargs)
+    def __init__(self, args):
+        super(VH4Mu, self).__init__(args)
         #############################
         # Initialise event counters #
         #############################
@@ -136,8 +136,7 @@ class VH4Mu(AnalysisBase):
 ## ___________________________________________________________
 # actually execute the analysis
 def main(argv=None):
-    args = analysisBaseMain(argv)
-    VH4Mu(inputFileList = args.inputFileList).analyze()
+    VH4Mu(analysisBaseMain(argv)).analyze()
 
 ## ___________________________________________________________
 # checks if this was run from the command line

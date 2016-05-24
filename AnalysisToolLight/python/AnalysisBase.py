@@ -12,32 +12,51 @@ class AnalysisBase(object):
     You should derive your own class from AnalysisBase
     '''
     ## _______________________________________________________
-    def __init__(self, **kwargs):
-        # set defaults. These can be overridden with command line arguments
-        self.filenames = kwargs.pop('filenames', [])
-        self.treedir   = kwargs.pop('treedir', 'makeroottree')
-        self.treename  = kwargs.pop('treename', 'AC1B')
-        self.luminame  = kwargs.pop('luminame', 'AC1Blumi')
-        self.output    = kwargs.pop('output', 'ana.root')
+    def __init__(self, args):
+        # set defaults. These can be overridden with command line arguments (after adding to Base)
+        self.filenames = []
+        self.treedir   = 'makeroottree'
+        self.treename  = 'AC1B'
+        self.luminame  = 'AC1Blumi'
+        self.infoname  = 'AC1Binfo'
 
-        inputFileList = kwargs.pop('inputFileList', '')
+        self.output    = args.outputFileName
+
+        # put file names into a list called self.filenames
+        inputFileList = args.inputFileList
         with open(inputFileList,'r') as f:
             for line in f.readlines():
                 self.filenames += glob.glob(line.strip())
 
+        # things we will check in the first file
+        self.isdata = True
+        self.tauDiscrims = []
+        infotree = tfile.Get('{0}/{1}'.format(self.treedir, self.infoname))
+        self.isdata = infotree.isdata
+
+        tauDiscList = infotree.taudiscriminators
+        self.tauDiscrims = tauDiscList.split()
+
+
+        for d, disc in self.tauDiscrims print d
+
         # get the summed weights of processed entries (add up all lumi_sumweights in AC1Blumi)
         self.sumweight = 0
+        self.nevents   = 0
         for f, fname in enumerate(self.filenames):
             tfile = ROOT.TFile(fname)
-            print 'Adding file(s) ' + fname
-            tree = tfile.Get('{0}/{1}'.format(self.treedir, self.luminame))
-            self.sumweight += tree.lumi_sumweights
+            print 'Adding file ' + str(f+1) + ': ' + fname
+            lumitree = tfile.Get('{0}/{1}'.format(self.treedir, self.luminame))
+            self.sumweight += lumitree.lumi_sumweights
+            self.nevents   += lumitree.lumi_eventsprocessed
 
         # initialize output file
         self.outfile = ROOT.TFile(self.output,'RECREATE')
 
         # initialize list of histograms as empty
         self.histograms = {}
+
+        print 
 
     ## _______________________________________________________
     def analyze(self):
@@ -53,13 +72,14 @@ class AnalysisBase(object):
             # Iterate over each event
             for row in tree:
                 # Load collections
-                self.muons = [Muon(row,i) for i in range(row.muon_count)]
-                self.electrons = [Electron(row,i) for i in range(row.electron_count)]
-                # Calls the perEventAction method (overridden in the derived class)
+                #self.vertices  = [Vertex(row, i) for i in range(row.primvertex_count)]
+                self.muons     = [Muon(row, i) for i in range(row.muon_count)]
+                self.electrons = [Electron(row, i) for i in range(row.electron_count)]
+
+                # Calls the perEventAction method (which is overridden in the derived class)
                 self.perEventAction()
 
         self.endJob()
-
         self.write()
 
 
@@ -104,10 +124,12 @@ class AnalysisBase(object):
 ## ___________________________________________________________
 def parse_command_line(argv):
     parser = argparse.ArgumentParser(description='Run analyzer')
-    # line below is an example of an optional argument
-    parser.add_argument('--outputFileName', type=str, default='ana.out', help='Output file name')
+
     # line below is an example of a required argument
     parser.add_argument('inputFileList', type=str, help='List of input files (AC1B*.root)')
+    # line below is an example of an optional argument
+    parser.add_argument('--outputFileName', type=str, default='ana.out', help='Output file name')
+
     return parser.parse_args(argv)
 
 ## ___________________________________________________________
