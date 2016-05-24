@@ -91,12 +91,17 @@ class AnalysisBase(object):
 ## ___________________________________________________________
 def parse_command_line(argv):
     parser = argparse.ArgumentParser(description='Run analyzer')
-
     parser.add_argument('--inputFileList', type=str, default='', help='List of input files (AC1B*.root)')
-
     return parser.parse_args(argv)
 
 ## ___________________________________________________________
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = parse_command_line(argv)
+
+## ___________________________________________________________
+# checks if this was run from the command line
 if __name__ == "__main__":
     status = main()
     sys.exit(status)
