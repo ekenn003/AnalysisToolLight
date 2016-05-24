@@ -14,11 +14,16 @@ class AnalysisBase(object):
     ## _______________________________________________________
     def __init__(self, **kwargs):
         # set defaults. These can be overridden with command line arguments
-        self.filenames = kwargs.pop('filenames',[])
-        self.treedir   = kwargs.pop('treedir','makeroottree')
-        self.treename  = kwargs.pop('treename','AC1B')
-        self.luminame  = kwargs.pop('luminame','AC1Blumi')
-        self.output    = kwargs.pop('output','ana.root')
+        self.filenames = kwargs.pop('filenames', [])
+        self.treedir   = kwargs.pop('treedir', 'makeroottree')
+        self.treename  = kwargs.pop('treename', 'AC1B')
+        self.luminame  = kwargs.pop('luminame', 'AC1Blumi')
+        self.output    = kwargs.pop('output', 'ana.root')
+
+        inputFileList = kwargs.pop(inputFileList, [])
+        with open(inputFileList,'r') as f:
+            for line in f.readlines():
+                filenames += glob.glob(line.strip())
 
         # get the summed weights of processed entries (add up all lumi_sumweights in AC1Blumi)
         self.sumweight = 0
