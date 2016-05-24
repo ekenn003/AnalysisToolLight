@@ -5,35 +5,36 @@ from Candidates import Muon, Electron
 ## ___________________________________________________________
 class AnalysisBase(object):
     '''
-    You should derive your own class MyAnalysis from AnalysisBase
+    You should derive your own class from AnalysisBase
     '''
-    def __init__(self,**kwargs):
+    ## _______________________________________________________
+    def __init__(self, **kwargs):
         # set defaults. These can be overridden with command line arguments
         self.filenames = kwargs.pop('filenames',[])
-        self.treedir = kwargs.pop('treedir','makeroottree')
-        self.treename = kwargs.pop('treename','AC1B')
-        self.luminame = kwargs.pop('luminame','AC1Blumi')
-        self.output = kwargs.pop('output','ana.root')
+        self.treedir   = kwargs.pop('treedir','makeroottree')
+        self.treename  = kwargs.pop('treename','AC1B')
+        self.luminame  = kwargs.pop('luminame','AC1Blumi')
+        self.output    = kwargs.pop('output','ana.root')
 
-        ## get the summed weights of processed entries (add up all lumi_sumweights in AC1Blumi)
-        #self.sumweight = 0
-        #for f,fname in enumerate(self.filenames):
-        #    tfile = ROOT.TFile(fname)
-        #    tree = tfile.Get('{0}/{1}'.format(self.treedir,self.luminame))
-        #    self.sumweight += tree.sumweights
+        # get the summed weights of processed entries (add up all lumi_sumweights in AC1Blumi)
+        self.sumweight = 0
+        for f, fname in enumerate(self.filenames):
+            tfile = ROOT.TFile(fname)
+            tree = tfile.Get('{0}/{1}'.format(self.treedir, self.luminame))
+            self.sumweight += tree.sumweights
 
         # initialize output file
         self.outfile = ROOT.TFile(self.output,'RECREATE')
 
-        # by default, list of histograms is empty
+        # initialize list of histograms as empty
         self.histograms = {}
 
-## ___________________________________________________________
+    ## _______________________________________________________
     def analyze(self):
         '''
         The primary analysis loop.
         Iterate over each input file and row in trees.
-        Calls the perEventAction method (overridden in the derived class).
+        Calls the perEventAction method (which is overridden in the derived class).
         '''
         # Iterate over each input file
         for f,fname in enumerate(self.filenames):
@@ -43,7 +44,7 @@ class AnalysisBase(object):
             for row in tree:
                 # Load collections
                 self.muons = [Muon(row,i) for i in range(row.muon_count)]
-                self.electrons = [Electron(row,i) for i in range(row.muon_count)]
+                self.electrons = [Electron(row,i) for i in range(row.electron_count)]
                 # Calls the perEventAction method (overridden in the derived class)
                 self.perEventAction()
 
@@ -52,7 +53,7 @@ class AnalysisBase(object):
         self.write()
 
 
-## ___________________________________________________________
+    ## _______________________________________________________
     def perEventAction(self):
         '''
         Action taken every event. Must be overriden.
@@ -66,21 +67,36 @@ class AnalysisBase(object):
         self.fill()
 
 
-## ___________________________________________________________
+    ## _______________________________________________________
     def fill(self):
         '''
         Determines the event weight and fills the histogram accordingly. (overridden in derived class)
         '''
         weight = 1.
 
-## ___________________________________________________________
+    ## _______________________________________________________
     def endJob(self):
         pass
 
-## ___________________________________________________________
+    ## _______________________________________________________
     def write(self):
         self.outfile.cd()
         for hist in self.histograms:
             self.histograms[hist].Write()
 
         self.outfile.Close()
+
+
+
+## ___________________________________________________________
+def parse_command_line(argv):
+    parser = argparse.ArgumentParser(description='Run analyzer')
+
+    parser.add_argument('--inputFileList', type=str, default='', help='List of input files (AC1B*.root)')
+
+    return parser.parse_args(argv)
+
+## ___________________________________________________________
+if __name__ == "__main__":
+    status = main()
+    sys.exit(status)
