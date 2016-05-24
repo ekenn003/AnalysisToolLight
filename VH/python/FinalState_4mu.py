@@ -2,6 +2,7 @@
 import glob
 import itertools
 import argparse
+import sys
 import ROOT
 from collections import OrderedDict
 from AnalysisToolLight.AnalysisToolLight.AnalysisBase import main as analysisBaseMain
@@ -30,11 +31,6 @@ class CutFlow(object):
 ## ___________________________________________________________
 class VH4Mu(AnalysisBase):
     def __init__(self, **kwargs):
-        #filenames = []
-        #with open('inputFileList','r') as f:
-        #    for line in f.readlines():
-        #        self.filenames += glob.glob(line.strip())
-        #super(VH4Mu, self).__init__(filenames = filenames, **kwargs)
         super(VH4Mu, self).__init__(**kwargs)
         #############################
         # Initialise event counters #
@@ -77,7 +73,7 @@ class VH4Mu(AnalysisBase):
 
             # muon cuts
             if not muon.Pt() > cMuPt: continue
-            if not muon.Eta() > cMuEta: continue
+            if not muon.Eta() < cMuEta: continue
 
             # if we get to this point, push muon into goodMuons
             self.goodMuons += [muon]
@@ -95,9 +91,8 @@ class VH4Mu(AnalysisBase):
                 diMuP4 = pair[0].P4() + pair[1].P4()
                 if diMuP4.Pt() > min(maxDiMuPt, cDiMuPt):
                     maxDiMuPt = diMuP4.Pt()
-                    #self.dimuon = pair if pair[0].Pt() > pair[1].Pt() else (pair[1], pair[0])
-                    if pair[0].Pt() > pair[1].Pt(): self.dimuon = pair
-                    else: self.dimuon = (pair[1], pair[0])
+                    # order the pair by pt
+                    self.dimuon = pair if pair[0].Pt() > pair[1].Pt() else (pair[1], pair[0])
 
         # fill histograms
         self.fill()
@@ -110,17 +105,17 @@ class VH4Mu(AnalysisBase):
         '''
         weight = 1.
         # leading muon
-        if len[self.goodMuons] >= 1:
+        if len(self.goodMuons) > 0:
             mu0 = self.goodMuons[0]
             self.histograms['hLeadMuPt'].Fill(mu0.Pt(), weight)
 
         # subleading muon
-        if len[self.goodMuons] >= 2:
+        if len(self.goodMuons) > 1:
             mu1 = self.goodMuons[1]
             self.histograms['hSubLeadMuPt'].Fill(mu1.Pt(), weight)
 
         # diumuon
-        if len[self.dimuon]:
+        if self.dimuon:
             diMuP4 = mu0.P4() + mu1.P4()
             self.histograms['hDiMuPt'].Fill(diMuP4.Pt(), weight)
             self.histograms['hDiMuInvMass'].Fill(diMuP4.M(), weight)
