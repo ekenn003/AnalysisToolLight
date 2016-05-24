@@ -4,7 +4,7 @@ import glob
 import os
 import sys
 import ROOT
-from Candidates import Muon, Electron
+from Dataform import *
 
 ## ___________________________________________________________
 class AnalysisBase(object):
@@ -28,27 +28,31 @@ class AnalysisBase(object):
             for line in f.readlines():
                 self.filenames += glob.glob(line.strip())
 
+
+
+
+        self.sumweight = 0
+        self.nevents   = 0
         # things we will check in the first file
         self.isdata = True
         self.tauDiscrims = []
-        infotree = tfile.Get('{0}/{1}'.format(self.treedir, self.infoname))
-        self.isdata = infotree.isdata
-
-        tauDiscList = infotree.taudiscriminators
-        self.tauDiscrims = tauDiscList.split()
-
-
-        for d, disc in self.tauDiscrims print d
-
         # get the summed weights of processed entries (add up all lumi_sumweights in AC1Blumi)
-        self.sumweight = 0
-        self.nevents   = 0
         for f, fname in enumerate(self.filenames):
             tfile = ROOT.TFile(fname)
             print 'Adding file ' + str(f+1) + ': ' + fname
             lumitree = tfile.Get('{0}/{1}'.format(self.treedir, self.luminame))
             self.sumweight += lumitree.lumi_sumweights
             self.nevents   += lumitree.lumi_eventsprocessed
+            if f == 0:
+                infotree = tfile.Get('{0}/{1}'.format(self.treedir, self.infoname))
+                self.isdata = infotree.isdata
+                tauDiscList = str(infotree.taudiscriminators)
+                print str(tauDiscList)
+#                self.tauDiscrims = tauDiscList.split()
+
+
+
+#        for disc in self.tauDiscrims: print disc
 
         # initialize output file
         self.outfile = ROOT.TFile(self.output,'RECREATE')
