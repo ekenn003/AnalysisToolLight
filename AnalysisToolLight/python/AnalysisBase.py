@@ -21,7 +21,7 @@ class AnalysisBase(object):
         self.output    = kwargs.pop('output', 'ana.root')
 
         inputFileList = kwargs.pop('inputFileList', '')
-        with open('inputFileList','r') as f:
+        with open(inputFileList,'r') as f:
             for line in f.readlines():
                 self.filenames += glob.glob(line.strip())
 
@@ -29,8 +29,9 @@ class AnalysisBase(object):
         self.sumweight = 0
         for f, fname in enumerate(self.filenames):
             tfile = ROOT.TFile(fname)
+            print 'Adding file(s) ' + fname
             tree = tfile.Get('{0}/{1}'.format(self.treedir, self.luminame))
-            self.sumweight += tree.sumweights
+            self.sumweight += tree.lumi_sumweights
 
         # initialize output file
         self.outfile = ROOT.TFile(self.output,'RECREATE')
@@ -85,6 +86,9 @@ class AnalysisBase(object):
 
     ## _______________________________________________________
     def endJob(self):
+        ''' 
+        Dummy function overridden in derived class
+        '''
         pass
 
     ## _______________________________________________________
@@ -100,7 +104,10 @@ class AnalysisBase(object):
 ## ___________________________________________________________
 def parse_command_line(argv):
     parser = argparse.ArgumentParser(description='Run analyzer')
-    parser.add_argument('--inputFileList', type=str, default='', help='List of input files (AC1B*.root)')
+    # line below is an example of an optional argument
+    parser.add_argument('--outputFileName', type=str, default='ana.out', help='Output file name')
+    # line below is an example of a required argument
+    parser.add_argument('inputFileList', type=str, help='List of input files (AC1B*.root)')
     return parser.parse_args(argv)
 
 ## ___________________________________________________________
