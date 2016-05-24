@@ -110,18 +110,20 @@ class VH4Mu(AnalysisBase):
         '''
         weight = 1.
         # leading muon
-        mu0 = self.dimuon[0]
-
-        self.histograms['hLeadMuPt'].Fill(mu0.Pt(), weight)
+        if len[self.goodMuons] >= 1:
+            mu0 = self.goodMuons[0]
+            self.histograms['hLeadMuPt'].Fill(mu0.Pt(), weight)
 
         # subleading muon
-        mu1 = self.dimuon[1]
-        self.histograms['hSubLeadMuPt'].Fill(mu1.Pt(), weight)
+        if len[self.goodMuons] >= 2:
+            mu1 = self.goodMuons[1]
+            self.histograms['hSubLeadMuPt'].Fill(mu1.Pt(), weight)
 
         # diumuon
-        diMuP4 = mu0.P4() + mu1.P4()
-        self.histograms['hDiMuPt'].Fill(diMuP4.Pt(), weight)
-        self.histograms['hDiMuInvMass'].Fill(diMuP4.M(), weight)
+        if len[self.dimuon]:
+            diMuP4 = mu0.P4() + mu1.P4()
+            self.histograms['hDiMuPt'].Fill(diMuP4.Pt(), weight)
+            self.histograms['hDiMuInvMass'].Fill(diMuP4.M(), weight)
         
 
 
