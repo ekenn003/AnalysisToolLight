@@ -45,9 +45,9 @@ class Vertex(object):
 
 
 ## ___________________________________________________________
-class ObjectBase(object):
+class CandBase(object):
     '''
-    Basic objects
+    Basic objects from reco::Candidate objects
     '''
     # constructors/helpers
     def __init__(self, tree, candName, entry):
@@ -61,8 +61,11 @@ class ObjectBase(object):
     def deltaR(self, cand): return deltaR(self, cand)
 
     # methods
+    def P4(self):
+        p4 = ROOT.TLorentzVector()
+        p4.SetPtEtaPhiE(self.Pt(), self.Eta(), self.Phi(), self.Energy())
+        return p4
     def P(self):      return ROOT.TVector3(self._get('px'), self._get('py'), self._get('pz'))
-    def P4(self):     return ROOT.TLorentzVector(self._get('pt'), self._get('eta'), self._get('phi'), self._get('energy'))
     def Pt(self):     return self._get('pt')
     def Eta(self):    return self._get('eta')
     def Phi(self):    return self._get('phi')
@@ -73,28 +76,28 @@ class ObjectBase(object):
 
 
 ## ___________________________________________________________
-class CommonObject(ObjectBase):
+class CommonCand(CandBase):
     # constructors/helpers
     def __init__(self, tree, obtype, entry):
-       super(CommonObject, self).__init__(tree, obtype, entry)
+       super(CommonCand, self).__init__(tree, obtype, entry)
 
     # methods
     #gen*
 
 ## ___________________________________________________________
-class JettyObject(ObjectBase):
+class JettyCand(CandBase):
     # constructors/helpers
     def __init__(self, tree, jttype, entry):
-       super(JettyObject, self).__init__(tree, jttype, entry)
+       super(JettyCand, self).__init__(tree, jttype, entry)
 
     # methods
     #genJet*
 
 ## ___________________________________________________________
-class EgammaObject(CommonObject):
+class EgammaCand(CommonCand):
     # constructors/helpers
     def __init__(self, tree, egtype, entry):
-       super(EgammaObject, self).__init__(tree, egtype, entry)
+       super(EgammaCand, self).__init__(tree, egtype, entry)
 
     # methods
     def EffectiveArea(self): return self._get('effectiveArea')
@@ -113,7 +116,6 @@ class EgammaObject(CommonObject):
     def E5x5(self): return self._get('e5x5')
     # isolation
     def IsoPFR3Charged(self): return self._get('isolationpfr3charged')
-    #def (self): return self._get('isolationpfr3chargedpu')
     def IsoPFR3Photon(self):  return self._get('isolationpfr3photon')
     def IsoPFR3Neutral(self): return self._get('isolationpfr3neutral')
     def IsoR3Track(self):     return self._get('isolationr3track')
@@ -161,7 +163,7 @@ class EgammaObject(CommonObject):
 
 
 ## ___________________________________________________________
-class Muon(CommonObject):
+class Muon(CommonCand):
     # constructors/helpers
     def __init__(self, tree, entry):
        super(Muon, self).__init__(tree, 'muon', entry)
@@ -172,8 +174,11 @@ class Muon(CommonObject):
     def Dxy(self):      return self._get('dxy')
     def DxyError(self): return self._get('dxyerr')
     # rochester corrected values
+    def CorrectedP4(self):
+        cp4 = ROOT.TLorentzVector()
+        cp4.SetPtEtaPhiE(self.CorrectedPt(), self.CorrectedEta(), self.CorrectedPhi(), self.CorrectedEnergy())
+        return cp4
     def CorrectedP(self):      return ROOT.TVector3(self._get('rochesterPx'), self._get('rochesterPy'), self._get('rochesterPx'))
-    def CorrectedP4(self):     return ROOT.TLorentzVector(self._get('rochesterPt'), self._get('rochesterEta'), self._get('rochesterPhi'), self._get('rochesterEnergy'))
     def CorrectedPt(self):     return self._get('rochesterPt')
     def CorrectedEta(self):    return self._get('rochesterEta')
     def CorrectedPhi(self):    return self._get('rochesterPhi')
@@ -258,7 +263,7 @@ class Muon(CommonObject):
 
 
 ## ___________________________________________________________
-class Electron(EgammaObject):
+class Electron(EgammaCand):
     # constructors/helpers
     def __init__(self, tree, entry):
        super(Electron, self).__init__(tree, 'electron', entry)
@@ -303,7 +308,7 @@ class Electron(EgammaObject):
 
 
 ## ___________________________________________________________
-class Photon(EgammaObject):
+class Photon(EgammaCand):
     # constructors/helpers
     def __init__(self, tree, entry):
        super(Photon, self).__init__(tree, 'photon', entry)
@@ -325,7 +330,7 @@ class Photon(EgammaObject):
     def IsoR4NTrackHollow(self): return self._get('isolationr4ntrackhollow')
 
 ## ___________________________________________________________
-class Tau(JettyObject):
+class Tau(JettyCand):
     # constructors/helpers
     def __init__(self, tree, entry):
        super(Tau, self).__init__(tree, 'tau', entry)
@@ -365,7 +370,7 @@ class Tau(JettyObject):
 
 
 ## ___________________________________________________________
-class Jet(JettyObject):
+class Jet(JettyCand):
     # constructors/helpers
     def __init__(self, tree, entry):
        super(Jet, self).__init__(tree, 'ak4pfchsjet', entry)
