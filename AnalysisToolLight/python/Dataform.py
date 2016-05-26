@@ -3,6 +3,7 @@ See RootMaker/RootMaker/python/objectBase.py
 '''
 
 import ROOT
+#import math
 from collections import OrderedDict, namedtuple
 
 
@@ -35,6 +36,7 @@ class Event(object):
     # constructors/helpers
     def __init__(self, tree):
         self.tree = tree
+    def _get(self, var): return getattr(self.tree, var)
 
     # methods
     def Number(self):       return self.tree.event_nr
@@ -58,6 +60,31 @@ class Event(object):
     def GenId2(self):    return self.tree.genid2
     def Genx2(self):     return self.tree.genx2
     def GenScale(self):  return self.tree.genScale
+
+    # event.PassesHLTs returns True if any of the triggers fired
+    def PassesHLTs(self, paths):
+        result = False
+        for pathname in paths:
+            try:
+                result = self._get('event_hlt_passes_'+pathname)
+            except AttributeError:
+                print 'HLT path "' + pathname + '" not available.'
+                print 'Available paths are:'
+                for x in self.tree.GetListOfBranches():
+                    if 'event_hlt_passes_' in x.GetName(): print '    ' + x.GetName()[17:]
+                print '\n'
+                raise
+        return result
+
+
+
+
+
+
+
+
+
+
 
 ## ___________________________________________________________
 class Vertex(object):
@@ -111,6 +138,7 @@ class CandBase(object):
     def P(self):      return ROOT.TVector3(self._get('px'), self._get('py'), self._get('pz'))
     def Pt(self):     return self._get('pt')
     def Eta(self):    return self._get('eta')
+    def AbsEta(self): return abs(self._get('eta'))
     def Phi(self):    return self._get('phi')
     def Energy(self): return self._get('energy')
     def Charge(self): return self._get('charge')
@@ -311,8 +339,23 @@ class Muon(CommonCand):
         # return result of isolation check
         if isotype=='PF_dB':
             return (self.IsoPFR3dBCombRel() < 0.15) if isolevel=='tight' else (self.IsoPFR3dBCombRel() < 0.25)
-        else if isotype=='tracker':
+        if isotype=='tracker':
             return (self.IsoR3Track() < 0.05) if isolevel=='tight' else (self.IsoR3Track() < 0.10)
+
+    # muon.PassesHLTs returns True if any of the triggers fired
+    def PassesHLTs(self, paths):
+        result = False
+        for pathname in paths:
+            try:
+                result = self._get('muon_hlt_matches_'+pathname)
+            except AttributeError:
+                print 'Muon HLT path "' + pathname + '" not available.'
+                print 'Available paths are:'
+                for x in self.tree.GetListOfBranches():
+                    if 'muon_hlt_matches_' in x.GetName(): print '    ' + x.GetName()[17:]
+                print '\n'
+                raise
+        return result
 
 
 
