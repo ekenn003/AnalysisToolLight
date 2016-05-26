@@ -310,15 +310,9 @@ class Muon(CommonCand):
             raise ValueError('Muon.CheckIso: "{0}" not an available choice for isolevel. Available choices are "tight" and "loose".'.format(isolevel))
         # return result of isolation check
         if isotype=='PF_dB':
-            if isolevel=='tight':
-                return (self.IsoPFR3dBCombRel() < 0.15)
-            else if isolevel=='loose':
-                return (self.IsoPFR3dBCombRel() < 0.25)
+            return (self.IsoPFR3dBCombRel() < 0.15) if isolevel=='tight' else (self.IsoPFR3dBCombRel() < 0.25)
         else if isotype=='tracker':
-            if isolevel=='tight':
-                return (self.IsoR3Track() < 0.05)
-            else if isolevel=='loose':
-                return (self.IsoR3Track() < 0.10)
+            return (self.IsoR3Track() < 0.05) if isolevel=='tight' else (self.IsoR3Track() < 0.10)
 
 
 
