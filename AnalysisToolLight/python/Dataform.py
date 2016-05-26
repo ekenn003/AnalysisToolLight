@@ -3,6 +3,11 @@ See RootMaker/RootMaker/python/objectBase.py
 '''
 
 import ROOT
+from collections import OrderedDict, namedtuple
+
+
+## ___________________________________________________________
+Z_MASS = 91.1876 # GeV
 
 ## ___________________________________________________________
 def deltaPhi(c0, c1):
@@ -20,6 +25,41 @@ def deltaR(c0, c1):
     return ROOT.TMath.Sqrt(deta**2+dphi**2)
 
 ## ___________________________________________________________
+BeamSpot = namedtuple('BeamSpot', ['x', 'y', 'z', 'xwidth','ywidth','zsigma'])
+
+## ___________________________________________________________
+class Event(object):
+    '''
+    Event object
+    '''
+    # constructors/helpers
+    def __init__(self, tree):
+        self.tree = tree
+
+    # methods
+    def Number(self):       return self.tree.event_nr
+    def RunNumber(self):    return self.tree.event_run
+    def TimeUnix(self):     return self.tree.event_timeunix
+    def TimeMicroSec(self): return self.tree.event_timemicrosec
+    def LumiBlock(self):    return self.tree.event_luminosityblock
+    def Rho(self):          return self.tree.event_rho
+    # beamspot
+    def BeamSpot(self):
+        return Beamspot(self.tree.beamspot_x, self.tree.beamspot_y, self.tree.beamspot_z, self.tree.beamspot_xwidth, self.tree.beamspot_ywidth, self.tree.beamspot_zsigma)
+    # pileup
+    def NumPileUpInteractionsMinus(self): return self.tree.numpileupinteractionsminus
+    def NumPileUpInteractions(self):      return self.tree.numpileupinteractions
+    def NumPileUpInteractionsPlus(self):  return self.tree.numpileupinteractionsplus
+    def NumTruePileUpInteractions(self):  return self.tree.numtruepileupinteractions
+    # generator info
+    def GenWeight(self): return self.tree.genweight
+    def GenId1(self):    return self.tree.genid1
+    def Genx1(self):     return self.tree.genx1
+    def GenId2(self):    return self.tree.genid2
+    def Genx2(self):     return self.tree.genx2
+    def GenScale(self):  return self.tree.genScale
+
+## ___________________________________________________________
 class Vertex(object):
     '''
     Vertices from reco::Vertex objects
@@ -32,16 +72,19 @@ class Vertex(object):
     def _get(self, var): return getattr(self.tree, '{0}_{1}'.format('primvertex', var))[self.entry]
 
     # methods
-    def XError(self):   return self._get('xError')
-    def YError(self):   return self._get('yError')
-    def ZError(self):   return self._get('zError')
+    def X(self): return self._get('x')
+    def Y(self): return self._get('y')
+    def Z(self): return self._get('z')
+    def XError(self): return self._get('xError')
+    def YError(self): return self._get('yError')
+    def ZError(self): return self._get('zError')
     def Chi2(self):     return self._get('chi2')
     def Ndof(self):     return self._get('ndof')
     def NTracks(self):  return self._get('ntracks')
     def NormChi2(self): return self._get('normalizedChi2')
     def IsValid(self):  return self._get('isvalid')
     def IsFake(self):   return self._get('isfake')
-    def VRho(self):     return self._get('rho')
+    def Rho(self):      return self._get('rho')
 
 
 ## ___________________________________________________________
@@ -193,10 +236,10 @@ class Muon(CommonCand):
     def IsLooseMuon(self):  return self._get('is_loose_muon')
     # track info
     def IsPFMuon(self):         return self._get('is_pf_muon')
-    def IsGlobalMuon(self):     return self._get('is_global')
+    def IsGlobal(self):     return self._get('is_global')
     def HasGlobalTrack(self):   return self._get('hasglobaltrack') # this might be exactly the above - check
-    def IsTrackerMuon(self):    return self._get('is_tracker')
-    def IsStandaloneMuon(self): return self._get('is_standalone')
+    def IsTracker(self):    return self._get('is_tracker')
+    def IsStandalone(self): return self._get('is_standalone')
     def IsCaloMuon(self):       return self._get('is_calo')
     def PtError(self):          return self._get('pterror')
     def Chi2(self):             return self._get('chi2')
@@ -255,10 +298,27 @@ class Muon(CommonCand):
             ) / self._get('pt')
         )
         return isoval
-
-
-
-
+    # check isolation function
+    def CheckIso(self, isotype, isolevel):
+        ''' Returns whether the muon passes selected hard-coded isolation values taken
+        from https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2#Muon_Isolation
+        '''
+        # kind of validate input
+        if not (isotype=='PF_dB' or isotype=='tracker'):
+            raise ValueError('Muon.CheckIso: "{0}" not an available choice for isotype. Available choices are "PF_dB" and "tracker".'.format(isotype))
+        if not (isolevel=='tight' or isolevel=='loose'):
+            raise ValueError('Muon.CheckIso: "{0}" not an available choice for isolevel. Available choices are "tight" and "loose".'.format(isolevel))
+        # return result of isolation check
+        if isotype=='PF_dB':
+            if isolevel=='tight':
+                return (self.IsoPFR3dBCombRel() < 0.15)
+            else if isolevel=='loose':
+                return (self.IsoPFR3dBCombRel() < 0.25)
+        else if isotype=='tracker':
+            if isolevel=='tight':
+                return (self.IsoR3Track() < 0.05)
+            else if isolevel=='loose':
+                return (self.IsoR3Track() < 0.10)
 
 
 
@@ -367,7 +427,11 @@ class Tau(JettyCand):
                 if 'tau_tdisc_' in x.GetName(): print '    ' + x.GetName()[10:]
             print '\n'
             raise
+        return result
 
+
+## ___________________________________________________________
+JetShape = namedtuple('JetShape', ['chargeda', 'chargedb', 'neutrala', 'neutralb', 'alla', 'allb', 'chargedfractionmv'])
 
 ## ___________________________________________________________
 class Jet(JettyCand):
@@ -375,15 +439,89 @@ class Jet(JettyCand):
     def __init__(self, tree, entry):
        super(Jet, self).__init__(tree, 'ak4pfchsjet', entry)
 
+    # methods
+    def Area(self): return self._get('area')
+    # energy
+    def HadEnergy(self):        return self._get('hadronicenergy')
+    def ChargedHadEnergy(self): return self._get('chargedhadronicenergy')
+    def EMEnergy(self):         return self._get('emenergy')
+    def ChargedEMEnergy(self):  return self._get('chargedemenergy')
+    def HFHadEnergy(self):      return self._get('hfhadronicenergy')
+    def HFEMEnergy(self):       return self._get('hfemenergy')
+    def ElectronEnergy(self):   return self._get('electronenergy')
+    def MuonEnergy(self):       return self._get('muonenergy')
+    # multiplicities
+    def ChargedMulti(self):  return self._get('chargedmulti')
+    def NeutralMulti(self):  return self._get('neutralmulti')
+    def HFHadMulti(self):    return self._get('hfhadronicmulti')
+    def HFEMMulti(self):     return self._get('hfemmulti')
+    def ElectronMulti(self): return self._get('electronmulti')
+    def MuonMulti(self):     return self._get('muonmulti')
+    # energy fractions
+    def NeutralHadEnergyFraction(self): return self._get('neutralhadronenergyfraction')
+    def NeutralEMEnergyFraction(self):  return self._get('neutralemenergyfraction')
+    def ChargedHadEnergyFraction(self): return self._get('chargedhadronenergyfraction')
+    def MuonEnergyFraction(self):       return self._get('muonenergyfraction')
+    def ChargedEMEnergyFraction(self):  return self._get('chargedemenergyfraction')
+    # jet id
+    def IsLooseJet(self):        return self._get('is_loose')
+    def IsTightJet(self):        return self._get('is_tight')
+    def IsTightLepVetoJet(self): return self._get('is_tightLepVeto')
+    # shape
+    def Shape(self):
+        return JetShape(self._get('chargeda'), self._get('chargedb'), self._get('neutrala'), self._get('neutralb'), self._get('alla'), self._get('allb'), self._get('chargedfractionmv'))
+    # btagging
+    def Btag(self, tagname): 
+        result = False
+        try:
+            result = self._get('btag_'+tagname)
+        except AttributeError:
+            print 'Btag "' + tagname + '" not available.'
+            print 'Available btags are:'
+            for x in self.tree.GetListOfBranches():
+                if 'ak4pfchsjet_btag_' in x.GetName(): print '    ' + x.GetName()[17:]
+            print '\n'
+            raise
+        return result
 
 
 
 
 
-
-
-
-
+## ___________________________________________________________
+class CutFlow(object):
+    '''
+    The CutFlow object keeps track of the cutflow and helps fill
+    the efficiencies histogram at the end of the job.
+    '''
+    def __init__(self):
+        self.counters = OrderedDict()
+        self.pretty = {}
+    def getPretty(self, name):
+        return self.pretty.get(name, name)
+    def add(self, var, label):
+        self.counters[var] = 0
+        self.pretty[var] = label
+    def increment(self, arg): # increases counter "arg" by 1
+        self.counters[arg] += 1.
+    def numBins(self): # returns number of counters
+        return len(self.counters)
+    def count(self, name): # returns the current value of the counter "name"
+        return self.counters[name]
+    def getNames(self): # returns ordered dict of counters
+        return self.counters.keys()
+    def getSkimEff(self, index):
+        if index == 0: return '---'
+        num = self.count(self.getNames()[index])
+        den = self.count(self.getNames()[0])
+        if den!=0: return format((100.*num)/den, '0.2f')
+        return '-'
+    def getRelEff(self, index):
+        if index == 0: return '---'
+        num = self.count(self.getNames()[index])
+        den = self.count(self.getNames()[index-1])
+        if den!=0: return format((100.*num)/den, '0.2f')
+        return '-'
 
 
 
