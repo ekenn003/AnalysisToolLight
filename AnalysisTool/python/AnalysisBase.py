@@ -78,27 +78,32 @@ class AnalysisBase(object):
         Calls the perEventAction method (which is overridden in the derived class).
         '''
         eventsprocessed = 0
-        # Iterate over each input file
+        # loop over each input file
         for f, fname in enumerate(self.filenames):
             logging.info('Processing file {0} of {1}:'.format(f+1, len(self.filenames)))
-
+            # open the file and get the AC1B tree
             tfile = ROOT.TFile(fname)
             tree = tfile.Get('{0}/{1}'.format(self.treedir,self.treename))
 
-            # Iterate over each event
+            # loop over each event (row)
             for row in tree:
                 eventsprocessed += 1
                 if eventsprocessed%1000==0: logging.info('  Processing event {0}/{1}'.format(eventsprocessed, self.nevents))
-                # Load collections
+                # load collections
                 self.event     = Event(row)
                 self.vertices  = [Vertex(row, i) for i in range(row.primvertex_count)]
                 self.muons     = [Muon(row, i) for i in range(row.muon_count)]
                 self.electrons = [Electron(row, i) for i in range(row.electron_count)]
+                self.photons   = [Photon(row, i) for i in range(row.photon_count)]
                 self.taus      = [Tau(row, i) for i in range(row.tau_count)]
+                self.jets      = [Jet(row, i) for i in range(row.ak4pfchsjet_count)]
+                self.met       = [PFMETTYPE1(row, 0)] # MET is a vector of size 1
 
-                # Calls the perEventAction method (which is overridden in the derived class)
+                # do the event analysis!
+                # call the perEventAction method (which is overridden in the derived class)
                 self.perEventAction()
 
+        # end job and write histograms to output file
         self.endJob()
         self.write()
 
@@ -124,7 +129,7 @@ class AnalysisBase(object):
         # initialise cutflow histogram
         self.histograms['hEfficiencies'] = ROOT.TH1F('hEfficiencies', 'hEfficiencies', self.cutflow.numBins(), 0, self.cutflow.numBins())
         self.histograms['hEfficiencies'].GetXaxis().SetTitle('')
-        self.histograms['hEfficiencies'].GetYaxis().SetTitle('')
+        self.histograms['hEfficiencies'].GetYaxis().SetTitle('Events')
         # fill histogram
         for i, name in enumerate(self.cutflow.getNames()):
             # 0 is the underflow bin in root: first bin to fill is bin 1
@@ -133,23 +138,20 @@ class AnalysisBase(object):
 
         # print cutflow table
         logging.info('Job complete.')
-        logging.info('NEVENTS: {0}'.format(self.nevents))
+        logging.info('NEVENTS:    {0}'.format(self.nevents))
         logging.info('SUMWEIGHTS: {0}'.format(self.sumweights))
 
         efftable = PrettyTable(['Selection', 'Events', 'Eff.(Skim) [%]', 'Rel.Eff. [%]'])
         efftable.align['Selection'] = 'l'
         efftable.align['Events'] = 'r'
-        efftable.align['Eff.(Skim) [%]'] = 'r'
-        efftable.align['Rel.Eff. [%]'] = 'r'
+        efftable.align['Eff. (Skim) [%]'] = 'r'
+        efftable.align['Rel. Eff. [%]'] = 'r'
         skimnevents = self.cutflow.count(self.cutflow.getNames()[0])
 
         for i, name in enumerate(self.cutflow.getNames()):
             efftable.add_row([self.cutflow.getPretty(name), format(self.cutflow.count(name), '0.0f'), self.cutflow.getSkimEff(i), self.cutflow.getRelEff(i)])
 
-
-         
         logging.info('Cutflow summary:\n\n' + efftable.get_string() + '\n')
-
 
 
 
@@ -161,7 +163,7 @@ class AnalysisBase(object):
         self.outfile.cd()
         for hist in self.histograms:
             self.histograms[hist].Write()
-        logging.info('Output file ' + self.output + ' created.')
+        logging.info('Output file {0} created.'.format(self.output))
         self.outfile.Close()
 
 

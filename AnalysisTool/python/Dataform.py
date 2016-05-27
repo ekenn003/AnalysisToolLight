@@ -61,6 +61,7 @@ class Event(object):
     def Genx2(self):     return self.tree.genx2
     def GenScale(self):  return self.tree.genScale
 
+    ## _______________________________________________________
     # event.PassesHLTs returns True if any of the triggers fired
     def PassesHLTs(self, paths):
         result = False
@@ -68,7 +69,7 @@ class Event(object):
             try:
                 result = self._get('event_hlt_passes_'+pathname)
             except AttributeError:
-                print 'HLT path "' + pathname + '" not available.'
+                print 'PassesHLTs: Event HLT path "' + pathname + '" not available.'
                 print 'Available paths are:'
                 for x in self.tree.GetListOfBranches():
                     if 'event_hlt_passes_' in x.GetName(): print '    ' + x.GetName()[17:]
@@ -76,14 +77,22 @@ class Event(object):
                 raise
         return result
 
+    ## _______________________________________________________
+    def AnyIsPrescaled(self, paths):
+        result = False
+        for pathname in paths:
+            try:
+                result = self._get('event_hlt_passes_'+pathname)
+            except AttributeError:
+                print 'AnyIsPrescaled: Event HLT path "' + pathname + '" not available.'
+                print 'Available paths are:'
+                for x in self.tree.GetListOfBranches():
+                    if 'event_hlt_passes_' in x.GetName(): print '    ' + x.GetName()[17:]
+                print '\n'
+                raise
+        return result
 
-
-
-
-
-
-
-
+    def GetPrescale(self, path): return self._get('prescale_hlt_'+pathname)
 
 
 ## ___________________________________________________________
@@ -115,6 +124,36 @@ class Vertex(object):
 
 
 ## ___________________________________________________________
+class METBase(object):
+    '''
+    Basic objects from reco::PFMET objects
+    '''
+    # constructors/helpers
+    def __init__(self, tree, metName, entry):
+        self.tree = tree
+        self.candName = metName
+        self.entry = entry
+    def _get(self, var): return getattr(self.tree, '{0}_{1}'.format(self.metName, var))[self.entry]
+
+    # methods
+    def E(self):   return ROOT.TVector3(self._get('ex'), self._get('ey'), 0.)
+    def Et(self):  return self._get('et')
+    def Phi(self): return self._get('phi')
+    def RawEt(self):  return self._get('rawet')
+    def RawPhi(self): return self._get('rawphi')
+
+
+## ___________________________________________________________
+class PFMETTYPE1(METBase):
+    # constructors/helpers
+    def __init__(self, tree, egtype, entry):
+       super(PFMETTYPE1, self).__init__(tree, 'pfmettype1', entry)
+
+    # methods
+
+
+
+## ___________________________________________________________
 class CandBase(object):
     '''
     Basic objects from reco::Candidate objects
@@ -131,11 +170,8 @@ class CandBase(object):
     def deltaR(self, cand): return deltaR(self, cand)
 
     # methods
-    def P4(self):
-        p4 = ROOT.TLorentzVector()
-        p4.SetPtEtaPhiE(self.Pt(), self.Eta(), self.Phi(), self.Energy())
-        return p4
     def P(self):      return ROOT.TVector3(self._get('px'), self._get('py'), self._get('pz'))
+    def P4(self):     return ROOT.TLorentzVector(self.P(), self.Energy())
     def Pt(self):     return self._get('pt')
     def Eta(self):    return self._get('eta')
     def AbsEta(self): return abs(self._get('eta'))
@@ -245,11 +281,8 @@ class Muon(CommonCand):
     def Dxy(self):      return self._get('dxy')
     def DxyError(self): return self._get('dxyerr')
     # rochester corrected values
-    def CorrectedP4(self):
-        cp4 = ROOT.TLorentzVector()
-        cp4.SetPtEtaPhiE(self.CorrectedPt(), self.CorrectedEta(), self.CorrectedPhi(), self.CorrectedEnergy())
-        return cp4
     def CorrectedP(self):      return ROOT.TVector3(self._get('rochesterPx'), self._get('rochesterPy'), self._get('rochesterPx'))
+    def CorrectedP4(self):     return ROOT.TLorentzVector(self.CorrectedP(), self.CorrectedEnergy())
     def CorrectedPt(self):     return self._get('rochesterPt')
     def CorrectedEta(self):    return self._get('rochesterEta')
     def CorrectedPhi(self):    return self._get('rochesterPhi')
@@ -342,12 +375,12 @@ class Muon(CommonCand):
         if isotype=='tracker':
             return (self.IsoR3Track() < 0.05) if isolevel=='tight' else (self.IsoR3Track() < 0.10)
 
-    # muon.PassesHLTs returns True if any of the triggers fired
-    def PassesHLTs(self, paths):
+    # muon.MatchesHLTs returns True if any of the triggers fired
+    def MatchesHLTs(self, paths):
         result = False
         for pathname in paths:
             try:
-                result = self._get('muon_hlt_matches_'+pathname)
+                result = self._get('hlt_matches_'+pathname)
             except AttributeError:
                 print 'Muon HLT path "' + pathname + '" not available.'
                 print 'Available paths are:'
@@ -403,6 +436,20 @@ class Electron(EgammaCand):
     def WP90_v1(self): return self._get('mvaNonTrigWP90')
     def WP80_v1(self): return self._get('mvaNonTrigWP80')
 
+    # electron.MatchesHLTs returns True if any of the triggers fired
+    def MatchesHLTs(self, paths):
+        result = False
+        for pathname in paths:
+            try:
+                result = self._get('hlt_matches_'+pathname)
+            except AttributeError:
+                print 'Electron HLT path "' + pathname + '" not available.'
+                print 'Available paths are:'
+                for x in self.tree.GetListOfBranches():
+                    if 'electron_hlt_matches_' in x.GetName(): print '    ' + x.GetName()[21:]
+                print '\n'
+                raise
+        return result
 
 ## ___________________________________________________________
 class Photon(EgammaCand):
