@@ -79,10 +79,11 @@ class Event(object):
 
     ## _______________________________________________________
     def AnyIsPrescaled(self, paths):
-        result = False
+        # initialise empty map of results
+        results = {}
         for pathname in paths:
             try:
-                result = self._get('event_hlt_passes_'+pathname)
+                prescale = self._get('prescale_hlt_'+pathname)
             except AttributeError:
                 print 'AnyIsPrescaled: Event HLT path "' + pathname + '" not available.'
                 print 'Available paths are:'
@@ -90,8 +91,15 @@ class Event(object):
                     if 'event_hlt_passes_' in x.GetName(): print '    ' + x.GetName()[17:]
                 print '\n'
                 raise
-        return result
+            # only store results that are prescaled
+            if prescale != 1: results[pathname] = prescale
 
+        # check if we had any paths that were prescaled
+        for x in results:
+            print 'HLT path {0} has a prescale of {1}.'.format(x, results[x])
+        return True if results else False
+
+    ## _______________________________________________________
     def GetPrescale(self, path): return self._get('prescale_hlt_'+pathname)
 
 
@@ -296,12 +304,12 @@ class Muon(CommonCand):
     def IsMediumMuon(self): return self._get('is_medium_muon')
     def IsLooseMuon(self):  return self._get('is_loose_muon')
     # track info
-    def IsPFMuon(self):         return self._get('is_pf_muon')
-    def IsGlobal(self):     return self._get('is_global')
-    def HasGlobalTrack(self):   return self._get('hasglobaltrack') # this might be exactly the above - check
-    def IsTracker(self):    return self._get('is_tracker')
-    def IsStandalone(self): return self._get('is_standalone')
-    def IsCaloMuon(self):       return self._get('is_calo')
+    def IsPFMuon(self):       return self._get('is_pf_muon')
+    def IsGlobal(self):       return self._get('is_global')
+    def HasGlobalTrack(self): return self._get('hasglobaltrack') # this might be exactly the above - check
+    def IsTracker(self):      return self._get('is_tracker')
+    def IsStandalone(self):   return self._get('is_standalone')
+    def IsCaloMuon(self):     return self._get('is_calo')
     def PtError(self):          return self._get('pterror')
     def Chi2(self):             return self._get('chi2')
     def Ndof(self):             return self._get('ndof')
@@ -443,7 +451,7 @@ class Electron(EgammaCand):
             try:
                 result = self._get('hlt_matches_'+pathname)
             except AttributeError:
-                print 'Electron HLT path "' + pathname + '" not available.'
+                print 'Electron HLT path "{0}" not available.'.format(pathname)
                 print 'Available paths are:'
                 for x in self.tree.GetListOfBranches():
                     if 'electron_hlt_matches_' in x.GetName(): print '    ' + x.GetName()[21:]
