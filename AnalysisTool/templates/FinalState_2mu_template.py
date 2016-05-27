@@ -14,6 +14,7 @@ class Ana2Mu(AnalysisBase):
         super(Ana2Mu, self).__init__(args)
 
         self.debug = False
+        self.printEventInfo = True
 
         #############################
         # Define cuts ###############
@@ -23,15 +24,16 @@ class Ana2Mu(AnalysisBase):
         self.cVtxZ   = 24. # cm
 
         # muon cuts
-        self.cMuPt = 10. # GeV
-        self.cMuEta = 2.4
-        self.cMuPtMax = 20. # choice here should depend on HLT
-        self.cMuEtaMax = 2.4 # choice here should depend on HLT
+        self.cPtMu = 10. # GeV
+        self.cEtaMu = 2.4
+        self.cPtMuMax = 20. # choice here should depend on HLT
+        self.cEtaMuMax = 2.4 # choice here should depend on HLT
         # muon pv cuts
-        self.cMuDxy = 0.02 # cm
-        self.cMuDz  = 0.14 # cm
+        self.cDxyMu = 0.02 # cm
+        self.cDzMu  = 0.14 # cm
 
         # isolation (https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2#Muon_Isolation)
+        # special funtion for muons
         self.cIsoMuType = 'PF_dB' # PF combined w/dB correction Loose
         #self.cIsoMuType = 'tracker' # Tracker-based
         self.cIsoMuLevel = 'tight'
@@ -44,11 +46,14 @@ class Ana2Mu(AnalysisBase):
 
         # dimuon pair cuts
         self.cDiMuInvMass = 50. # GeV
-        self.cDiMuPt = 38. # GeV
+        self.cPtDiMu = 38. # GeV
 
         # electron cuts
         self.cPtE = 10.
         self.cEtaE = 2.4
+
+        # electron iso: FIND NEW RUN2 WPs
+        self.cIsoE = 0.12
 
         # jet cuts
         self.cPtJet = 30. # GeV
@@ -71,18 +76,18 @@ class Ana2Mu(AnalysisBase):
         self.cutflow.add('nEv_PV', 'PV cuts')
         # muon selection
         self.cutflow.add('nEv_GAndTr',   'Global+Tracker muon')
-        self.cutflow.add('nEv_Pt',       'Muon pT > {0}'.format(self.cMuPt))
-        self.cutflow.add('nEv_Eta',      'Muon |eta| < {0}'.format(self.cMuEta))
-        self.cutflow.add('nEv_PtEtaMax', 'At least 1 trigger-matched mu with pT > {0} and |eta| < {1}'.format(self.cMuPtMax, self.cMuEtaMax))
+        self.cutflow.add('nEv_Pt',       'Muon pT > {0}'.format(self.cPtMu))
+        self.cutflow.add('nEv_Eta',      'Muon |eta| < {0}'.format(self.cEtaMu))
+        self.cutflow.add('nEv_PtEtaMax', 'At least 1 trigger-matched mu with pT > {0} and |eta| < {1}'.format(self.cPtMuMax, self.cEtaMuMax))
         self.cutflow.add('nEv_Iso',      'Muon has {0} {1} isolation'.format(self.cIsoMuType, self.cIsoMuLevel))
         self.cutflow.add('nEv_ID',       'Muon has {0} muon ID'.format(self.cMuID))
-        self.cutflow.add('nEv_PVMu',     'Muon Dxy < {0} and Dx < {1}'.format(self.cMuDxy, self.cMuDz))
+        self.cutflow.add('nEv_PVMu',     'Muon Dxy < {0} and Dx < {1}'.format(self.cDxyMu, self.cDzMu))
         # muon pair slection
         self.cutflow.add('nEv_2Mu',         'Require 2 "good" muons')
         self.cutflow.add('nEv_ChargeDiMu',  'Dimu pair has opposite-sign mus')
         self.cutflow.add('nEv_SamePVDiMu',  'Dimu pair has same pv mus')
         self.cutflow.add('nEv_InvMassDiMu', 'Dimu pair has invariant mass > {0}'.format(self.cDiMuInvMass))
-        self.cutflow.add('nEv_PtDiMu',      'Dimu pair has pT > {0}'.format(self.cDiMuPt))
+        self.cutflow.add('nEv_PtDiMu',      'Dimu pair has pT > {0}'.format(self.cPtDiMu))
         self.cutflow.add('nEv_1DiMu',       'Require at least 1 "good" dimuon pair')
 
 
@@ -232,13 +237,13 @@ class Ana2Mu(AnalysisBase):
             # muon cuts
             if not (muon.IsGlobal() and muon.IsTracker()): continue
             isGAndTr = True
-            if not muon.Pt() > self.cMuPt: continue
+            if not muon.Pt() > self.cPtMu: continue
             isPtCutOK = True
-            if not muon.AbsEta() < self.cMuEta: continue
+            if not muon.AbsEta() < self.cEtaMu: continue
             isEtaCutOK = True
 
             # make sure at least one HLT-matched muon passes extra cuts
-            if muon.MatchesHLTs(hltriggers) and muon.Pt > self.cMuPtMax and muon.AbsEta() < self.cMuEtaMax: nMuPtEtaMax += 1
+            if muon.MatchesHLTs(hltriggers) and muon.Pt > self.cPtMuMax and muon.AbsEta() < self.cEtaMuMax: nMuPtEtaMax += 1
 
             # check isolation
             # here you can also do muon.IsoR3CombinedRelIso() < stuff, muon.PFR4ChargedHadrons() etc.
@@ -258,7 +263,7 @@ class Ana2Mu(AnalysisBase):
             if not (isIDOK): continue
 
             # check muon PV
-            if not (muon.Dxy() < self.cMuDxy and muon.Dz() < self.cMuDz): continue
+            if not (muon.Dxy() < self.cDxyMu and muon.Dz() < self.cDzMu): continue
             isTrackCutOK = True
 
             # if we get to this point, push muon into goodMuons
@@ -284,8 +289,75 @@ class Ana2Mu(AnalysisBase):
 
 
 
+
+
+
+
+        #############################
+        # ELECTRONS #################
+        #############################
+        # loop over electrons and save the good ones
+        goodElectrons = []
+        for electron in self.electrons:
+            # electron cuts
+            if not electron.Pt() > self.cPtE: continue
+            if not electron.AbsEta() < self.cEtaE: continue
+
+            # check electron id
+            # options: cutbased: IsVetoElectron, IsLooseElectron, IsMediumElectron, IsTightElectron
+            #          mva: WP90_v1, WP80_v1
+            if not electron.IsMediumElectron(): continue
+
+            # check isolation
+            # options: rel PF r3 combined with dB correction (IsoPFR3dBCombRel), 
+            #          rel PF r3 combined with rho correction (IsoPFR3RhoCombRel),
+            #          and lots more in Dataform.py
+            # WARNING: check with egamma POG for run 2 working points
+            if not electron.IsoPFR3RhoCombRel() < self.cIsoE: continue
+
+            # if we get to this point, push electron into goodElectrons
+            goodElectrons += [electron]
+
+
+        # uncomment the line below to require at least 2 good electrons
+        #if len(goodElectrons) < 2: return
+
+
+
+        #############################
+        # JETS ######################
+        #############################
+        # initialise empty list of good jets
+        goodJets = []
+        # loop over jets
+        for jet in self.jets:
+            # jet cuts
+            if not jet.Pt() > self.cPtJet: continue
+            if not jet.AbsEta() < self.cEtaJet: continue
+
+            # jet cleaning
+
+
+        #############################
+        # TAUS ######################
+        #############################
+
+
+
         #if self.taus: print 'Tau(0) has pT = ' + str(self.taus[0].Pt())
         #if self.taus: print ' = ' + str(self.taus[0].TauDiscriminator('cantfindme'))
+
+        #############################
+        # MET #######################
+        #############################
+
+
+        #############################
+        # PHOTONS ###################
+        #############################
+        # you can also do photons, but why would you
+
+
 
 
         #############################
@@ -312,7 +384,7 @@ class Ana2Mu(AnalysisBase):
             # require min pT and min InvMass
             if not (diMuonP4.M() > self.cDiMuInvMass): continue
             isInvMassMuCutOK = True
-            if not (diMuonP4.Pt() > self.cDiMuPt): continue
+            if not (diMuonP4.Pt() > self.cPtDiMu): continue
             isPtDiMuCutOK = True
 
             # if we reach this part, we have a pair! set thisdimuon to the pair, ordered by pT
@@ -333,10 +405,14 @@ class Ana2Mu(AnalysisBase):
 
 
 
-        if self.debug:
-            # print muon info
-            print 'Event number {0} has {1} good muons and {2} good dimuon pairs.'.format(self.event.Number(), len(goodMuons), len(diMuonPairs))
+        #if self.printEventInfo:
+        if self.printEventInfo and not self.event.Number()%10:
             print '\n=================================================='
+            print '\nEvent info for {0}:{1}:{2}'.format(self.event.Run(), self.event.LumiBlock(), self.event.Number())
+            print '\n=================================================='
+            # print muon info
+            print '{0} good muons and {2} good dimuon pairs.'.format(self.event.Number(), len(goodMuons), len(diMuonPairs))
+            print 'good muons: {0}\ngood dimuon pairs: {1}'.format(len(goodMuons), len(diMuonPairs))
             for i, m in enumerate(goodMuons):
                 print '  Muon({2}):\n    pT = {0}\n    eta = {1}'.format(m.Pt(), m.Eta(), i)
             print
@@ -344,18 +420,27 @@ class Ana2Mu(AnalysisBase):
                 print '  Pair({0}):\n'.format(i)
                 print '      Muon(0):\n    pT = {0}\n    eta = {1}\n'.format(p[0].Pt(), p[0].Eta())
                 print '      Muon(1):\n    pT = {0}\n    eta = {1}\n'.format(p[1].Pt(), p[1].Eta())
-            print '==================================================\n'
 
             # print electron info
-            print 'Event number {0} has {1} good muons and {2} good dimuon pairs.'.format(self.event.Number(), len(goodMuons), len(diMuonPairs))
-            print '\n=================================================='
-            for i, m in enumerate(goodMuons):
-                print '  Muon({2}):\n    pT = {0}\n    eta = {1}'.format(m.Pt(), m.Eta(), i)
+            print '{0} good electrons and {2} good dielectron pairs.'.format(self.event.Number(), len(goodElectrons), len(diElectronPairs))
+            print 'good electrons: {0}\ngood dielectron pairs: {1}'.format(len(goodElectrons), len(diElectronPairs))
+            for i, e in enumerate(goodElectrons):
+                print '  Electron({2}):\n    pT = {0}\n    eta = {1}'.format(e.Pt(), e.Eta(), i)
             print
-            for i, p in enumerate(diMuonPairs):
+            for i, p in enumerate(diElectronPairs):
                 print '  Pair({0}):\n'.format(i)
-                print '      Muon(0):\n    pT = {0}\n    eta = {1}\n'.format(p[0].Pt(), p[0].Eta())
-                print '      Muon(1):\n    pT = {0}\n    eta = {1}\n'.format(p[1].Pt(), p[1].Eta())
+                print '      Electron(0):\n    pT = {0}\n    eta = {1}\n'.format(p[0].Pt(), p[0].Eta())
+                print '      Electron(1):\n    pT = {0}\n    eta = {1}\n'.format(p[1].Pt(), p[1].Eta())
+
+
+
+
+
+
+
+
+
+
             print '==================================================\n'
 
 
