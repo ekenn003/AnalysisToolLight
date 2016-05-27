@@ -1,1 +1,0 @@
-/afs/cern.ch/work/e/ekennedy/work/tuplizer/tup76/CMSSW_7_6_5/src/RootMaker/RootMaker/rootfiles/A*.root
