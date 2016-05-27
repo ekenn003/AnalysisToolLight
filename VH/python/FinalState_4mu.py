@@ -5,13 +5,16 @@ import argparse
 import sys
 import ROOT
 from collections import OrderedDict
-from AnalysisToolLight.AnalysisToolLight.AnalysisBase import AnalysisBase, CutFlow
-from AnalysisToolLight.AnalysisToolLight.AnalysisBase import main as analysisBaseMain
+from AnalysisToolLight.AnalysisTool.AnalysisBase import AnalysisBase, CutFlow
+from AnalysisToolLight.AnalysisTool.AnalysisBase import main as analysisBaseMain
 
 ## ___________________________________________________________
 class VH4Mu(AnalysisBase):
     def __init__(self, args):
         super(VH4Mu, self).__init__(args)
+
+        self.debug = False
+
         #############################
         # Define cuts ###############
         #############################
@@ -25,8 +28,8 @@ class VH4Mu(AnalysisBase):
         self.cMuPtMax = 20. # choice here should depend on HLT
         self.cMuEtaMax = 2.4 # choice here should depend on HLT
         # muon pv cuts
-        self.cDxyMu = 0.02 # cm
-        self.cDzMu  = 0.14 # cm
+        self.cMuDxy = 0.02 # cm
+        self.cMuDz  = 0.14 # cm
 
         # isolation (https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2#Muon_Isolation)
         self.cIsoMuType = 'PF_dB' # PF combined w/dB correction Loose
@@ -69,16 +72,18 @@ class VH4Mu(AnalysisBase):
         # muon selection
         self.cutflow.add('nEv_GAndTr',   'Global+Tracker muon')
         self.cutflow.add('nEv_Pt',       'Muon pT > {0}'.format(self.cMuPt))
-        self.cutflow.add('nEv_Eta',      'Muon eta < {0}'.format(self.cMuEta))
+        self.cutflow.add('nEv_Eta',      'Muon |eta| < {0}'.format(self.cMuEta))
         self.cutflow.add('nEv_PtEtaMax', 'At least 1 trigger-matched mu with pT > {0} and |eta| < {1}'.format(self.cMuPtMax, self.cMuEtaMax))
         self.cutflow.add('nEv_Iso',      'Muon has {0} {1} isolation'.format(self.cIsoMuType, self.cIsoMuLevel))
         self.cutflow.add('nEv_ID',       'Muon has {0} muon ID'.format(self.cMuID))
         self.cutflow.add('nEv_PVMu',     'Muon Dxy < {0} and Dx < {1}'.format(self.cMuDxy, self.cMuDz))
         # muon pair slection
-        self.cutflow.add('nEv_SamePVDiMu',  'Dimu pair has same pv mus')
+        self.cutflow.add('nEv_2Mu',         'Require 2 "good" muons')
         self.cutflow.add('nEv_ChargeDiMu',  'Dimu pair has opposite-sign mus')
+        self.cutflow.add('nEv_SamePVDiMu',  'Dimu pair has same pv mus')
         self.cutflow.add('nEv_InvMassDiMu', 'Dimu pair has invariant mass > {0}'.format(self.cDiMuInvMass))
         self.cutflow.add('nEv_PtDiMu',      'Dimu pair has pT > {0}'.format(self.cDiMuPt))
+        self.cutflow.add('nEv_1DiMu',       'Require at least 1 "good" dimuon pair')
 
 
 
@@ -165,13 +170,20 @@ class VH4Mu(AnalysisBase):
         #############################
         # Trigger ###################
         #############################
-        # debugging:
-        evtnr = self.event.Number()
-        if not evtnr%2: self.cutflow.increment('nEv_Trigger')
-        else: return
+        #evtnr = self.event.Number()
+
+        # list of triggers we want to check for this event
+        hltriggers = (
+            'IsoMu20',
+            'IsoTkMu20',
+        )
+        # event.PassesHLTs returns True if any of the triggers fired
+        if not self.event.PassesHLTs(hltriggers): return
+        self.cutflow.increment('nEv_Trigger')
 
 
 
+        # optional: make funtion here that alerts you to any prescales
 
 
         #############################
@@ -217,48 +229,57 @@ class VH4Mu(AnalysisBase):
         isIDOK = False
         isTrackCutOK = False
         for muon in self.muons:
-
             # muon cuts
             if not (muon.IsGlobal() and muon.IsTracker()): continue
             isGAndTr = True
             if not muon.Pt() > self.cMuPt: continue
             isPtCutOK = True
-            if not muon.Eta() < self.cMuEta: continue
+            if not muon.AbsEta() < self.cMuEta: continue
             isEtaCutOK = True
 
+            # make sure at least one HLT-matched muon passes extra cuts
+            if muon.MatchesHLTs(hltriggers) and muon.Pt > self.cMuPtMax and muon.AbsEta() < self.cMuEtaMax: nMuPtEtaMax += 1
 
             # check isolation
             # here you can also do muon.IsoR3CombinedRelIso() < stuff, muon.PFR4ChargedHadrons() etc.
             # see Muon object in Dataform.py for all avaiable methods
-            if not (muon.CheckIso(cIsoMuType, cIsoMuLevel)): continue
+            if not (muon.CheckIso(self.cIsoMuType, self.cIsoMuLevel)): continue
             isIsoOK = True
-            if not (): continue
-            isIDOK = True
 
+            # check muon ID
+            if self.cMuID=='tight':
+                isIDOK = muon.IsTightMuon()
+            elif self.cMuID=='medium': 
+                isIDOK = muon.IsMediumMuon()
+            elif self.cMuID=='loose':
+                isIDOK = muon.IsLooseMuon()
+            elif self.cMuID=='none':
+                isIDOK = True
+            if not (isIDOK): continue
 
-
-
-
+            # check muon PV
             if not (muon.Dxy() < self.cMuDxy and muon.Dz() < self.cMuDz): continue
             isTrackCutOK = True
-
 
             # if we get to this point, push muon into goodMuons
             goodMuons += [muon]
 
 
-
         if isGAndTr: self.cutflow.increment('nEv_GAndTr')
         if isPtCutOK: self.cutflow.increment('nEv_Pt')
         if isEtaCutOK: self.cutflow.increment('nEv_Eta')
+
         # make sure at least one HLT-matched muon passed extra cuts
-        if nMuPtEtaMax > 0: self.cutflow.increment('nEv_PtEtaMax')
-        else: return
+        if nMuPtEtaMax < 1: return
+        else: self.cutflow.increment('nEv_PtEtaMax')
+
         if isIsoOK: self.cutflow.increment('nEv_Iso')
         if isIDOK: self.cutflow.increment('nEv_ID')
         if isTrackCutOK: self.cutflow.increment('nEv_PVMu')
 
-
+        # require at least 2 good muons in this event
+        if len(goodMuons) < 2: return
+        self.cutflow.increment('nEv_2Mu')
 
 
 
@@ -271,30 +292,63 @@ class VH4Mu(AnalysisBase):
         # DIMUON PAIRS ##############
         #############################
         # loop over all possible pairs of muons
-        self.dimuon = () 
+        diMuonPairs = []
+        isChargeMuCutOK = False
+        isSamePVMuCutOK = False
+        isInvMassMuCutOK = False
+        isPtDiMuCutOK = False
+
         maxDiMuPt = 0
-        if len(goodMuons) >= 2:
-            for pair in itertools.combinations(goodMuons, 2):
-                diMuP4 = pair[0].P4() + pair[1].P4()
-                if diMuP4.Pt() > min(maxDiMuPt, self.cDiMuPt):
-                    maxDiMuPt = diMuP4.Pt()
-                    # order the pair by pt
-                    self.dimuon = pair if pair[0].Pt() > pair[1].Pt() else (pair[1], pair[0])
+        # iterate over every (non-ordered) pair of 2 muons in goodMuons
+        for pair in itertools.combinations(goodMuons, 2):
+            # require opposite sign
+            if not (pair[0].Charge() * pair[1].Charge() < 0): continue
+            isChargeMuCutOK = True
+            # require from same PV
+            if not (abs(pair[0].Dz() - pair[1].Dz()) < 0.14): continue
+            isSamePVMuCutOK = True
+            # create composite four-vector
+            diMuonP4 = pair[0].P4() + pair[1].P4()
+            # require min pT and min InvMass
+            if not (diMuonP4.M() > self.cDiMuInvMass): continue
+            isInvMassMuCutOK = True
+            if not (diMuonP4.Pt() > self.cDiMuPt): continue
+            isPtDiMuCutOK = True
+
+            # if we reach this part, we have a pair! set thisdimuon to the pair, ordered by pT
+            thisdimuon = pair if pair[0].Pt() > pair[1].Pt() else (pair[1], pair[0])
+            diMuonPairs += [thisdimuon]
+
+        if isChargeMuCutOK: self.cutflow.increment('nEv_ChargeDiMu')
+        if isSamePVMuCutOK: self.cutflow.increment('nEv_SamePVDiMu')
+        if isInvMassMuCutOK: self.cutflow.increment('nEv_InvMassDiMu')
+        if isPtDiMuCutOK: self.cutflow.increment('nEv_PtDiMu')
+
+        # require at least one dimuon pair
+        if len(diMuonPairs) < 1: return
+        self.cutflow.increment('nEv_1DiMu')
 
 
 
 
 
 
-        self.cutflow.add('nEv_SamePVDiMu',  'Dimu pair has same pv mus')
-        self.cutflow.add('nEv_ChargeDiMu',  'Dimu pair has opposite-sign mus')
-        self.cutflow.add('nEv_InvMassDiMu', 'Dimu pair has invariant mass > {0}'.format(self.cDiMuInvMass))
-        self.cutflow.add('nEv_PtDiMu',      'Dimu pair has pT > {0}'.format(self.cDiMuPt))
+        if self.debug:
+            print 'Event number {0} has {1} good muons and {2} good dimuon pairs.'.format(self.event.Number(), len(goodMuons), len(diMuonPairs))
+            print '\n=================================================='
+            for i, m in enumerate(goodMuons):
+                print '  Muon({2}):\n    pT = {0}\n    eta = {1}'.format(m.Pt(), m.Eta(), i)
+            print
+            for i, p in enumerate(diMuonPairs):
+                print '  Pair({0}):\n'.format(i)
+                print '      Muon(0):\n    pT = {0}\n    eta = {1}\n'.format(p[0].Pt(), p[0].Eta())
+                print '      Muon(1):\n    pT = {0}\n    eta = {1}\n'.format(p[1].Pt(), p[1].Eta())
+            print '==================================================\n'
 
 
 
-
-
+      #      if diMuP4.Pt() > min(maxDiMuPt, self.cDiMuPt):
+      #          maxDiMuPt = diMuP4.Pt()
 
 
 
@@ -313,22 +367,12 @@ class VH4Mu(AnalysisBase):
             self.histograms['hSubLeadMuPt'].Fill(mu1.Pt(), pileupweight)
 
         # diumuon
-        if self.dimuon:
+        if diMuonPairs:
             diMuP4 = mu0.P4() + mu1.P4()
             self.histograms['hDiMuPt'].Fill(diMuP4.Pt(), pileupweight)
             self.histograms['hDiMuInvMass'].Fill(diMuP4.M(), pileupweight)
         
 
-
-    ### _______________________________________________________
-    #def endJob(self):
-    #    '''
-    #    At the end of the job, fill efficiencies histogram.
-    #    '''
-    #    for i, name in enumerate(self.cutflow.getNames()):
-    #        # 0 is the underflow bin in root: first bin to fill is bin 1
-    #        self.histograms['hEfficiencies'].SetBinContent(i+1, self.cutflow.count(name))
-    #        self.histograms['hEfficiencies'].GetXaxis().SetBinLabel(i+1, name)
 
 
 ## ___________________________________________________________
