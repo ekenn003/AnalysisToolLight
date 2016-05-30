@@ -1,7 +1,7 @@
 import logging
 import argparse
 import glob
-import os, sys
+import os, sys, time
 import ROOT
 from prettytable import PrettyTable
 from Dataform import *
@@ -33,6 +33,7 @@ class AnalysisBase(object):
         # put file names into a list called self.filenames
         with open(inputFileList,'r') as f:
             for line in f.readlines():
+                # glob.glob returns the list of files with their full path
                 self.filenames += glob.glob(line.strip())
 
 
@@ -44,10 +45,12 @@ class AnalysisBase(object):
         tfile0 = ROOT.TFile(self.filenames[0])
         infotree = tfile0.Get('{0}/{1}'.format(self.treedir, self.infoname))
         self.isdata = bool(infotree.isdata)
+
         #cmsswversion = infotree.CMSSW_version
         #reading infotree.CMSSW_version is broken right now
         # hardcode as 76 for now
         cmsswversion = 'CMSSW_7_6_X'
+
         tfile0.Close('R')
 
 
@@ -61,6 +64,7 @@ class AnalysisBase(object):
             logging.info('Adding file {0}: {1}'.format(f+1, fname))
             lumichain.Add(fname)
         # iterate over lumis to find total number of events and summed event weights
+        logging.info('Counting events and lumiblocks...')
         self.numlumis = lumichain.GetEntries()
         for entry in xrange(self.numlumis):
             lumichain.GetEntry(entry)
@@ -118,6 +122,9 @@ class AnalysisBase(object):
         '''
 
         eventsprocessed = 0
+        # how often (in number of events) should we print out progress updates?
+        updateevery = 1000
+
         # loop over each input file
         for f, fname in enumerate(self.filenames):
             logging.info('Processing file {0} of {1}:'.format(f+1, len(self.filenames)))
@@ -128,7 +135,26 @@ class AnalysisBase(object):
             # loop over each event (row)
             for row in tree:
                 eventsprocessed += 1
-                if eventsprocessed%1000==0: logging.info('  Processing event {0}/{1}'.format(eventsprocessed, self.nevents))
+
+                # progress updates (n = updateevery)
+                # if the last event was divisible by n, start the timer
+                if (eventsprocessed+1) % updateevery:
+                    starttime = time.time()
+                # if this event is divisible by n (and therefore the next event will reset the timer),
+                # calculate how much time it took to analyse the last (n-1) events
+                if eventsprocessed % updateevery == 0:
+                    currenttime = time.time()
+                    timeelapsed = currenttime - starttime
+                    # time left = number events left * (time per last n-1 events) / (n-1 events)
+                    timeleft = (float(self.nevents) - float(eventsprocessed)) * (float(timeelapsed) / float(updateevery-1))
+                    minutesleft, secondsleft = divmod(int(timeleft), 60)
+                    hoursleft, minutesleft = divmod(minutesleft, 60)
+
+                    #logging.info('{3}:{4:02d}:{5:02d} remaining'.format(self.outputTreeName,total,self.totalEntries,hours,mins,secs))
+
+                    logging.info('  Processing event {0}/{1} ({2:0.0f}%) [{3}:{4:02d}:{5:02d}]'.format(eventsprocessed, self.nevents, (100.*eventsprocessed)/self.nevents, hoursleft, minutesleft, secondsleft))
+
+
                 # load collections
                 self.event     = Event(row, self.sumweights)
                 self.vertices  = [Vertex(row, i) for i in range(row.primvertex_count)]
@@ -145,7 +171,6 @@ class AnalysisBase(object):
 
         # end job and write histograms to output file
         self.endJob()
-        self.write()
 
 
     ## _______________________________________________________
@@ -192,17 +217,22 @@ class AnalysisBase(object):
         logging.info('Cutflow summary:\n\n' + efftable.get_string() + '\n')
 
 
-
-    ## _______________________________________________________
-    def write(self):
-        '''
-        Writes the histograms to the output file and saves it.
-        '''
+        # write histograms to output file
         self.outfile.cd()
         for hist in self.histograms:
             self.histograms[hist].Write()
         logging.info('Output file {0} created.'.format(self.output))
         self.outfile.Close()
+
+    ## _______________________________________________________
+    def GetPileupWeight(self, numtrueinteractions):
+        return self.pileupScale[int(round(numtrueinteractions))] if len(self.pileupScale) > numtrueinteractions else 0.
+
+
+    # clean up the job in case of keyboard interrupt
+    ## _______________________________________________________
+    def __exit__(self, type, value, traceback):
+        self.endJob()
 
 
 ## ___________________________________________________________
