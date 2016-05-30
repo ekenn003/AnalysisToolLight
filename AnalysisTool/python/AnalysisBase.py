@@ -123,6 +123,7 @@ class AnalysisBase(object):
 
         eventsprocessed = 0
         # how often (in number of events) should we print out progress updates?
+        # this can't be 1!
         updateevery = 1000
 
         # loop over each input file
@@ -137,21 +138,20 @@ class AnalysisBase(object):
                 eventsprocessed += 1
 
                 # progress updates (n = updateevery)
+                if eventsprocessed == updateevery:
+                    logging.info('  Processing event {0}/{1} ({2:0.0f}%)'.format(eventsprocessed, self.nevents, (100.*eventsprocessed)/self.nevents))
                 # if the last event was divisible by n, start the timer
-                if (eventsprocessed+1) % updateevery:
+                if ((eventsprocessed-1) % updateevery)==0 and eventsprocessed > updateevery:
                     starttime = time.time()
                 # if this event is divisible by n (and therefore the next event will reset the timer),
                 # calculate how much time it took to analyse the last (n-1) events
-                if eventsprocessed % updateevery == 0:
+                if eventsprocessed > updateevery and eventsprocessed % updateevery == 0:
                     currenttime = time.time()
                     timeelapsed = currenttime - starttime
                     # time left = number events left * (time per last n-1 events) / (n-1 events)
                     timeleft = (float(self.nevents) - float(eventsprocessed)) * (float(timeelapsed) / float(updateevery-1))
                     minutesleft, secondsleft = divmod(int(timeleft), 60)
                     hoursleft, minutesleft = divmod(minutesleft, 60)
-
-                    #logging.info('{3}:{4:02d}:{5:02d} remaining'.format(self.outputTreeName,total,self.totalEntries,hours,mins,secs))
-
                     logging.info('  Processing event {0}/{1} ({2:0.0f}%) [{3}:{4:02d}:{5:02d}]'.format(eventsprocessed, self.nevents, (100.*eventsprocessed)/self.nevents, hoursleft, minutesleft, secondsleft))
 
 
@@ -229,10 +229,6 @@ class AnalysisBase(object):
         return self.pileupScale[int(round(numtrueinteractions))] if len(self.pileupScale) > numtrueinteractions else 0.
 
 
-    # clean up the job in case of keyboard interrupt
-    ## _______________________________________________________
-    def __exit__(self, type, value, traceback):
-        self.endJob()
 
 
 ## ___________________________________________________________
