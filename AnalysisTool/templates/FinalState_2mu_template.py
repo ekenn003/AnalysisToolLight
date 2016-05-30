@@ -672,15 +672,13 @@ class Ana2Mu(AnalysisBase):
 
         ##########################################################
         #                                                        #
-        #                                                        #
+        # Fill histograms                                        #
         #                                                        #
         ##########################################################
 
-        ##########################################################
-        # fill histograms ########################################
-        ##########################################################
-
-        # muons
+        #############################
+        # Muons #####################
+        #############################
         self.histograms['hNumMu'].Fill(len(goodMuons), pileupweight)
         for mu in goodMuons:
             self.histograms['hMuPt'].Fill(mu.Pt(), pileupweight)
@@ -693,7 +691,9 @@ class Ana2Mu(AnalysisBase):
         if len(goodMuons) > 1:
             self.histograms['hSubLeadMuPt'].Fill(goodMuons[1].Pt(), pileupweight)
 
-        # dimuon
+        #############################
+        # Dimuon ####################
+        #############################
         for mupair in diMuonPairs:
             diMuP4 = mupair[0].P4() + mupair[1].P4()
             self.histograms['hDiMuPt'].Fill(diMuP4.Pt(), pileupweight)
@@ -704,7 +704,10 @@ class Ana2Mu(AnalysisBase):
             self.histograms['hDiMuDeltaEta'].Fill(mupair[0].Eta() - mupair[1].Eta(), pileupweight)
             self.histograms['hDiMuDeltaPhi'].Fill(mupair[0].Phi() - mupair[1].Phi(), pileupweight)
         
-        # electrons
+
+        #############################
+        # Electrons #################
+        #############################
         self.histograms['hNumE'].Fill(len(goodElectrons), pileupweight)
         for e in goodElectrons:
             self.histograms['hEPt'].Fill(e.Pt(), pileupweight)
@@ -717,7 +720,9 @@ class Ana2Mu(AnalysisBase):
         if len(goodElectrons) > 1:
             self.histograms['hSubLeadEPt'].Fill(goodElectrons[1].Pt(), pileupweight)
 
-        # dielectron
+        #############################
+        # Dielectron ################
+        #############################
         for epair in diElectronPairs:
             diEP4 = epair[0].P4() + epair[1].P4()
             self.histograms['hDiEPt'].Fill(diEP4.Pt(), pileupweight)
@@ -729,8 +734,9 @@ class Ana2Mu(AnalysisBase):
             self.histograms['hDiEDeltaPhi'].Fill(epair[0].Phi() - epair[1].Phi(), pileupweight)
 
 
-
-        # jets
+        #############################
+        # Jets ######################
+        #############################
         self.histograms['hNumJets'].Fill(len(goodJets), pileupweight)
         for jet in goodJets:
             self.histograms['hJetPt'].Fill(jet.Pt(), pileupweight)
@@ -743,7 +749,9 @@ class Ana2Mu(AnalysisBase):
         if len(goodJets) > 1:
             self.histograms['hSubLeadJetPt'].Fill(goodJets[1].Pt(), pileupweight)
 
-        # dijet
+        #############################
+        # Dijet #####################
+        #############################
         for jetpair in diJetPairs:
             diJetP4 = jetpair[0].P4() + jetpair[1].P4()
             self.histograms['hDiJetPt'].Fill(diJetP4.Pt(), pileupweight)
@@ -755,7 +763,9 @@ class Ana2Mu(AnalysisBase):
             self.histograms['hDiJetDeltaPhi'].Fill(jetpair[0].Phi() - jetpair[1].Phi(), pileupweight)
 
 
-        # met
+        #############################
+        # MET #######################
+        #############################
         self.histograms['hMET'].Fill(self.met.Et(), pileupweight)
         self.histograms['hMETPhi'].Fill(self.met.Phi(), pileupweight)
 
