@@ -14,11 +14,18 @@ class Ana2Mu(AnalysisBase):
     def __init__(self, args):
         super(Ana2Mu, self).__init__(args)
 
+        ##########################################################
+        #                                                        #
+        # Some run options                                       #
+        #                                                        #
+        ##########################################################
         self.debug = False
 
         # careful! this will print out event info for every single event
         self.printEventInfo = False
 
+        #self.doPileupReweighting = True
+        self.doPileupReweighting = False
 
         ##########################################################
         #                                                        #
@@ -118,6 +125,18 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hWeight'] = ROOT.TH1F('hWeight', 'hWeight', 100, -10., 10.)
         self.histograms['hWeight'].GetXaxis().SetTitle('Event weight')
         self.histograms['hWeight'].GetYaxis().SetTitle('Events')
+
+        self.histograms['hVtxN_purw'] = ROOT.TH1F('hVtxN_purw', 'hVtxN_purw', 100, 0., 100.)
+        self.histograms['hVtxN_purw'].GetXaxis().SetTitle('N_{PV} with pu and gen weighting')
+        self.histograms['hVtxN_purw'].GetYaxis().SetTitle('Candidates')
+
+        self.histograms['hVtxN_evrw'] = ROOT.TH1F('hVtxN_evrw', 'hVtxN_evrw', 100, 0., 100.)
+        self.histograms['hVtxN_evrw'].GetXaxis().SetTitle('N_{PV} with gen weighting (no pu)')
+        self.histograms['hVtxN_evrw'].GetYaxis().SetTitle('Candidates')
+
+        self.histograms['hVtxN_totrw'] = ROOT.TH1F('hVtxN_totrw', 'hVtxN_totrw', 100, 0., 100.)
+        self.histograms['hVtxN_totrw'].GetXaxis().SetTitle('N_{PV} with ALL weighting')
+        self.histograms['hVtxN_totrw'].GetYaxis().SetTitle('Candidates')
 
         #############################
         # Muons #####################
@@ -292,7 +311,13 @@ class Ana2Mu(AnalysisBase):
         # Event weight ##############
         #############################
         pileupweight = 1.
-        if not self.isdata: pileupweight = self.event.GenWeight()
+
+        if not self.isdata:
+            pileupweight = self.event.GenWeight()
+            if self.doPileupReweighting:
+                pileupweight *= self.GetPileupWeight(self.event.NumTruePileUpInteractions())
+
+
         self.histograms['hWeight'].Fill(pileupweight)
 
         self.cutflow.increment('nEv_Skim')
@@ -354,6 +379,13 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hVtxN_u'].Fill(len(goodVertices))
 
 
+        weight1 = self.event.GenWeight()
+        weight2 = self.event.GenWeight() * self.GetPileupWeight(self.event.NumTruePileUpInteractions())
+        weight3 = self.event.GenWeight() * self.GetPileupWeight(self.event.NumTruePileUpInteractions()) * (6025.2/self.sumweights)
+        # check pileup reweighting
+        self.histograms['hVtxN_evrw'].Fill(len(goodVertices), weight1)
+        self.histograms['hVtxN_purw'].Fill(len(goodVertices), weight2)
+        self.histograms['hVtxN_totrw'].Fill(len(goodVertices), weight3)
 
 
         ##########################################################
@@ -772,7 +804,10 @@ class Ana2Mu(AnalysisBase):
 ## ___________________________________________________________
 # actually execute the analysis
 def main(argv=None):
-    Ana2Mu(analysisBaseMain(argv)).analyze()
+    try:
+        Ana2Mu(analysisBaseMain(argv)).analyze()
+    except KeyboardInterrupt:
+        Ana2Mu(analysisBaseMain(argv)).endJob()
 
 ## ___________________________________________________________
 # checks if this was run from the command line
