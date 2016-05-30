@@ -20,9 +20,12 @@ class Ana2Mu(AnalysisBase):
         self.printEventInfo = False
 
 
-        #############################
-        # Define cuts ###############
-        #############################
+        ##########################################################
+        #                                                        #
+        # Define cuts                                            #
+        #                                                        #
+        ##########################################################
+
         # PV cuts
         self.cVtxNdf = 4
         self.cVtxZ   = 24. # cm
@@ -70,11 +73,12 @@ class Ana2Mu(AnalysisBase):
 
 
 
+        ##########################################################
+        #                                                        #
+        # Initialize event counters                              #
+        #                                                        #
+        ##########################################################
 
-
-        #############################
-        # Initialise event counters #
-        #############################
         self.cutflow = CutFlow()
         self.cutflow.add('nEv_Skim', 'Skim number of events')
         # event selection
@@ -98,12 +102,12 @@ class Ana2Mu(AnalysisBase):
 
 
 
+        ##########################################################
+        #                                                        #
+        # Book histograms                                        #
+        #                                                        #
+        ##########################################################
 
-
-
-        #############################
-        # Book histograms ###########
-        #############################
         self.histograms['hVtxN'] = ROOT.TH1F('hVtxN', 'hVtxN', 100, 0., 100.)
         self.histograms['hVtxN'].GetXaxis().SetTitle('N_{PV}')
         self.histograms['hVtxN'].GetYaxis().SetTitle('Candidates')
@@ -115,7 +119,9 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hWeight'].GetXaxis().SetTitle('Event weight')
         self.histograms['hWeight'].GetYaxis().SetTitle('Events')
 
-        # muons
+        #############################
+        # Muons #####################
+        #############################
         self.histograms['hNumMu'] = ROOT.TH1F('hNumMu', 'hNumMu', 20, 0., 20.)
         self.histograms['hNumMu'].GetXaxis().SetTitle('N_{#mu}')
         self.histograms['hNumMu'].GetYaxis().SetTitle('Candidates')
@@ -136,7 +142,9 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hSubLeadMuPt'].GetXaxis().SetTitle('p_{T #mu}[GeV/c]')
         self.histograms['hSubLeadMuPt'].GetYaxis().SetTitle('Candidates/2.0[GeV]')
 
-        # electrons
+        #############################
+        # Electrons #################
+        #############################
         self.histograms['hNumE'] = ROOT.TH1F('hNumE', 'hNumE', 20, 0., 20.)
         self.histograms['hNumE'].GetXaxis().SetTitle('N_{e}')
         self.histograms['hNumE'].GetYaxis().SetTitle('Candidates')
@@ -157,7 +165,34 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hSubLeadEPt'].GetXaxis().SetTitle('p_{T e}[GeV/c]')
         self.histograms['hSubLeadEPt'].GetYaxis().SetTitle('Candidates/2.0[GeV]')
 
-        # dimuon
+        #############################
+        # Jets ######################
+        #############################
+        self.histograms['hNumJets'] = ROOT.TH1F('hNumJets', 'hNumJets', 20, 0., 20.)
+        self.histograms['hNumJets'].GetXaxis().SetTitle('N_{j}')
+        self.histograms['hNumJets'].GetYaxis().SetTitle('Candidates')
+
+        self.histograms['hJetPt'] = ROOT.TH1F('hJetPt', 'hJetPt', 500, 0., 1000.)
+        self.histograms['hJetPt'].GetXaxis().SetTitle('p_{T j}[GeV/c]')
+        self.histograms['hJetPt'].GetYaxis().SetTitle('Candidates/2.0[GeV/c]')
+        self.histograms['hJetEta'] = ROOT.TH1F('hJetEta', 'hJetEta',  52, -2.6, 2.6)
+        self.histograms['hJetEta'].GetXaxis().SetTitle('#eta_{j}')
+        self.histograms['hJetEta'].GetYaxis().SetTitle('Candidates/0.1')
+        self.histograms['hJetPhi'] = ROOT.TH1F('hJetPhi', 'hJetPhi', 34, -3.4, 3.4)
+        self.histograms['hJetPhi'].GetXaxis().SetTitle('#varphi_{j} [rad]')
+        self.histograms['hJetPhi'].GetYaxis().SetTitle('Candidates/0.2[rad]')
+        # leading/subleading good jets
+        self.histograms['hLeadJetPt'] = ROOT.TH1F('hLeadJetPt', 'hLeadJetPt', 500, 0., 1000.)
+        self.histograms['hLeadJetPt'].GetXaxis().SetTitle('p_{T j}[GeV/c]')
+        self.histograms['hLeadJetPt'].GetYaxis().SetTitle('Candidates/2.0[GeV]')
+        self.histograms['hSubLeadJetPt'] = ROOT.TH1F('hSubLeadJetPt', 'hSubLeadJetPt', 500, 0., 1000.)
+        self.histograms['hSubLeadJetPt'].GetXaxis().SetTitle('p_{T j}[GeV/c]')
+        self.histograms['hSubLeadJetPt'].GetYaxis().SetTitle('Candidates/2.0[GeV]')
+
+
+        #############################
+        # Dimuon ####################
+        #############################
         self.histograms['hDiMuPt'] = ROOT.TH1F('hDiMuPt', 'hDiMuPt', 500, 0., 1000.)
         self.histograms['hDiMuPt'].GetXaxis().SetTitle('p_{T #mu^{+}#mu^{-}}[GeV/c]')
         self.histograms['hDiMuPt'].GetYaxis().SetTitle('Candidates/2.0[GeV]')
@@ -182,7 +217,9 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hDiMuInvMass'].GetXaxis().SetTitle('M_{#mu^{+}#mu^{-}} [GeV/c^{2}]')
         self.histograms['hDiMuInvMass'].GetYaxis().SetTitle('Candidates/0.5[GeV/c^{2}]')
 
-        # dielectron
+        #############################
+        # Dielectron ################
+        #############################
         self.histograms['hDiEPt'] = ROOT.TH1F('hDiEPt', 'hDiEPt', 500, 0., 1000.)
         self.histograms['hDiEPt'].GetXaxis().SetTitle('p_{T e^{+}e^{-}}[GeV/c]')
         self.histograms['hDiEPt'].GetYaxis().SetTitle('Candidates/2.0[GeV]')
@@ -207,29 +244,9 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hDiEInvMass'].GetXaxis().SetTitle('M_{e^{+}e^{-}} [GeV/c^{2}]')
         self.histograms['hDiEInvMass'].GetYaxis().SetTitle('Candidates/0.5[GeV/c^{2}]')
 
-        # jets
-        self.histograms['hNumJets'] = ROOT.TH1F('hNumJets', 'hNumJets', 20, 0., 20.)
-        self.histograms['hNumJets'].GetXaxis().SetTitle('N_{j}')
-        self.histograms['hNumJets'].GetYaxis().SetTitle('Candidates')
-
-        self.histograms['hJetPt'] = ROOT.TH1F('hJetPt', 'hJetPt', 500, 0., 1000.)
-        self.histograms['hJetPt'].GetXaxis().SetTitle('p_{T j}[GeV/c]')
-        self.histograms['hJetPt'].GetYaxis().SetTitle('Candidates/2.0[GeV/c]')
-        self.histograms['hJetEta'] = ROOT.TH1F('hJetEta', 'hJetEta',  52, -2.6, 2.6)
-        self.histograms['hJetEta'].GetXaxis().SetTitle('#eta_{j}')
-        self.histograms['hJetEta'].GetYaxis().SetTitle('Candidates/0.1')
-        self.histograms['hJetPhi'] = ROOT.TH1F('hJetPhi', 'hJetPhi', 34, -3.4, 3.4)
-        self.histograms['hJetPhi'].GetXaxis().SetTitle('#varphi_{j} [rad]')
-        self.histograms['hJetPhi'].GetYaxis().SetTitle('Candidates/0.2[rad]')
-        # leading/subleading good jets
-        self.histograms['hLeadJetPt'] = ROOT.TH1F('hLeadJetPt', 'hLeadJetPt', 500, 0., 1000.)
-        self.histograms['hLeadJetPt'].GetXaxis().SetTitle('p_{T j}[GeV/c]')
-        self.histograms['hLeadJetPt'].GetYaxis().SetTitle('Candidates/2.0[GeV]')
-        self.histograms['hSubLeadJetPt'] = ROOT.TH1F('hSubLeadJetPt', 'hSubLeadJetPt', 500, 0., 1000.)
-        self.histograms['hSubLeadJetPt'].GetXaxis().SetTitle('p_{T j}[GeV/c]')
-        self.histograms['hSubLeadJetPt'].GetYaxis().SetTitle('Candidates/2.0[GeV]')
-
-        # dijet
+        #############################
+        # Dijet #####################
+        #############################
         self.histograms['hDiJetPt'] = ROOT.TH1F('hDiJetPt', 'hDiJetPt', 500, 0., 1000.)
         self.histograms['hDiJetPt'].GetXaxis().SetTitle('p_{T j^{+}j^{-}}[GeV/c]')
         self.histograms['hDiJetPt'].GetYaxis().SetTitle('Candidates/2.0[GeV]')
@@ -255,7 +272,9 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hDiJetInvMass'].GetYaxis().SetTitle('Candidates/0.5[GeV/c^{2}]')
 
 
-        # met
+        #############################
+        # MET #######################
+        #############################
         self.histograms['hMET'] = ROOT.TH1F('hMET', 'hMET', 500, 0., 1000.)
         self.histograms['hMET'].GetXaxis().SetTitle('E_{T miss}[GeV/c]')
         self.histograms['hMET'].GetYaxis().SetTitle('Candidates/2.0[GeV]')
@@ -305,7 +324,7 @@ class Ana2Mu(AnalysisBase):
         # alerts you to any prescales
         if self.event.AnyIsPrescaled(hltriggers): logging.info('WARNING! One of the selected HLT paths is prescaled.')
 
-        ## check the prescale of a path
+        # How to check the prescale of a path
         #mypathname = 'IsoTkMu20'
         #myprescale = self.event.GetPrescale(mypathname)
         #print 'HLT path {0} has prescale of {1}!'.format(mypathname, myprescale)
@@ -594,7 +613,6 @@ class Ana2Mu(AnalysisBase):
             diJetPairs += [thispair]
 
 
-        if not self.event.Number()%100: print '{0}:{1}:{2}'.format(self.event.Run(), self.event.LumiBlock(), self.event.Number())
 
 
         ##########################################################
