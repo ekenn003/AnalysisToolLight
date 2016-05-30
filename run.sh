@@ -35,6 +35,9 @@ DATASET="testing"
 #########################################
 PILEUPDIR=$BASEDIR/AnalysisTool/data/pileup
 
+
+
+
 #########################################
 # Set up rest of running ################
 #########################################
@@ -68,14 +71,14 @@ if [ ! -f "$ANALYSISCODE" ]; then
 fi
 
 echo
-echo "########################### PARAMETERS: ##############################################################################################"
+echo "########################### PARAMETERS:
 echo "ANALYSIS = $ANALYSIS"
 echo "DATASET  = $DATASET"
 echo "INPUTFILE    = $INPUTFILE"
 echo "OUTPUTFILE   = $OUTPUTFILE"
 echo "PILEUPDIR    = $PILEUPDIR"
 echo "ANALYSISCODE = $ANALYSISCODE"
-echo "######################################################################################################################################"
+echo "#######################################
 echo
 
 # run analysis
