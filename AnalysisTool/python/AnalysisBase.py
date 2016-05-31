@@ -27,7 +27,7 @@ class AnalysisBase(object):
         self.treename = 'AC1B'
         self.output = args.outputFileName
         inputFileList = args.inputFileList
-        pileupDir = args.pileupDir
+        self.pileupDir = args.pileupDir
 
 
         # put file names into a list called self.filenames
@@ -39,21 +39,8 @@ class AnalysisBase(object):
 
         logging.info('Assembling job information...')
         # things we will check in the first file
-        cmsswversion = ''
+        self.cmsswversion = ''
         self.isdata = None
-        # open first file and load info tree
-        tfile0 = ROOT.TFile(self.filenames[0])
-        infotree = tfile0.Get('{0}/{1}'.format(self.treedir, self.infoname))
-        self.isdata = bool(infotree.isdata)
-
-        #cmsswversion = infotree.CMSSW_version
-        #reading infotree.CMSSW_version is broken right now
-        # hardcode as 76 for now
-        cmsswversion = 'CMSSW_7_6_X'
-
-        tfile0.Close('R')
-
-
 
         # set up lumi info and see how many events we have to process
         lumichain = ROOT.TChain('{0}/{1}'.format(self.treedir, self.luminame))
@@ -61,6 +48,12 @@ class AnalysisBase(object):
         self.sumweights = 0
         self.nevents    = 0
         for f, fname in enumerate(self.filenames):
+            tfile = ROOT.TFile(self.filenames[f])
+            infotree = tfile.Get('{0}/{1}'.format(self.treedir, self.infoname))
+            infotree.GetEntry(0)
+            self.isdata = bool(infotree.isdata)
+            self.cmsswversion = str(infotree.CMSSW_version)
+            tfile.Close('R')
             logging.info('Adding file {0}: {1}'.format(f+1, fname))
             lumichain.Add(fname)
         # iterate over lumis to find total number of events and summed event weights
@@ -76,34 +69,6 @@ class AnalysisBase(object):
         logging.info('Sample will be processed as {0}'.format('DATA' if self.isdata else 'MC'))
 
 
-        # load pileup info and other scale factors
-        logging.info('Loading pileup info...')
-
-        # set up pileup reweighting
-        self.pileupScale = []
-        self.pileupScale_up = []
-        self.pileupScale_down = []
-
-        # get short CMSSW version that was used to produce these
-        version = '{0}{1}X'.format(cmsswversion.split('_')[1], cmsswversion.split('_')[2])
-
-        # now we look for a file called pileup_76X.root or pileup_80X.root in the pileupDir
-        pufile = ROOT.TFile('{0}/pileup_{1}.root'.format(pileupDir, version))
-        logging.info('  Looking for pileup file at {0}/pileup_{1}.root'.format(pileupDir, version))
-
-        # save scale factors in vectors where each index corresponds to the NumTruePileupInteractions
-        scalehist_ = pufile.Get('pileup_scale')
-        for b in range(scalehist_.GetNbinsX()):
-            # set (b)th entry in self.pileupScale to bin content of (b+1)th bin
-            # (0th bin is underflow)
-            self.pileupScale.append(scalehist_.GetBinContent(b+1))
-        scalehist_ = pufile.Get('pileup_scale_up')
-        for b in range(scalehist_.GetNbinsX()):
-            self.pileupScale_up.append(scalehist_.GetBinContent(b+1))
-        scalehist_ = pufile.Get('pileup_scale_down')
-        for b in range(scalehist_.GetNbinsX()):
-            self.pileupScale_down.append(scalehist_.GetBinContent(b+1))
-        pufile.Close()
 
 
         # initialize map of histograms as empty
@@ -121,6 +86,37 @@ class AnalysisBase(object):
         Calls the perEventAction method (which is overridden in the derived class).
         '''
 
+
+        # load pileup info and other scale factors
+        logging.info('Loading pileup info...')
+
+        # set up pileup reweighting
+        self.pileupScale = []
+        self.pileupScale_up = []
+        self.pileupScale_down = []
+
+        logging.info('version = "{0}"'.format(self.cmsswversion))
+        # get short CMSSW version that was used to produce these
+        version = '{0}{1}X'.format(self.cmsswversion.split('_')[1], self.cmsswversion.split('_')[2])
+
+	# now we look for a file called pileup_76X.root or pileup_80X.root in the pileupDir
+        pufile = ROOT.TFile('{0}/pileup_{1}.root'.format(self.pileupDir, version))
+        logging.info('  Looking for pileup file at {0}/pileup_{1}.root'.format(self.pileupDir, version))
+
+        # save scale factors in vectors where each index corresponds to the NumTruePileupInteractions
+        scalehist_ = pufile.Get('pileup_scale')
+        for b in range(scalehist_.GetNbinsX()):
+            # set (b)th entry in self.pileupScale to bin content of (b+1)th bin
+            # (0th bin is underflow)
+            self.pileupScale.append(scalehist_.GetBinContent(b+1))
+        scalehist_ = pufile.Get('pileup_scale_up')
+        for b in range(scalehist_.GetNbinsX()):
+            self.pileupScale_up.append(scalehist_.GetBinContent(b+1))
+        scalehist_ = pufile.Get('pileup_scale_down')
+        for b in range(scalehist_.GetNbinsX()):
+            self.pileupScale_down.append(scalehist_.GetBinContent(b+1))
+        pufile.Close()
+
         eventsprocessed = 0
         # how often (in number of events) should we print out progress updates?
         # this can't be 1!
@@ -137,19 +133,15 @@ class AnalysisBase(object):
             for row in tree:
                 eventsprocessed += 1
 
-                # progress updates (n = updateevery)
-                if eventsprocessed == updateevery:
-                    logging.info('  Processing event {0}/{1} ({2:0.0f}%)'.format(eventsprocessed, self.nevents, (100.*eventsprocessed)/self.nevents))
-                # if the last event was divisible by n, start the timer
-                if ((eventsprocessed-1) % updateevery)==0 and eventsprocessed > updateevery:
+                # progress updates
+                if eventsprocessed==2:
                     starttime = time.time()
-                # if this event is divisible by n (and therefore the next event will reset the timer),
-                # calculate how much time it took to analyse the last (n-1) events
+                elif eventsprocessed==updateevery:
+                    logging.info('  Processing event {0}/{1} ({2:0.0f}%) [est. time remaining]'.format(eventsprocessed, self.nevents, (100.*eventsprocessed)/self.nevents))
                 if eventsprocessed > updateevery and eventsprocessed % updateevery == 0:
                     currenttime = time.time()
                     timeelapsed = currenttime - starttime
-                    # time left = number events left * (time per last n-1 events) / (n-1 events)
-                    timeleft = (float(self.nevents) - float(eventsprocessed)) * (float(timeelapsed) / float(updateevery-1))
+                    timeleft = (float(self.nevents) - float(eventsprocessed)) * (float(timeelapsed) / float(eventsprocessed))
                     minutesleft, secondsleft = divmod(int(timeleft), 60)
                     hoursleft, minutesleft = divmod(minutesleft, 60)
                     logging.info('  Processing event {0}/{1} ({2:0.0f}%) [{3}:{4:02d}:{5:02d}]'.format(eventsprocessed, self.nevents, (100.*eventsprocessed)/self.nevents, hoursleft, minutesleft, secondsleft))
