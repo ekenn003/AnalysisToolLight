@@ -1,3 +1,4 @@
+# AnalysisToolLight/AnalysisTool/python/Dataform.py
 '''
 See RootMaker/RootMaker/python/objectBase.py
 '''
@@ -8,24 +9,6 @@ from collections import OrderedDict, namedtuple
 
 
 ## ___________________________________________________________
-Z_MASS = 91.1876 # GeV
-
-## ___________________________________________________________
-def deltaPhi(c0, c1):
-    result = c0.phi() - c1.phi()
-    while result>ROOT.TMath.Pi():
-        result -= 2*ROOT.TMath.Pi()
-    while result<=-ROOT.TMath.Pi():
-        result += 2*ROOT.TMath.Pi()
-    return result
-
-## ___________________________________________________________
-def deltaR(c0, c1):
-    deta = c0.eta() - c1.eta()
-    dphi = deltaPhi(c0, c1)
-    return ROOT.TMath.Sqrt(deta**2+dphi**2)
-
-## ___________________________________________________________
 BeamSpot = namedtuple('BeamSpot', ['x', 'y', 'z', 'xwidth','ywidth','zsigma'])
 
 ## ___________________________________________________________
@@ -34,13 +17,14 @@ class Event(object):
     Event object
     '''
     # constructors/helpers
-    def __init__(self, tree):
+    def __init__(self, tree, sumweights):
         self.tree = tree
+        self.sumweights = sumweights
     def _get(self, var): return getattr(self.tree, var)
 
     # methods
     def Number(self):       return self.tree.event_nr
-    def RunNumber(self):    return self.tree.event_run
+    def Run(self):          return self.tree.event_run
     def TimeUnix(self):     return self.tree.event_timeunix
     def TimeMicroSec(self): return self.tree.event_timemicrosec
     def LumiBlock(self):    return self.tree.event_luminosityblock
@@ -54,12 +38,27 @@ class Event(object):
     def NumPileUpInteractionsPlus(self):  return self.tree.numpileupinteractionsplus
     def NumTruePileUpInteractions(self):  return self.tree.numtruepileupinteractions
     # generator info
-    def GenWeight(self): return self.tree.genweight
+    def GenWeight(self):    return (self.tree.genweight)
+    def GenWeightRel(self): return (self.tree.genweight/self.sumweights)
     def GenId1(self):    return self.tree.genid1
     def Genx1(self):     return self.tree.genx1
     def GenId2(self):    return self.tree.genid2
     def Genx2(self):     return self.tree.genx2
     def GenScale(self):  return self.tree.genScale
+
+    ## _______________________________________________________
+    def PrintAvailableTauDiscriminators(self):
+        print 'Available discriminators are:'
+        for x in self.tree.GetListOfBranches():
+            if 'tau_tdisc_' in x.GetName(): print '    ' + x.GetName()[10:]
+        print '\n'
+
+    ## _______________________________________________________
+    def PrintAvailableBtags(self):
+        print 'Available btags are:'
+        for x in self.tree.GetListOfBranches():
+            if 'ak4pfchsjet_btag_' in x.GetName(): print '    ' + x.GetName()[17:]
+        print '\n'
 
     ## _______________________________________________________
     # event.PassesHLTs returns True if any of the triggers fired
@@ -69,12 +68,12 @@ class Event(object):
             try:
                 result = self._get('event_hlt_passes_'+pathname)
             except AttributeError:
-                print 'PassesHLTs: Event HLT path "' + pathname + '" not available.'
-                print 'Available paths are:'
-                for x in self.tree.GetListOfBranches():
-                    if 'event_hlt_passes_' in x.GetName(): print '    ' + x.GetName()[17:]
-                print '\n'
-                raise
+                pass
+                #print 'PassesHLTs: Event HLT path "' + pathname + '" not available.'
+                #print 'Available paths are:'
+                #for x in self.tree.GetListOfBranches():
+                #    if 'event_hlt_passes_' in x.GetName(): print '    ' + x.GetName()[17:]
+                #print '\n'
         return result
 
     ## _______________________________________________________
@@ -85,12 +84,13 @@ class Event(object):
             try:
                 prescale = self._get('prescale_hlt_'+pathname)
             except AttributeError:
-                print 'AnyIsPrescaled: Event HLT path "' + pathname + '" not available.'
-                print 'Available paths are:'
-                for x in self.tree.GetListOfBranches():
-                    if 'event_hlt_passes_' in x.GetName(): print '    ' + x.GetName()[17:]
-                print '\n'
-                raise
+                pass
+                #print 'AnyIsPrescaled: Event HLT path "{0}" not available.'.format(pathname)
+                #print 'Available paths are:'
+                #for x in self.tree.GetListOfBranches():
+                #    if 'event_hlt_passes_' in x.GetName(): print '    ' + x.GetName()[17:]
+                #print '\n'
+                #raise
             # only store results that are prescaled
             if prescale != 1: results[pathname] = prescale
 
@@ -100,7 +100,13 @@ class Event(object):
         return True if results else False
 
     ## _______________________________________________________
-    def GetPrescale(self, path): return self._get('prescale_hlt_'+pathname)
+    def GetPrescale(self, pathname):
+        prescale = -1
+        try:
+            prescale = self._get('prescale_hlt_'+pathname)
+        except AttributeError:
+            pass
+        return prescale
 
 
 ## ___________________________________________________________
@@ -139,7 +145,7 @@ class METBase(object):
     # constructors/helpers
     def __init__(self, tree, metName, entry):
         self.tree = tree
-        self.candName = metName
+        self.metName = metName
         self.entry = entry
     def _get(self, var): return getattr(self.tree, '{0}_{1}'.format(self.metName, var))[self.entry]
 
@@ -154,7 +160,7 @@ class METBase(object):
 ## ___________________________________________________________
 class PFMETTYPE1(METBase):
     # constructors/helpers
-    def __init__(self, tree, egtype, entry):
+    def __init__(self, tree, entry):
        super(PFMETTYPE1, self).__init__(tree, 'pfmettype1', entry)
 
     # methods
@@ -390,12 +396,12 @@ class Muon(CommonCand):
             try:
                 result = self._get('hlt_matches_'+pathname)
             except AttributeError:
-                print 'Muon HLT path "' + pathname + '" not available.'
-                print 'Available paths are:'
-                for x in self.tree.GetListOfBranches():
-                    if 'muon_hlt_matches_' in x.GetName(): print '    ' + x.GetName()[17:]
-                print '\n'
-                raise
+                pass
+                #print 'Muon HLT path "' + pathname + '" not available.'
+                #print 'Available paths are:'
+                #for x in self.tree.GetListOfBranches():
+                #    if 'muon_hlt_matches_' in x.GetName(): print '    ' + x.GetName()[17:]
+                #print '\n'
         return result
 
 
@@ -451,12 +457,12 @@ class Electron(EgammaCand):
             try:
                 result = self._get('hlt_matches_'+pathname)
             except AttributeError:
-                print 'Electron HLT path "{0}" not available.'.format(pathname)
-                print 'Available paths are:'
-                for x in self.tree.GetListOfBranches():
-                    if 'electron_hlt_matches_' in x.GetName(): print '    ' + x.GetName()[21:]
-                print '\n'
-                raise
+                pass
+                #print 'Electron HLT path "{0}" not available.'.format(pathname)
+                #print 'Available paths are:'
+                #for x in self.tree.GetListOfBranches():
+                #    if 'electron_hlt_matches_' in x.GetName(): print '    ' + x.GetName()[21:]
+                #print '\n'
         return result
 
 ## ___________________________________________________________
@@ -514,11 +520,8 @@ class Tau(JettyCand):
             result = self._get('tdisc_'+discname)
         except AttributeError:
             print 'Tau discriminator "' + discname + '" not available.'
-            print 'Available discriminators are:'
-            for x in self.tree.GetListOfBranches():
-                if 'tau_tdisc_' in x.GetName(): print '    ' + x.GetName()[10:]
-            print '\n'
-            raise
+            print 'Print a list of available discriminators with:\n    self.event.PrintAvailableTauDiscriminators()'
+            #raise
         return result
 
 
@@ -569,11 +572,8 @@ class Jet(JettyCand):
             result = self._get('btag_'+tagname)
         except AttributeError:
             print 'Btag "' + tagname + '" not available.'
-            print 'Available btags are:'
-            for x in self.tree.GetListOfBranches():
-                if 'ak4pfchsjet_btag_' in x.GetName(): print '    ' + x.GetName()[17:]
-            print '\n'
-            raise
+            print 'Print a list of available btags with:\n    self.event.PrintAvailableBtags()'
+            #raise
         return result
 
 
