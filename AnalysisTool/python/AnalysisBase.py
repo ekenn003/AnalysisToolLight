@@ -15,9 +15,7 @@ class AnalysisBase(object):
     def __init__(self, args):
         # set up logging info
         logging.getLogger('Analysis')
-        #logging.basicConfig(level=logging.INFO, stream=sys.stderr, format='%(asctime)s: %(message)s', datefmt='%H:%M:%S')
         logging.basicConfig(level=logging.INFO, stream=sys.stderr, format='[%(asctime)s]   %(message)s', datefmt='%Y-%m-%d %H:%M')
-
 
         # set defaults. These can be overridden with command line arguments (after adding to Base)
         self.filenames = []
@@ -25,22 +23,30 @@ class AnalysisBase(object):
         self.infoname = 'AC1Binfo'
         self.luminame = 'AC1Blumi'
         self.treename = 'AC1B'
-        self.output = args.outputFileName
-        inputFileList = args.inputFileList
+        inputFileList  = args.inputFileList
+        self.output    = args.outputFileName
         self.pileupDir = args.pileupDir
-
 
         # put file names into a list called self.filenames
         with open(inputFileList,'r') as f:
             for line in f.readlines():
-                # glob.glob returns the list of files with their full path
-                self.filenames += glob.glob(line.strip())
+                self.filenames += [line.strip()]
 
 
         logging.info('Assembling job information...')
         # things we will check in the first file
         self.cmsswversion = ''
         self.isdata = None
+        # open first file and load info tree
+        tfile0 = ROOT.TFile(self.filenames[0])
+        infotree = tfile0.Get('{0}/{1}'.format(self.treedir, self.infoname))
+        infotree.GetEntry(0)
+        self.isdata = bool(infotree.isdata)
+        self.cmsswversion = str(infotree.CMSSW_version)
+        tfile0.Close('R')
+        # get short CMSSW version that was used to produce these
+        self.cmsswversion = ''.join(self.cmsswversion.split('_')[1:3] + ['X'])
+
 
         # set up lumi info and see how many events we have to process
         lumichain = ROOT.TChain('{0}/{1}'.format(self.treedir, self.luminame))
@@ -48,12 +54,6 @@ class AnalysisBase(object):
         self.sumweights = 0
         self.nevents    = 0
         for f, fname in enumerate(self.filenames):
-            tfile = ROOT.TFile(self.filenames[f])
-            infotree = tfile.Get('{0}/{1}'.format(self.treedir, self.infoname))
-            infotree.GetEntry(0)
-            self.isdata = bool(infotree.isdata)
-            self.cmsswversion = str(infotree.CMSSW_version)
-            tfile.Close('R')
             logging.info('Adding file {0}: {1}'.format(f+1, fname))
             lumichain.Add(fname)
         # iterate over lumis to find total number of events and summed event weights
@@ -63,7 +63,6 @@ class AnalysisBase(object):
             lumichain.GetEntry(entry)
             self.nevents += lumichain.lumi_nevents
             self.sumweights += lumichain.lumi_sumweights
-
 
         logging.info('Number of events found: {0} in {1} lumi sections in {2} files'.format(self.nevents, self.numlumis, len(self.filenames)))
         logging.info('Sample will be processed as {0}'.format('DATA' if self.isdata else 'MC'))
@@ -95,13 +94,9 @@ class AnalysisBase(object):
         self.pileupScale_up = []
         self.pileupScale_down = []
 
-        logging.info('version = "{0}"'.format(self.cmsswversion))
-        # get short CMSSW version that was used to produce these
-        version = '{0}{1}X'.format(self.cmsswversion.split('_')[1], self.cmsswversion.split('_')[2])
-
 	# now we look for a file called pileup_76X.root or pileup_80X.root in the pileupDir
-        pufile = ROOT.TFile('{0}/pileup_{1}.root'.format(self.pileupDir, version))
-        logging.info('  Looking for pileup file at {0}/pileup_{1}.root'.format(self.pileupDir, version))
+        pufile = ROOT.TFile('{0}/pileup_{1}.root'.format(self.pileupDir, self.cmsswversion))
+        logging.info('  Looking for pileup file at {0}/pileup_{1}.root'.format(self.pileupDir, self.cmsswversion))
 
         # save scale factors in vectors where each index corresponds to the NumTruePileupInteractions
         scalehist_ = pufile.Get('pileup_scale')
@@ -120,7 +115,7 @@ class AnalysisBase(object):
         eventsprocessed = 0
         # how often (in number of events) should we print out progress updates?
         # this can't be 1!
-        updateevery = 1000
+        updateevery = 10000
 
         # loop over each input file
         for f, fname in enumerate(self.filenames):
