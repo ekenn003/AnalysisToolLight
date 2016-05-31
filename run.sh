@@ -1,5 +1,8 @@
 #!/bin/bash
-# this has to be run with ./run.sh instead of source
+# This has to be run with ./run.sh instead of source
+# This is an example of a script to run an analyis locally.
+# See AnalysisTool/test/batch.sh for a script to run
+# on the lxplus batch system.
 set -e
 BASEDIR=$CMSSW_BASE/src/AnalysisToolLight
 
@@ -14,7 +17,7 @@ ANALYSIS="template"
 #########################################
 # Dataset to run analysis on ############
 #########################################
-DATASET="testing"
+#DATASET="testing"
 #DATASET="DYJetsToLL"
 #DATASET="GF125HToMuMu"
 #DATASET="TTJets"
@@ -26,22 +29,16 @@ DATASET="testing"
 #DATASET="ZZTo2L2Nu"
 #DATASET="ZZTo2L2q"
 #DATASET="ZZTo4L"
-#DATASET="SingleMuon2015C"
+
+DATASET="SingleMuon2015C"
 #DATASET="SingleMuon2015D"
-
-
-#########################################
-# Location of pileup files ##############
-#########################################
-PILEUPDIR=$BASEDIR/AnalysisTool/data/pileup
-
-
 
 
 #########################################
 # Set up rest of running ################
 #########################################
 INPUTFILE=$BASEDIR/AnalysisTool/data/inputfiles_$DATASET.txt
+PILEUPDIR=$BASEDIR/AnalysisTool/data/pileup
 
 if [ "$ANALYSIS" == "template" ]; then
     OUTPUTFILE=$BASEDIR/ana_2mu_$DATASET.root
@@ -61,25 +58,26 @@ fi
 # check for input list
 if [ ! -f "$INPUTFILE" ]; then
     echo "Input file $INPUTFILE not found."
-    #exit 1
+    exit 1
 fi
 
 # check for analysis code
 if [ ! -f "$ANALYSISCODE" ]; then
     echo "Analysis $ANALYSISCODE not found."
-    #exit 1
+    exit 1
 fi
 
-echo
-echo "########################### PARAMETERS:
-echo "ANALYSIS = $ANALYSIS"
-echo "DATASET  = $DATASET"
-echo "INPUTFILE    = $INPUTFILE"
-echo "OUTPUTFILE   = $OUTPUTFILE"
-echo "PILEUPDIR    = $PILEUPDIR"
-echo "ANALYSISCODE = $ANALYSISCODE"
-echo "#######################################
-echo
+# debuggin
+#echo
+#echo "########################### PARAMETERS:"
+#echo "ANALYSIS = $ANALYSIS"
+#echo "DATASET  = $DATASET"
+#echo "PILEUPDIR    = $PILEUPDIR"
+#echo "INPUTFILE    = $INPUTFILE"
+#echo "OUTPUTFILE   = $OUTPUTFILE"
+#echo "ANALYSISCODE = $ANALYSISCODE"
+#echo "#######################################"
+#echo
 
 # run analysis
 python $ANALYSISCODE $INPUTFILE $OUTPUTFILE $PILEUPDIR
