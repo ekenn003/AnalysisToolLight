@@ -24,14 +24,25 @@ class Ana2Mu(AnalysisBase):
         # careful! this will print out event info for every single event
         self.printEventInfo = False
 
-        #self.doPileupReweighting = True
-        self.doPileupReweighting = False
+        self.doPileupReweighting = True
+        #self.doPileupReweighting = False
+
+        # include trigger scale factors
+        #self.includeTriggerScaleFactors = True
+
 
         ##########################################################
         #                                                        #
         # Define cuts                                            #
         #                                                        #
         ##########################################################
+
+        # list of triggers we want to check for this event
+        self.hltriggers = (
+            'IsoMu20',
+            'IsoTkMu20',
+        )
+        self.pathForTriggerScaleFactors = 'IsoMu20_OR_IsoTkMu20'
 
         # PV cuts
         self.cVtxNdf = 4
@@ -122,21 +133,14 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hVtxN_u'].GetXaxis().SetTitle('N_{PV} before weighting')
         self.histograms['hVtxN_u'].GetYaxis().SetTitle('Candidates')
 
+        self.histograms['hVtxN_after'] = ROOT.TH1F('hVtxN_after', 'hVtxN_after', 100, 0., 100.)
+        self.histograms['hVtxN_after'].GetXaxis().SetTitle('N_{PV} after selection')
+        self.histograms['hVtxN_after'].GetYaxis().SetTitle('Candidates')
+
         self.histograms['hWeight'] = ROOT.TH1F('hWeight', 'hWeight', 100, -10., 10.)
         self.histograms['hWeight'].GetXaxis().SetTitle('Event weight')
         self.histograms['hWeight'].GetYaxis().SetTitle('Events')
 
-        self.histograms['hVtxN_purw'] = ROOT.TH1F('hVtxN_purw', 'hVtxN_purw', 100, 0., 100.)
-        self.histograms['hVtxN_purw'].GetXaxis().SetTitle('N_{PV} with pu and gen weighting')
-        self.histograms['hVtxN_purw'].GetYaxis().SetTitle('Candidates')
-
-        self.histograms['hVtxN_evrw'] = ROOT.TH1F('hVtxN_evrw', 'hVtxN_evrw', 100, 0., 100.)
-        self.histograms['hVtxN_evrw'].GetXaxis().SetTitle('N_{PV} with gen weighting (no pu)')
-        self.histograms['hVtxN_evrw'].GetYaxis().SetTitle('Candidates')
-
-        self.histograms['hVtxN_totrw'] = ROOT.TH1F('hVtxN_totrw', 'hVtxN_totrw', 100, 0., 100.)
-        self.histograms['hVtxN_totrw'].GetXaxis().SetTitle('N_{PV} with ALL weighting')
-        self.histograms['hVtxN_totrw'].GetYaxis().SetTitle('Candidates')
 
         #############################
         # Muons #####################
@@ -315,7 +319,7 @@ class Ana2Mu(AnalysisBase):
         if not self.isdata:
             pileupweight = self.event.GenWeight()
             if self.doPileupReweighting:
-                pileupweight *= self.GetPileupWeight(self.event.NumTruePileUpInteractions())
+                pileupweight *= self.puweights.getWeight(self.event.NumTruePileUpInteractions())
 
 
         self.histograms['hWeight'].Fill(pileupweight)
@@ -335,25 +339,21 @@ class Ana2Mu(AnalysisBase):
         #############################
         #evtnr = self.event.Number()
 
-        # list of triggers we want to check for this event
-        hltriggers = (
-            'IsoMu20',
-            'IsoTkMu20',
-        )
         # event.PassesHLTs returns True if any of the triggers fired
-        if not self.event.PassesHLTs(hltriggers): return
+        if not self.event.PassesHLTs(self.hltriggers): return
         self.cutflow.increment('nEv_Trigger')
 
 
 
         # alerts you to any prescales
-        if self.event.AnyIsPrescaled(hltriggers): logging.info('WARNING! One of the selected HLT paths is prescaled.')
+        if self.event.AnyIsPrescaled(self.hltriggers): logging.info('WARNING! One of the selected HLT paths is prescaled.')
 
         # How to check the prescale of a path
         #mypathname = 'IsoTkMu20'
         #myprescale = self.event.GetPrescale(mypathname)
         #print 'HLT path {0} has prescale of {1}!'.format(mypathname, myprescale)
 
+        print 'self.pathForTriggerScaleFactors = ' + (self.pathForTriggerScaleFactors)
 
         #############################
         # Primary vertices ##########
@@ -379,13 +379,18 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hVtxN_u'].Fill(len(goodVertices))
 
 
-        weight1 = self.event.GenWeight()
-        weight2 = self.event.GenWeight() * self.GetPileupWeight(self.event.NumTruePileUpInteractions())
-        weight3 = self.event.GenWeight() * self.GetPileupWeight(self.event.NumTruePileUpInteractions()) * (6025.2/self.sumweights)
-        # check pileup reweighting
-        self.histograms['hVtxN_evrw'].Fill(len(goodVertices), weight1)
-        self.histograms['hVtxN_purw'].Fill(len(goodVertices), weight2)
-        self.histograms['hVtxN_totrw'].Fill(len(goodVertices), weight3)
+        #weight1 = self.event.GenWeight()
+        #weight2 = self.event.GenWeight() * self.GetPileupWeight(self.event.NumTruePileUpInteractions())
+        #weight3 = self.event.GenWeight() * self.GetPileupWeight(self.event.NumTruePileUpInteractions()) * (6025.2/self.sumweights)
+        ## check pileup reweighting
+        #if self.isdata:
+        #    self.histograms['hVtxN_evrw'].Fill(len(goodVertices), 1.)
+        #    self.histograms['hVtxN_purw'].Fill(len(goodVertices), 1.)
+        #    self.histograms['hVtxN_totrw'].Fill(len(goodVertices), 1.)
+        #else:
+        #    self.histograms['hVtxN_evrw'].Fill(len(goodVertices), weight1)
+        #    self.histograms['hVtxN_purw'].Fill(len(goodVertices), weight2)
+        #    self.histograms['hVtxN_totrw'].Fill(len(goodVertices), weight3)
 
 
         ##########################################################
@@ -416,7 +421,7 @@ class Ana2Mu(AnalysisBase):
             isEtaCutOK = True
 
             # make sure at least one HLT-matched muon passes extra cuts
-            if muon.MatchesHLTs(hltriggers) and muon.Pt > self.cPtMuMax and muon.AbsEta() < self.cEtaMuMax: nMuPtEtaMax += 1
+            if muon.MatchesHLTs(self.hltriggers) and muon.Pt > self.cPtMuMax and muon.AbsEta() < self.cEtaMuMax: nMuPtEtaMax += 1
 
             # check isolation
             # here you can also do muon.IsoR3CombinedRelIso() < stuff, muon.PFR4ChargedHadrons() etc.
@@ -707,6 +712,10 @@ class Ana2Mu(AnalysisBase):
         # Fill histograms                                        #
         #                                                        #
         ##########################################################
+        #############################
+        # PV after selection ########
+        #############################
+        self.histograms['hVtxN_after'].Fill(len(goodVertices), pileupweight)
 
         #############################
         # Muons #####################
@@ -804,10 +813,10 @@ class Ana2Mu(AnalysisBase):
 ## ___________________________________________________________
 # actually execute the analysis
 def main(argv=None):
-    try:
-        Ana2Mu(analysisBaseMain(argv)).analyze()
-    except KeyboardInterrupt:
-        Ana2Mu(analysisBaseMain(argv)).endJob()
+#    try:
+    Ana2Mu(analysisBaseMain(argv)).analyze()
+#    except KeyboardInterrupt:
+#        Ana2Mu(analysisBaseMain(argv)).endJob()
 
 ## ___________________________________________________________
 # checks if this was run from the command line
