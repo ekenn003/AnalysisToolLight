@@ -56,10 +56,11 @@ def main():
     dahist2 = ROOT.TH2F(pogFile.Get(singlemuoneffs['runD_IsoMu20_OR_IsoTkMu20_HLTv4p3']['DATA']))
     weight2 = singlemuoneffs['runD_IsoMu20_OR_IsoTkMu20_HLTv4p3']['lumi'] / totlumi
 
-    # create result hist
-    ratiohist = mchist0.Clone('ratiohist')
-    nbinsx = ratiohist.GetNbinsX()
-    nbinsy = ratiohist.GetNbinsY()
+    # create result hists
+    MChist = mchist0.Clone('MChist')
+    DAhist = dahist0.Clone('DAhist')
+    nbinsx = mchist0.GetNbinsX()
+    nbinsy = mchist0.GetNbinsY()
     print 'nbinx = {0}, nbinsy = {1}'.format(nbinsx, nbinsy)
     for bx in range(0, nbinsx):
         for by in range(0, nbinsy):
@@ -73,15 +74,17 @@ def main():
             daeff1 = dahist1.GetBinContent(bx, by)
             daeff2 = dahist2.GetBinContent(bx, by)
             dabincontent = daeff0 * weight0 + daeff1 * weight1 + daeff2 * weight2
-            # fill ratio hist with data/mc
-            print 'mcbincontent/dabincontent = {0} / {1}'.format(mcbincontent, dabincontent)
-            ratiohist.SetBinContent(bx, by, mcbincontent/dabincontent)
+            # fill result hists
+            MChist.SetBinContent(bx, by, mcbincontent)
+            DAhist.SetBinContent(bx, by, dabincontent)
 
     # save result
+    MChist.Write()
+    DAhist.Write()
     pogFile.Close()
-    ratiohist.Write()
     outfile.Write()
     outfile.Close()
+
 
 if __name__ == "__main__":
     status = main()
