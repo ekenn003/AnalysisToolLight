@@ -77,36 +77,54 @@ class HLTScaleFactors(ScaleFactor):
     def __init__(self, cmsswversion, datadir, hltrigger):
         super(HLTScaleFactors, self).__init__(cmsswversion, datadir)
 
-        print 'self.pathForTriggerScaleFactors = "{0}"'.format(hltrigger)
         # right now the only choice is single muon hlt
         if hltrigger=='IsoMu20_OR_IsoTkMu20':
             filename = 'singlemuontrigger'
         else:
             raise ValueError('Right now the only available HLT for scale factors is "IsoMu20_OR_IsoTkMu20".')
 
-        logging.info('  Looking for scale factor file at {0}/scalefactors/{1}_{2}.root'.format(self.dataDir, filename, self.cmsswversion))
+        logging.info('  Looking for scale factor file at {0}/scalefactors/{1}_{2}.root'.format(self.datadir, filename, self.cmsswversion))
+
+        #try:
         # this is the file created by AnalysisTool/scripts/collectTriggerScaleFactors.py
-        hltfile = ROOT.TFile('{0}/scalefactors/{1}_{2}.root'.format(self.datadir, filename, self.cmsswversion))
+        self.hltfile = ROOT.TFile('{0}/scalefactors/{1}_{2}.root'.format(self.datadir, filename, self.cmsswversion))
 
         # the histograms in the file are named effMC and effDA, with x axis: Pt, y axis: AbsEta
-        effhistDA_ = hltfile.Get('effDA')
-        effhistMC_ = hltfile.Get('effMC')
-        maxpt = effhistDA_.GetXaxis().GetXmax()
-        maxeta = effhistDA_.GetYaxis().GetXmax()
+        self.effhistDA_ = self.hltfile.Get('effDA')
+        self.effhistMC_ = self.hltfile.Get('effMC')
 
-        print 'maxpt = {0} and maxeta = {1}'.format(maxpt, maxeta)
+        self.maxpt = self.effhistDA_.GetXaxis().GetXmax()
+        self.maxeta = self.effhistDA_.GetYaxis().GetXmax()
+
+        print 'maxpt = {0} and maxeta = {1}'.format(self.maxpt, self.maxeta)
+
+        #except :
+
+        ## trigger scale factors
+        #logging.info('Loading trigger scale factor info...')
+        ##try:
+        #self.hltweights = HLTScaleFactors(self.cmsswversion, self.datadir, self.pathForTriggerScaleFactors)
+        ##except AttributeError as err:
+        ##    logging.info('    AttributeError: '.format(err))
+        ##    logging.info('    *******')
+        ##    logging.info('    WARNING: self.pathForTriggerScaleFactors is not set.')
+        ##    logging.info('    Will not include trigger scale factors.')
+        ##    logging.info('    *******')
+
 
     # methods
-    def getScale(self, *args):
+    def getScale(self, muons):
         xda = 1.
         xmc = 1.
-        for mu in args:
+        for mu in muons:
             # make sure the muon is in range
-            pt = min(maxpt, mu.Pt())
-            eta = min(maxeta, mu.AbsEta())
+            pt_ = min(self.maxpt, mu.Pt())
+            eta_ = min(self.maxeta, mu.AbsEta())
             # find efficiencies for this muon
-            effda = effhistDA_.GetBinContent( effhistDA_.FindBin(pt, eta) )
-            effmc = effhistMC_.GetBinContent( effhistMC_.FindBin(pt, eta) )
+            effda = self.effhistDA_.GetBinContent( self.effhistDA_.GetXaxis().FindBin(pt_) , self.effhistDA_.GetYaxis().FindBin(eta_))
+            print 'da: found eff of {0} in bin {1},{2} for mu with pt {3} and eta {4}'.format(effda, self.effhistDA_.GetXaxis().FindBin(pt_), self.effhistDA_.GetYaxis().FindBin(eta_), pt_, eta_)
+            effmc = self.effhistMC_.GetBinContent( self.effhistMC_.GetXaxis().FindBin(pt_) , self.effhistMC_.GetYaxis().FindBin(eta_))
+            print 'mc: found eff of {0} in bin {1},{2} for mu with pt {3} and eta {4}'.format(effmc, self.effhistMC_.GetXaxis().FindBin(pt_), self.effhistMC_.GetYaxis().FindBin(eta_), pt_, eta_)
             # update total efficiency
             xda *= (1. - effda)
             xmc *= (1. - effmc)
@@ -114,4 +132,6 @@ class HLTScaleFactors(ScaleFactor):
         sf = (1. - xda) / (1. - xmc)
         return sf
 
+    def __del__(self):
+        self.hltfile.Close()
 
