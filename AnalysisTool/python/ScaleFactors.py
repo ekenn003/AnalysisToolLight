@@ -58,12 +58,15 @@ class PileupWeights(ScaleFactor):
             self.error = True
 
     # methods
+    ## _______________________________________________________
     def getWeight(self, numtrueinteractions):
         if self.error: return 1.
         return self.pileupScale[int(round(numtrueinteractions))] if len(self.pileupScale) > numtrueinteractions else 0.
+    ## _______________________________________________________
     def getWeightUp(self, numtrueinteractions):
         if self.error: return 1.
         return self.pileupScale_up[int(round(numtrueinteractions))] if len(self.pileupScale_up) > numtrueinteractions else 0.
+    ## _______________________________________________________
     def getWeightDown(self, numtrueinteractions):
         if self.error: return 1.
         return self.pileupScale_down[int(round(numtrueinteractions))] if len(self.pileupScale_down) > numtrueinteractions else 0.
@@ -125,6 +128,120 @@ class HLTScaleFactors(ScaleFactor):
         # calculate scale factor and return it
         return (1.-xda)/(1.-xmc) if (xmc!= 1.) else 1.
 
+
+    ## _______________________________________________________
     def __del__(self):
         self.hltfile.Close()
+
+
+## ___________________________________________________________
+class MuonScaleFactors(ScaleFactor):
+# https://twiki.cern.ch/twiki/bin/view/CMS/MuonReferenceEffsRun2
+    # constructors/helpers
+    def __init__(self, cmsswversion, datadir):
+        super(MuonScaleFactors, self).__init__(cmsswversion, datadir)
+        self.error = False
+
+        self.muonideffs = {
+            'looseID' : {},
+            'softID' : {},
+            'mediumID' : {},
+            'tightID' : {},
+        }
+        self.muonisoeffs = {
+            'looseIso_looseID' : {},
+            'looseIso_mediumID' : {},
+            'looseIso_tightID' : {},
+            'tightIso_mediumID' : {},
+            'tightIso_tightID' : {},
+        }
+
+        logging.info('  Looking for muon scale factor file at {0}/scalefactors/muonidiso_{1}.root'.format(self.datadir, self.cmsswversion))
+        try:
+            # this is the file created by AnalysisTool/scripts/collectMuonScaleFactors.py
+            self.mufile = ROOT.TFile('{0}/scalefactors/muonidiso_{1}.root'.format(self.datadir, self.cmsswversion))
+            # the histograms in the file have x axis: Pt, y axis: AbsEta
+            for cut in self.muonideffs:
+                self.muonideffs[cut]['RATIO'] = ROOT.TH2F(self.mufile.Get(cut))
+            for cut in self.muonisoeffs:
+                self.muonisoeffs[cut]['RATIO'] = ROOT.TH2F(self.mufile.Get(cut))
+
+            self.maxpt  = self.muonideffs['softID']['RATIO'].GetXaxis().GetXmax() - 1.
+            self.maxeta = self.muonideffs['softID']['RATIO'].GetYaxis().GetXmax()
+
+        except AttributeError:
+            logging.info('    *******')
+            logging.info('    WARNING: Muon scale factors file probably doesn\'t exist or was made improperly.')
+            logging.info('    Will not include trigger scale factors.')
+            logging.info('    *******')
+            self.error = True
+
+
+    # methods
+    ## _______________________________________________________
+    def getIdScale(self, muons, idcut):
+        '''
+        Returns the total scale factor for a list of muons
+        for ID cuts.
+        '''
+        if self.error: return 1.
+
+        if idcut in ['soft', 'loose', 'medium', 'tight']:
+            cut = '{0}ID'.format(idcut)
+        else:
+            raise ValueError('Muon getIdScale: id "{0}" not recognised.'.format(idcut))
+
+        sf = 1.
+        for mu in muons:
+            # make sure the muon is in range
+            pt_ = min(self.maxpt, mu.Pt())
+            eta_ = min(self.maxeta, mu.AbsEta())
+            # find efficiencies for this muon
+            musf = self.muonideffs[cut]['RATIO'].GetBinContent( self.muonideffs[cut]['RATIO'].GetXaxis().FindBin(pt_) , self.muonideffs[cut]['RATIO'].GetYaxis().FindBin(eta_) )
+            # update total efficiency
+            sf *= musf
+
+        return sf
+
+
+    ## _______________________________________________________
+    def getIsoScale(self, muons, idcut, isocut):
+        '''
+        Returns the total scale factor for a list of muons
+        for ID and isolation cuts. The efficiencies for these two cuts
+        are already merged and located in a single TH2F.
+        '''
+        if self.error: return 1.
+
+        # input validation
+        if isocut=='loose':
+            if idcut in ['loose', 'medium', 'tight']:
+                cut = '{0}Iso_{1}ID'.format(isocut, idcut)
+            else:
+                raise ValueError('Muon getIsoScale: ID "{0}" not recognised, or you are trying to use an invalid ID+Iso pairing ({0}+{1}.'.format(idcut, isocut))
+        elif isocut=='tight':
+            if idcut in ['medium', 'tight']:
+                cut = '{0}Iso_{1}ID'.format(isocut, idcut)
+            else:
+                raise ValueError('Muon getIsoScale: ID "{0}" not recognised, or you are trying to use an invalid ID+Iso pairing ({0}+{1}.'.format(idcut, isocut))
+        else:
+            raise ValueError('Muon getIsoScale: Iso "{0}" not recognised.'.format(isocut))
+
+        # find scale factor
+        sf = 1.
+        for mu in muons:
+            # make sure the muon is in range
+            pt_ = min(self.maxpt, mu.Pt())
+            eta_ = min(self.maxeta, mu.AbsEta())
+            # find efficiencies for this muon
+            musf = self.muonisoeffs[cut]['RATIO'].GetBinContent( self.muonisoeffs[cut]['RATIO'].GetXaxis().FindBin(pt_) , self.muonisoeffs[cut]['RATIO'].GetYaxis().FindBin(eta_) )
+            # update total efficiency
+            sf *= musf
+
+        return sf
+
+
+    ## _______________________________________________________
+    def __del__(self):
+        self.mufile.Close()
 

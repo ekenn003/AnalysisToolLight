@@ -709,6 +709,9 @@ class Ana2Mu(AnalysisBase):
         #                                                        #
         ##########################################################
         pileupweight *= self.hltweights.getScale(goodMuons)
+        pileupweight *= self.muonweights.getIdScale(goodMuons, self.cMuID)
+        # NB: the below only works for PF w/dB isolation
+        pileupweight *= self.muonweights.getIsoScale(goodMuons, self.cMuID, self.cIsoMuLevel)
 
         ##########################################################
         #                                                        #

@@ -18,6 +18,7 @@ class AnalysisBase(object):
         # set up logging info
         logging.getLogger('Analysis')
         logging.basicConfig(level=logging.INFO, stream=sys.stderr, format='[%(asctime)s]   %(message)s', datefmt='%Y-%m-%d %H:%M')
+        logging.info('Beginning job...')
 
         # set defaults. These can be overridden with command line arguments (after adding to Base)
         self.filenames = []
@@ -101,6 +102,10 @@ class AnalysisBase(object):
         # trigger scale factors
         logging.info('Loading trigger scale factor info...')
         self.hltweights = HLTScaleFactors(self.cmsswversion, self.dataDir, self.pathForTriggerScaleFactors)
+
+        # lepton scale factors
+        logging.info('Loading lepton scale factor info...')
+        self.muonweights = MuonScaleFactors(self.cmsswversion, self.dataDir)
 
         eventsprocessed = 0
         # how often (in number of events) should we print out progress updates?
