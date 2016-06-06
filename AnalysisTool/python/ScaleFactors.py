@@ -24,6 +24,7 @@ class PileupWeights(ScaleFactor):
     # constructors/helpers
     def __init__(self, cmsswversion, datadir):
         super(PileupWeights, self).__init__(cmsswversion, datadir)
+        self.error = False
 
         self.pileupScale = []
         self.pileupScale_up = []
@@ -54,13 +55,17 @@ class PileupWeights(ScaleFactor):
             logging.info('    WARNING: Pileup file probably doesn\'t exist or was made improperly.')
             logging.info('    Will not include pileup reweighting.')
             logging.info('    *******')
+            self.error = True
 
     # methods
     def getWeight(self, numtrueinteractions):
+        if self.error: return 1.
         return self.pileupScale[int(round(numtrueinteractions))] if len(self.pileupScale) > numtrueinteractions else 0.
     def getWeightUp(self, numtrueinteractions):
+        if self.error: return 1.
         return self.pileupScale_up[int(round(numtrueinteractions))] if len(self.pileupScale_up) > numtrueinteractions else 0.
     def getWeightDown(self, numtrueinteractions):
+        if self.error: return 1.
         return self.pileupScale_down[int(round(numtrueinteractions))] if len(self.pileupScale_down) > numtrueinteractions else 0.
 
 
@@ -76,6 +81,7 @@ class HLTScaleFactors(ScaleFactor):
     # constructors/helpers
     def __init__(self, cmsswversion, datadir, hltrigger):
         super(HLTScaleFactors, self).__init__(cmsswversion, datadir)
+        self.error = False
 
         # right now the only choice is single muon hlt
         if hltrigger=='IsoMu20_OR_IsoTkMu20':
@@ -84,36 +90,26 @@ class HLTScaleFactors(ScaleFactor):
             raise ValueError('Right now the only available HLT for scale factors is "IsoMu20_OR_IsoTkMu20".')
 
         logging.info('  Looking for scale factor file at {0}/scalefactors/{1}_{2}.root'.format(self.datadir, filename, self.cmsswversion))
+        try:
+            # this is the file created by AnalysisTool/scripts/collectTriggerScaleFactors.py
+            self.hltfile = ROOT.TFile('{0}/scalefactors/{1}_{2}.root'.format(self.datadir, filename, self.cmsswversion))
+            # the histograms in the file are named effMC and effDA, with x axis: Pt, y axis: AbsEta
+            self.effhistDA_ = self.hltfile.Get('effDA')
+            self.effhistMC_ = self.hltfile.Get('effMC')
+            self.maxpt = self.effhistDA_.GetXaxis().GetXmax() - 1.
+            self.maxeta = self.effhistDA_.GetYaxis().GetXmax()
 
-        #try:
-        # this is the file created by AnalysisTool/scripts/collectTriggerScaleFactors.py
-        self.hltfile = ROOT.TFile('{0}/scalefactors/{1}_{2}.root'.format(self.datadir, filename, self.cmsswversion))
-
-        # the histograms in the file are named effMC and effDA, with x axis: Pt, y axis: AbsEta
-        self.effhistDA_ = self.hltfile.Get('effDA')
-        self.effhistMC_ = self.hltfile.Get('effMC')
-
-        self.maxpt = self.effhistDA_.GetXaxis().GetXmax()
-        self.maxeta = self.effhistDA_.GetYaxis().GetXmax()
-
-        print 'maxpt = {0} and maxeta = {1}'.format(self.maxpt, self.maxeta)
-
-        #except :
-
-        ## trigger scale factors
-        #logging.info('Loading trigger scale factor info...')
-        ##try:
-        #self.hltweights = HLTScaleFactors(self.cmsswversion, self.datadir, self.pathForTriggerScaleFactors)
-        ##except AttributeError as err:
-        ##    logging.info('    AttributeError: '.format(err))
-        ##    logging.info('    *******')
-        ##    logging.info('    WARNING: self.pathForTriggerScaleFactors is not set.')
-        ##    logging.info('    Will not include trigger scale factors.')
-        ##    logging.info('    *******')
-
+        except AttributeError:
+            logging.info('    *******')
+            logging.info('    WARNING: HLT scale factors file probably doesn\'t exist or was made improperly.')
+            logging.info('    Will not include trigger scale factors.')
+            logging.info('    *******')
+            self.error = True
 
     # methods
     def getScale(self, muons):
+        if self.error: return 1.
+
         xda = 1.
         xmc = 1.
         for mu in muons:
@@ -122,15 +118,12 @@ class HLTScaleFactors(ScaleFactor):
             eta_ = min(self.maxeta, mu.AbsEta())
             # find efficiencies for this muon
             effda = self.effhistDA_.GetBinContent( self.effhistDA_.GetXaxis().FindBin(pt_) , self.effhistDA_.GetYaxis().FindBin(eta_))
-            print 'da: found eff of {0} in bin {1},{2} for mu with pt {3} and eta {4}'.format(effda, self.effhistDA_.GetXaxis().FindBin(pt_), self.effhistDA_.GetYaxis().FindBin(eta_), pt_, eta_)
             effmc = self.effhistMC_.GetBinContent( self.effhistMC_.GetXaxis().FindBin(pt_) , self.effhistMC_.GetYaxis().FindBin(eta_))
-            print 'mc: found eff of {0} in bin {1},{2} for mu with pt {3} and eta {4}'.format(effmc, self.effhistMC_.GetXaxis().FindBin(pt_), self.effhistMC_.GetYaxis().FindBin(eta_), pt_, eta_)
             # update total efficiency
             xda *= (1. - effda)
             xmc *= (1. - effmc)
         # calculate scale factor and return it
-        sf = (1. - xda) / (1. - xmc)
-        return sf
+        return (1.-xda)/(1.-xmc) if (xmc!= 1.) else 1.
 
     def __del__(self):
         self.hltfile.Close()

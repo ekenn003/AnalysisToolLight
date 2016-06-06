@@ -28,7 +28,7 @@ class Ana2Mu(AnalysisBase):
         #self.doPileupReweighting = False
 
         # include trigger scale factors
-        #self.includeTriggerScaleFactors = True
+        self.includeTriggerScaleFactors = True
 
 
         ##########################################################
@@ -77,8 +77,7 @@ class Ana2Mu(AnalysisBase):
         self.cPtE = 10.
         self.cEtaE = 2.4
 
-        # electron iso: FIND NEW RUN2 WPs
-        self.cIsoE = 0.12
+        # electron iso: part of eID
 
         # jet cuts
         self.cPtJet = 30. # GeV
@@ -137,7 +136,7 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hVtxN_after'].GetXaxis().SetTitle('N_{PV} after selection')
         self.histograms['hVtxN_after'].GetYaxis().SetTitle('Candidates')
 
-        self.histograms['hWeight'] = ROOT.TH1F('hWeight', 'hWeight', 100, -10., 10.)
+        self.histograms['hWeight'] = ROOT.TH1F('hWeight', 'hWeight', 100000, -10000., 10000.)
         self.histograms['hWeight'].GetXaxis().SetTitle('Event weight')
         self.histograms['hWeight'].GetYaxis().SetTitle('Events')
 
@@ -353,8 +352,6 @@ class Ana2Mu(AnalysisBase):
         #myprescale = self.event.GetPrescale(mypathname)
         #print 'HLT path {0} has prescale of {1}!'.format(mypathname, myprescale)
 
-        print 'self.pathForTriggerScaleFactors = ' + (self.pathForTriggerScaleFactors)
-
         #############################
         # Primary vertices ##########
         #############################
@@ -488,7 +485,6 @@ class Ana2Mu(AnalysisBase):
             #          rel PF r3 combined with rho correction (IsoPFR3RhoCombRel),
             #          and lots more in Dataform.py
             # WARNING: check with egamma POG for run 2 working points
-            if not electron.IsoPFR3RhoCombRel() < self.cIsoE: continue
 
             # if we get to this point, push electron into goodElectrons
             goodElectrons += [electron]
@@ -706,6 +702,13 @@ class Ana2Mu(AnalysisBase):
 
 
 
+
+        ##########################################################
+        #                                                        #
+        # Update event weight                                    #
+        #                                                        #
+        ##########################################################
+        pileupweight *= self.hltweights.getScale(goodMuons)
 
         ##########################################################
         #                                                        #
