@@ -63,11 +63,11 @@ def main():
     weight2 = singlemuoneffs['runD_IsoMu20_OR_IsoTkMu20_HLTv4p3']['lumi'] / totlumi
 
     # create result hists
-    MChist = mchist0.Clone('MChist')
-    DAhist = dahist0.Clone('DAhist')
+    MChist = mchist0.Clone('effMC')
+    DAhist = dahist0.Clone('effDA')
     nbinsx = mchist0.GetNbinsX()
     nbinsy = mchist0.GetNbinsY()
-    print 'nbinx = {0}, nbinsy = {1}'.format(nbinsx, nbinsy)
+
     for bx in range(0, nbinsx):
         for by in range(0, nbinsy):
             # get average value of eff for mc for this bin
@@ -85,11 +85,12 @@ def main():
             DAhist.SetBinContent(bx, by, dabincontent)
 
     # save result
+    outfile.cd()
     MChist.Write()
     DAhist.Write()
-    pogFile.Close()
     outfile.Write()
     outfile.Close()
+    pogFile.Close()
 
 
 if __name__ == "__main__":
@@ -99,10 +100,8 @@ if __name__ == "__main__":
 
 
 
-'''
-how this file was created
-'''
-
+# How this file was created
+#
 # run c:
 # 
 #     brilcalc lumi --normtag /afs/cern.ch/user/l/lumipro/public/normtag_file/moriond16_normtag.json -i /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions15/13TeV/Cert_246908-260627_13TeV_PromptReco_Collisions15_25ns_JSON_v2.txt --hltpath "HLT_Iso*Mu20_v*" -u /pb --begin 253659 --end 256464
