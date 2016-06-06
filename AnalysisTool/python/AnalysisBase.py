@@ -1,3 +1,4 @@
+# AnalysisToolLight/AnalysisTool/python/AnalysisBase.py
 import logging
 import argparse
 import glob
@@ -5,6 +6,7 @@ import os, sys, time
 import ROOT
 from prettytable import PrettyTable
 from Dataform import *
+from ScaleFactors import *
 
 ## ___________________________________________________________
 class AnalysisBase(object):
@@ -25,7 +27,7 @@ class AnalysisBase(object):
         self.treename = 'AC1B'
         inputFileList  = args.inputFileList
         self.output    = args.outputFileName
-        self.pileupDir = args.pileupDir
+        self.dataDir = args.dataDir
 
         # put file names into a list called self.filenames
         with open(inputFileList,'r') as f:
@@ -72,6 +74,8 @@ class AnalysisBase(object):
 
         # initialize map of histograms as empty
         self.histograms = {}
+        # initialise some other options that will be overridden in the derived class
+        self.pathForTriggerScaleFactors = ''
 
         # initialize output file
         self.outfile = ROOT.TFile(self.output,'RECREATE')
@@ -85,38 +89,41 @@ class AnalysisBase(object):
         Calls the perEventAction method (which is overridden in the derived class).
         '''
 
-
-        # load pileup info and other scale factors
+        ##########################################################
+        #                                                        #
+        # load pileup info and other scale factors               #
+        #                                                        #
+        ##########################################################
+        # pileup
         logging.info('Loading pileup info...')
+        try:
+            self.puweights = PileupWeights(self.cmsswversion, self.dataDir)
+        except AttributeError:
+            logging.info('    *******')
+            logging.info('    WARNING: Pileup file probably doesn\'t exist or was made improperly.')
+            logging.info('    Will not include pileup reweighting.')
+            logging.info('    *******')
 
-        # set up pileup reweighting
-        self.pileupScale = []
-        self.pileupScale_up = []
-        self.pileupScale_down = []
-
-	# now we look for a file called pileup_76X.root or pileup_80X.root in the pileupDir
-        pufile = ROOT.TFile('{0}/pileup_{1}.root'.format(self.pileupDir, self.cmsswversion))
-        logging.info('  Looking for pileup file at {0}/pileup_{1}.root'.format(self.pileupDir, self.cmsswversion))
-
-        # save scale factors in vectors where each index corresponds to the NumTruePileupInteractions
-        scalehist_ = pufile.Get('pileup_scale')
-        for b in range(scalehist_.GetNbinsX()):
-            # set (b)th entry in self.pileupScale to bin content of (b+1)th bin
-            # (0th bin is underflow)
-            self.pileupScale.append(scalehist_.GetBinContent(b+1))
-        scalehist_ = pufile.Get('pileup_scale_up')
-        for b in range(scalehist_.GetNbinsX()):
-            self.pileupScale_up.append(scalehist_.GetBinContent(b+1))
-        scalehist_ = pufile.Get('pileup_scale_down')
-        for b in range(scalehist_.GetNbinsX()):
-            self.pileupScale_down.append(scalehist_.GetBinContent(b+1))
-        pufile.Close()
+        # trigger scale factors
+        logging.info('Loading trigger scale factor info...')
+        #try:
+        self.hltweights = HLTScaleFactors(self.cmsswversion, self.dataDir, self.pathForTriggerScaleFactors)
+        #except AttributeError as err:
+        #    logging.info('    AttributeError: '.format(err))
+        #    logging.info('    *******')
+        #    logging.info('    WARNING: self.pathForTriggerScaleFactors is not set.')
+        #    logging.info('    Will not include trigger scale factors.')
+        #    logging.info('    *******')
 
         eventsprocessed = 0
         # how often (in number of events) should we print out progress updates?
-        # this can't be 1!
-        updateevery = 10000
+        updateevery = 1000
 
+        ##########################################################
+        #                                                        #
+        # do the analysis loop                                   #
+        #                                                        #
+        ##########################################################
         # loop over each input file
         for f, fname in enumerate(self.filenames):
             logging.info('Processing file {0} of {1}:'.format(f+1, len(self.filenames)))
@@ -156,7 +163,11 @@ class AnalysisBase(object):
                 # call the perEventAction method (which is overridden in the derived class)
                 self.perEventAction()
 
-        # end job and write histograms to output file
+        ##########################################################
+        #                                                        #
+        # end job and write histograms to output file            #
+        #                                                        #
+        ##########################################################
         self.endJob()
 
 
@@ -212,8 +223,8 @@ class AnalysisBase(object):
         self.outfile.Close()
 
     ## _______________________________________________________
-    def GetPileupWeight(self, numtrueinteractions):
-        return self.pileupScale[int(round(numtrueinteractions))] if len(self.pileupScale) > numtrueinteractions else 0.
+    #def GetPileupWeight(self, numtrueinteractions):
+    #    return self.pileupScale[int(round(numtrueinteractions))] if len(self.pileupScale) > numtrueinteractions else 0.
 
 
 
@@ -225,7 +236,7 @@ def parse_command_line(argv):
     # line below is an example of a required argument
     parser.add_argument('inputFileList', type=str, help='List of input files (AC1B*.root)')
     parser.add_argument('outputFileName', type=str, help='Output file name')
-    parser.add_argument('pileupDir', type=str, help='Pileup files directory (usually AnalysisTool/data/pileup)')
+    parser.add_argument('dataDir', type=str, help='Data directory (usually AnalysisTool/data/)')
     # line below is an example of an optional argument
     #parser.add_argument('--outputFileName', type=str, default='ana.out', help='Output file name')
 
