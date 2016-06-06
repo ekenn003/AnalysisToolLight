@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # AnalysisTool/scripts/collectTriggerScaleFactors.py
-import os, sys
+import os, sys, math
 import ROOT
 
 def main():
@@ -70,19 +70,31 @@ def main():
 
     for bx in range(0, nbinsx):
         for by in range(0, nbinsy):
-            # get average value of eff for mc for this bin
-            mceff0 = mchist0.GetBinContent(bx, by)
-            mceff1 = mchist1.GetBinContent(bx, by)
-            mceff2 = mchist2.GetBinContent(bx, by)
-            mcbincontent = mceff0 * weight0 + mceff1 * weight1 + mceff2 * weight2
             # get average value of eff for data for this bin
             daeff0 = dahist0.GetBinContent(bx, by)
             daeff1 = dahist1.GetBinContent(bx, by)
             daeff2 = dahist2.GetBinContent(bx, by)
-            dabincontent = daeff0 * weight0 + daeff1 * weight1 + daeff2 * weight2
+            dabincontent = daeff0*weight0 + daeff1*weight1 + daeff2*weight2
+            # get errors
+            daerr0 = dahist0.GetBinError(bx, by)
+            daerr1 = dahist1.GetBinError(bx, by)
+            daerr2 = dahist2.GetBinError(bx, by)
+            dabinerror = math.sqrt( pow(daerr0*weight0, 2) + pow(daeff1*weight1, 2) + pow(daeff2*weight2, 2) )
+            # get average value of eff for mc for this bin
+            mceff0 = mchist0.GetBinContent(bx, by)
+            mceff1 = mchist1.GetBinContent(bx, by)
+            mceff2 = mchist2.GetBinContent(bx, by)
+            mcbincontent = mceff0*weight0 + mceff1*weight1 + mceff2*weight2
+            # get errors
+            mcerr0 = mchist0.GetBinError(bx, by)
+            mcerr1 = mchist1.GetBinError(bx, by)
+            mcerr2 = mchist2.GetBinError(bx, by)
+            mcbinerror = math.sqrt( pow(mcerr0*weight0, 2) + pow(mceff1*weight1, 2) + pow(mceff2*weight2, 2) )
             # fill result hists
-            MChist.SetBinContent(bx, by, mcbincontent)
             DAhist.SetBinContent(bx, by, dabincontent)
+            DAhist.SetBinError(bx, by, dabinerror)
+            MChist.SetBinContent(bx, by, mcbincontent)
+            MChist.SetBinError(bx, by, mcbinerror)
 
     # save result
     outfile.cd()
