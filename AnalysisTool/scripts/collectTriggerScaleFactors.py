@@ -5,8 +5,14 @@ import ROOT
 
 def main():
     '''
-    This creates a 2D histogram of efficiencies for the RunC+D IsoMu20_OR_IsoTkMu20 path,
-    weighted by the integrated lumi for each period.
+    This creates a 2D histograms of efficiencies for the RunC+D IsoMu20_OR_IsoTkMu20 path,
+    weighted by the integrated lumi for each period. To find the scale factor for this path,
+    for i muons:
+        sf(IsoMu20_OR_IsoTkMu20) = [1-eff(data, mu(i))*eff(data, mu(i+1))*...] / [1-eff(MC, mu(i))*eff(MC, mu(i+1))*...]
+    where eff(data, mu(i)) is the bin content of the DAhist at the appropriate bins based on
+    the pt and eta of mu(i):
+        eff(data, mu) = DAhist.GetBinContent( DAhist.FindBin(mu.pt, mu.AbsEta) )
+
     See https://twiki.cern.ch/twiki/bin/view/CMS/MuonReferenceEffsRun2
     '''
 
