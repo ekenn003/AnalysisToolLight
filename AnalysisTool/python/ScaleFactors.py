@@ -3,11 +3,10 @@
 ScaleFactor class base
 '''
 import argparse
+import logging
 
 import ROOT
-#import math
 from collections import OrderedDict, namedtuple
-from Dataform import Muon
 
 ## ___________________________________________________________
 class ScaleFactor(object):
@@ -30,24 +29,31 @@ class PileupWeights(ScaleFactor):
         self.pileupScale_up = []
         self.pileupScale_down = []
 
-        logging.info('  Looking for pileup file at {0}/pileup/pileup_{1}.root'.format(self.dataDir, self.cmsswversion))
+        logging.info('  Looking for pileup file at {0}/pileup/pileup_{1}.root'.format(self.datadir, self.cmsswversion))
         # now we look for a file called pileup_76X.root or pileup_80X.root in datadir/pileup/
-        pufile = ROOT.TFile('{0}/pileup/pileup_{1}.root'.format(self.datadir, self.cmsswversion))
+        try:
+            pufile = ROOT.TFile('{0}/pileup/pileup_{1}.root'.format(self.datadir, self.cmsswversion))
+            scalehist_ = pufile.Get('pileup_scale')
 
-        # save scale factors in vectors where each index corresponds to the NumTruePileupInteractions
-        scalehist_ = pufile.Get('pileup_scale')
-        # for each histogram, set (b)th entry in self.pileupScale to bin content of (b+1)th bin (0th bin is underflow)
-        for b in range(scalehist_.GetNbinsX()):
-            self.pileupScale.append(scalehist_.GetBinContent(b+1))
-        scalehist_ = pufile.Get('pileup_scale_up')
-        for b in range(scalehist_.GetNbinsX()):
-            self.pileupScale_up.append(scalehist_.GetBinContent(b+1))
-        scalehist_ = pufile.Get('pileup_scale_down')
-        for b in range(scalehist_.GetNbinsX()):
-            self.pileupScale_down.append(scalehist_.GetBinContent(b+1))
+            # save scale factors in vectors where each index corresponds to the NumTruePileupInteractions
+            # for each histogram, set (b)th entry in self.pileupScale to bin content of (b+1)th bin (0th bin is underflow)
+            for b in range(scalehist_.GetNbinsX()):
+                self.pileupScale.append(scalehist_.GetBinContent(b+1))
+            scalehist_ = pufile.Get('pileup_scale_up')
+            for b in range(scalehist_.GetNbinsX()):
+                self.pileupScale_up.append(scalehist_.GetBinContent(b+1))
+            scalehist_ = pufile.Get('pileup_scale_down')
+            for b in range(scalehist_.GetNbinsX()):
+                self.pileupScale_down.append(scalehist_.GetBinContent(b+1))
 
-        pufile.Close()
+            pufile.Close()
 
+        # AttributeError: 'TObject' object has no attribute 'GetNbinsX' - happens if we couldn't find the file
+        except AttributeError:
+            logging.info('    *******')
+            logging.info('    WARNING: Pileup file probably doesn\'t exist or was made improperly.')
+            logging.info('    Will not include pileup reweighting.')
+            logging.info('    *******')
 
     # methods
     def getWeight(self, numtrueinteractions):
@@ -71,12 +77,12 @@ class HLTScaleFactors(ScaleFactor):
     def __init__(self, cmsswversion, datadir, hltrigger):
         super(HLTScaleFactors, self).__init__(cmsswversion, datadir)
 
+        print 'self.pathForTriggerScaleFactors = "{0}"'.format(hltrigger)
         # right now the only choice is single muon hlt
         if hltrigger=='IsoMu20_OR_IsoTkMu20':
             filename = 'singlemuontrigger'
         else:
-            print 'Right now the only available HLT for scale factors is "IsoMu20_OR_IsoTkMu20".'
-            raise
+            raise ValueError('Right now the only available HLT for scale factors is "IsoMu20_OR_IsoTkMu20".')
 
         logging.info('  Looking for scale factor file at {0}/scalefactors/{1}_{2}.root'.format(self.dataDir, filename, self.cmsswversion))
         # this is the file created by AnalysisTool/scripts/collectTriggerScaleFactors.py
@@ -96,16 +102,15 @@ class HLTScaleFactors(ScaleFactor):
         xmc = 1.
         for mu in args:
             # make sure the muon is in range
-
             pt = min(maxpt, mu.Pt())
             eta = min(maxeta, mu.AbsEta())
-
+            # find efficiencies for this muon
             effda = effhistDA_.GetBinContent( effhistDA_.FindBin(pt, eta) )
             effmc = effhistMC_.GetBinContent( effhistMC_.FindBin(pt, eta) )
-
-            xda *= (1.-effda)
-            xmc *= (1.-effmc)
-
+            # update total efficiency
+            xda *= (1. - effda)
+            xmc *= (1. - effmc)
+        # calculate scale factor and return it
         sf = (1. - xda) / (1. - xmc)
         return sf
 
