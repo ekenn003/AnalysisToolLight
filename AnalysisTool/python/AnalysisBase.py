@@ -96,24 +96,11 @@ class AnalysisBase(object):
         ##########################################################
         # pileup
         logging.info('Loading pileup info...')
-        try:
-            self.puweights = PileupWeights(self.cmsswversion, self.dataDir)
-        except AttributeError:
-            logging.info('    *******')
-            logging.info('    WARNING: Pileup file probably doesn\'t exist or was made improperly.')
-            logging.info('    Will not include pileup reweighting.')
-            logging.info('    *******')
+        self.puweights = PileupWeights(self.cmsswversion, self.dataDir)
 
         # trigger scale factors
         logging.info('Loading trigger scale factor info...')
-        #try:
         self.hltweights = HLTScaleFactors(self.cmsswversion, self.dataDir, self.pathForTriggerScaleFactors)
-        #except AttributeError as err:
-        #    logging.info('    AttributeError: '.format(err))
-        #    logging.info('    *******')
-        #    logging.info('    WARNING: self.pathForTriggerScaleFactors is not set.')
-        #    logging.info('    Will not include trigger scale factors.')
-        #    logging.info('    *******')
 
         eventsprocessed = 0
         # how often (in number of events) should we print out progress updates?
