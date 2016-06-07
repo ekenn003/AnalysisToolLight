@@ -198,6 +198,8 @@ class MuonScaleFactors(ScaleFactor):
             eta_ = min(self.maxeta, mu.AbsEta())
             # find efficiencies for this muon
             musf = self.muonideffs[cut]['RATIO'].GetBinContent( self.muonideffs[cut]['RATIO'].GetXaxis().FindBin(pt_) , self.muonideffs[cut]['RATIO'].GetYaxis().FindBin(eta_) )
+            if not musf: 
+                print 'found ID eff {0} for mu pt = {1}, eta = {2}'.format(musf, pt_, eta_)
             # update total efficiency
             sf *= musf
 
@@ -235,6 +237,8 @@ class MuonScaleFactors(ScaleFactor):
             eta_ = min(self.maxeta, mu.AbsEta())
             # find efficiencies for this muon
             musf = self.muonisoeffs[cut]['RATIO'].GetBinContent( self.muonisoeffs[cut]['RATIO'].GetXaxis().FindBin(pt_) , self.muonisoeffs[cut]['RATIO'].GetYaxis().FindBin(eta_) )
+            if not musf: 
+                print 'found Iso eff {0} for mu pt = {1}, eta = {2}'.format(musf, pt_, eta_)
             # update total efficiency
             sf *= musf
 
