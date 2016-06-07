@@ -24,11 +24,10 @@ class Ana2Mu(AnalysisBase):
         # careful! this will print out event info for every single event
         self.printEventInfo = False
 
+        # the default for all of these is False
         self.doPileupReweighting = True
-        #self.doPileupReweighting = False
-
-        # include trigger scale factors
         self.includeTriggerScaleFactors = True
+        self.includeLeptonScaleFactors = True
 
 
         ##########################################################
@@ -705,13 +704,16 @@ class Ana2Mu(AnalysisBase):
 
         ##########################################################
         #                                                        #
-        # Update event weight                                    #
+        # Update event weight (MC only)                          #
         #                                                        #
         ##########################################################
-        pileupweight *= self.hltweights.getScale(goodMuons)
-        pileupweight *= self.muonweights.getIdScale(goodMuons, self.cMuID)
-        # NB: the below only works for PF w/dB isolation
-        pileupweight *= self.muonweights.getIsoScale(goodMuons, self.cMuID, self.cIsoMuLevel)
+        if not self.isdata:
+            if self.includeTriggerScaleFactors:
+                pileupweight *= self.hltweights.getScale(goodMuons)
+                pileupweight *= self.muonweights.getIdScale(goodMuons, self.cMuID)
+            if self.includeLeptonScaleFactors:
+                # NB: the below only works for PF w/dB isolation
+                pileupweight *= self.muonweights.getIsoScale(goodMuons, self.cMuID, self.cIsoMuLevel)
 
         ##########################################################
         #                                                        #
