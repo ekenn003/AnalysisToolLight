@@ -4,6 +4,7 @@ ScaleFactor class base
 '''
 import argparse
 import logging
+import os.path
 
 import ROOT
 from collections import OrderedDict, namedtuple
@@ -29,11 +30,20 @@ class PileupWeights(ScaleFactor):
         self.pileupScale = []
         self.pileupScale_up = []
         self.pileupScale_down = []
+        filename = '{0}/pileup/pileup_{1}.root'.format(self.datadir, self.cmsswversion)
 
-        logging.info('  Looking for pileup file at {0}/pileup/pileup_{1}.root'.format(self.datadir, self.cmsswversion))
-        # now we look for a file called pileup_76X.root or pileup_80X.root in datadir/pileup/
-        try:
-            pufile = ROOT.TFile('{0}/pileup/pileup_{1}.root'.format(self.datadir, self.cmsswversion))
+        logging.info('  Looking for pileup file at {0}'.format(filename))
+        if not os.path.exists(filename):
+            self.error = True
+            logging.info('       *   ')
+            logging.info('    *******')
+            logging.info('    WARNING: Can\'t find Pileup file.')
+            logging.info('    Will not include pileup reweighting.')
+            logging.info('    *******')
+            logging.info('       *   ')
+        else:
+            # now we look for a file called pileup_76X.root or pileup_80X.root in datadir/pileup/
+            pufile = ROOT.TFile(filename)
             scalehist_ = pufile.Get('pileup_scale')
 
             # save scale factors in vectors where each index corresponds to the NumTruePileupInteractions
@@ -49,31 +59,29 @@ class PileupWeights(ScaleFactor):
 
             pufile.Close()
 
-        # AttributeError: 'TObject' object has no attribute 'GetNbinsX' - happens if we couldn't find the file
-        except AttributeError:
-            logging.info('    *******')
-            logging.info('    WARNING: Pileup file probably doesn\'t exist or was made improperly.')
-            logging.info('    Will not include pileup reweighting.')
-            logging.info('    *******')
-            self.error = True
 
     # methods
     ## _______________________________________________________
     def getWeight(self, numtrueinteractions):
         if self.error: return 1.
-        return self.pileupScale[int(round(numtrueinteractions))] if len(self.pileupScale) > numtrueinteractions else 0.
+        elif len(self.pileupScale) > numtrueinteractions:
+            return self.pileupScale[int(round(numtrueinteractions))]
+        else:
+            return 0.
     ## _______________________________________________________
     def getWeightUp(self, numtrueinteractions):
         if self.error: return 1.
-        return self.pileupScale_up[int(round(numtrueinteractions))] if len(self.pileupScale_up) > numtrueinteractions else 0.
+        elif len(self.pileupScale_up) > numtrueinteractions:
+            return self.pileupScale_up[int(round(numtrueinteractions))]
+        else:
+            return 0.
     ## _______________________________________________________
     def getWeightDown(self, numtrueinteractions):
         if self.error: return 1.
-        return self.pileupScale_down[int(round(numtrueinteractions))] if len(self.pileupScale_down) > numtrueinteractions else 0.
-
-
-
-
+        elif len(self.pileupScale_down) > numtrueinteractions:
+            return self.pileupScale_down[int(round(numtrueinteractions))]
+        else:
+            return 0.
 
 
 
@@ -92,22 +100,26 @@ class HLTScaleFactors(ScaleFactor):
         else:
             raise ValueError('Right now the only available HLT for scale factors is "IsoMu20_OR_IsoTkMu20".')
 
-        logging.info('  Looking for scale factor file at {0}/scalefactors/{1}_{2}.root'.format(self.datadir, filename, self.cmsswversion))
-        try:
+        filename = '{0}/scalefactors/{1}_{2}.root'.format(self.datadir, filename, self.cmsswversion)
+
+        logging.info('  Looking for trigger scale factor file at {0}'.format(filename))
+        if not os.path.exists(filename):
+            self.error = True
+            logging.info('       *   ')
+            logging.info('    *******')
+            logging.info('    WARNING: Can\'t find HLT scale factors file.')
+            logging.info('    Will not include trigger scale factors.')
+            logging.info('    *******')
+            logging.info('       *   ')
+        else:
             # this is the file created by AnalysisTool/scripts/collectTriggerScaleFactors.py
-            self.hltfile = ROOT.TFile('{0}/scalefactors/{1}_{2}.root'.format(self.datadir, filename, self.cmsswversion))
+            self.hltfile = ROOT.TFile(filename)
             # the histograms in the file are named effMC and effDA, with x axis: Pt, y axis: AbsEta
             self.effhistDA_ = self.hltfile.Get('effDA')
             self.effhistMC_ = self.hltfile.Get('effMC')
             self.maxpt = self.effhistDA_.GetXaxis().GetXmax() - 1.
             self.maxeta = self.effhistDA_.GetYaxis().GetXmax()
 
-        except AttributeError:
-            logging.info('    *******')
-            logging.info('    WARNING: HLT scale factors file probably doesn\'t exist or was made improperly.')
-            logging.info('    Will not include trigger scale factors.')
-            logging.info('    *******')
-            self.error = True
 
     # methods
     def getScale(self, muons):
@@ -156,8 +168,18 @@ class MuonScaleFactors(ScaleFactor):
             'tightIso_tightID' : {},
         }
 
-        logging.info('  Looking for muon scale factor file at {0}/scalefactors/muonidiso_{1}.root'.format(self.datadir, self.cmsswversion))
-        try:
+        filename = '{0}/scalefactors/muonidiso_{1}.root'.format(self.datadir, self.cmsswversion)
+
+        logging.info('  Looking for muon scale factor file at {0}'.format(filename))
+        if not os.path.exists(filename):
+            self.error = True
+            logging.info('       *   ')
+            logging.info('    *******')
+            logging.info('    WARNING: Can\'t find Muon scale factors file.')
+            logging.info('    Will not include muon ID/Iso scale factors.')
+            logging.info('    *******')
+            logging.info('       *   ')
+        else:
             # this is the file created by AnalysisTool/scripts/collectMuonScaleFactors.py
             self.mufile = ROOT.TFile('{0}/scalefactors/muonidiso_{1}.root'.format(self.datadir, self.cmsswversion))
             # the histograms in the file have x axis: Pt, y axis: AbsEta
@@ -167,14 +189,8 @@ class MuonScaleFactors(ScaleFactor):
                 self.muonisoeffs[cut]['RATIO'] = ROOT.TH2F(self.mufile.Get(cut))
 
             self.maxpt  = self.muonideffs['softID']['RATIO'].GetXaxis().GetXmax() - 1.
+            self.minpt  = self.muonideffs['softID']['RATIO'].GetXaxis().GetXmin()
             self.maxeta = self.muonideffs['softID']['RATIO'].GetYaxis().GetXmax()
-
-        except AttributeError:
-            logging.info('    *******')
-            logging.info('    WARNING: Muon scale factors file probably doesn\'t exist or was made improperly.')
-            logging.info('    Will not include trigger scale factors.')
-            logging.info('    *******')
-            self.error = True
 
 
     # methods
@@ -195,11 +211,17 @@ class MuonScaleFactors(ScaleFactor):
         for mu in muons:
             # make sure the muon is in range
             pt_ = min(self.maxpt, mu.Pt())
+
+
+            # workaround because the muon POG numbers only go down to 25. GeV...
+            pt_ = max(self.minpt, pt_)
+
+
             eta_ = min(self.maxeta, mu.AbsEta())
             # find efficiencies for this muon
             musf = self.muonideffs[cut]['RATIO'].GetBinContent( self.muonideffs[cut]['RATIO'].GetXaxis().FindBin(pt_) , self.muonideffs[cut]['RATIO'].GetYaxis().FindBin(eta_) )
-            if not musf: 
-                print 'found ID eff {0} for mu pt = {1}, eta = {2}'.format(musf, pt_, eta_)
+            #if not musf: 
+            #    print 'found ID eff {0} for mu pt = {1}, eta = {2}'.format(musf, pt_, eta_)
             # update total efficiency
             sf *= musf
 
@@ -234,11 +256,15 @@ class MuonScaleFactors(ScaleFactor):
         for mu in muons:
             # make sure the muon is in range
             pt_ = min(self.maxpt, mu.Pt())
+
+            # workaround because the muon POG numbers only go down to 25. GeV...
+            pt_ = max(self.minpt, pt_)
+
             eta_ = min(self.maxeta, mu.AbsEta())
             # find efficiencies for this muon
             musf = self.muonisoeffs[cut]['RATIO'].GetBinContent( self.muonisoeffs[cut]['RATIO'].GetXaxis().FindBin(pt_) , self.muonisoeffs[cut]['RATIO'].GetYaxis().FindBin(eta_) )
-            if not musf: 
-                print 'found Iso eff {0} for mu pt = {1}, eta = {2}'.format(musf, pt_, eta_)
+            #if not musf: 
+            #    print 'found Iso eff {0} for mu pt = {1}, eta = {2}'.format(musf, pt_, eta_)
             # update total efficiency
             sf *= musf
 
