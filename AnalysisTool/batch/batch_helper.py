@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import os, sys
 import math
-import subprocess
 
 ## ___________________________________________________________
 def selectAnalysisCode(analysisname, basedir):

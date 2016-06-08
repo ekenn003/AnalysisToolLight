@@ -9,12 +9,6 @@ from batch_helper import createSubmissionScript, splitInputFile
 ANALYSIS='template'
 #ANALYSIS='VH4Mu'
 
-
-# Options ###############################
-BASEDIR='{0}/src/AnalysisToolLight'.format(os.environ['CMSSW_BASE'])
-RESULTSDIR='{0}/AnalysisTool/batch/results'.format(BASEDIR)
-EOSDIR='/afs/cern.ch/user/e/ekennedy/eos'
-
 # Datasets ##############################
 datasets = {
     'SingleMuon2015C' : { 'njobs' : 1 },
@@ -30,6 +24,11 @@ datasets = {
     'ZZTo4L'      : { 'njobs' : 2 },
 }
 
+
+# Options ###############################
+BASEDIR='{0}/src/AnalysisToolLight'.format(os.environ['CMSSW_BASE'])
+RESULTSDIR='{0}/AnalysisTool/batch/results'.format(BASEDIR)
+EOSDIR='/afs/cern.ch/user/e/ekennedy/eos'
 
 ## ___________________________________________________________
 def main():
