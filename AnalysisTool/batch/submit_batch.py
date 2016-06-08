@@ -12,12 +12,12 @@ ANALYSIS='template'
 # Datasets ##############################
 datasets = {
     'SingleMuon2015C' : { 'njobs' : 1 },
-    'SingleMuon2015D' : { 'njobs' : 8 },
+    'SingleMuon2015D' : { 'njobs' : 12 },
     'DYJetsToLL'  : { 'njobs' : 6 },
     'TTJets'      : { 'njobs' : 2 },
     'TTZToLLNuNu' : { 'njobs' : 1 },
-    'WWTo2L2Nu'   : { 'njobs' : 1 },
-    'WZTo2L2q'    : { 'njobs' : 5 },
+    'WWTo2L2Nu'   : { 'njobs' : 3 },
+    'WZTo2L2q'    : { 'njobs' : 8 },
     'WZTo3LNu'    : { 'njobs' : 1 },
     'ZZTo2L2Nu'   : { 'njobs' : 2 },
     'ZZTo2L2q'    : { 'njobs' : 5 },
@@ -83,9 +83,9 @@ def main():
         for n in xrange(0, njobs):
             scriptname = 'tmp/job_{0}_{1}_{2}of{3}.sh'.format(dset, ANALYSIS, n+1, njobs)
             jobname = '{0}{1}'.format(dset, '' if njobs==1 else '_{0}'.format(n+1))
-            print 'bsub -q 1nd -J {0} < {1}'.format(jobname, scriptname)
             #subprocess.check_call('bsub -q 1nd -J {0} < {1}'.format(jobname, scriptname))
-            #os.system('bsub -q 1nd -J {0} < {1}'.format(jobname, scriptname))
+            os.system('bsub -q 1nd -J {0} < {1}'.format(jobname, scriptname))
+            print 'bsub -q 1nd -J {0} < {1}'.format(jobname, scriptname)
 
 
 
