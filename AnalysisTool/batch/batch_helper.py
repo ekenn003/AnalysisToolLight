@@ -24,7 +24,7 @@ def createSubmissionScript(dset, njob, njobs, **kwargs):
     datasets   = kwargs['datasets']
     ANALYSISCODE = selectAnalysisCode(ANALYSIS, BASEDIR)
 
-    DATADIR = '{0}/AnalysisTool/data'.format(BASEDIR),
+    DATADIR = '{0}/AnalysisTool/data'.format(BASEDIR)
     
     scriptname = 'job_{0}_{1}_{2}of{3}.sh'.format(dset, ANALYSIS, njob+1, njobs)
 
