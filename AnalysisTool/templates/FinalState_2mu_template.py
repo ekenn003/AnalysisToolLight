@@ -2,7 +2,7 @@
 import glob
 import itertools
 import argparse
-import sys
+import sys, logging
 import ROOT
 from collections import OrderedDict
 from AnalysisToolLight.AnalysisTool.tools.tools import DeltaR, Z_MASS, EventIsOnList
@@ -70,7 +70,7 @@ class Ana2Mu(AnalysisBase):
 
         # dimuon pair cuts
         self.cDiMuInvMass = 50. # GeV
-        self.cPtDiMu = 38. # GeV
+        self.cPtDiMu = 30. # GeV
 
         # electron cuts
         self.cPtE = 10.
@@ -135,7 +135,7 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hVtxN_after'].GetXaxis().SetTitle('N_{PV} after selection')
         self.histograms['hVtxN_after'].GetYaxis().SetTitle('Candidates')
 
-        self.histograms['hWeight'] = ROOT.TH1F('hWeight', 'hWeight', 100000, -10000., 10000.)
+        self.histograms['hWeight'] = ROOT.TH1F('hWeight', 'hWeight', 100, -1000., 100.)
         self.histograms['hWeight'].GetXaxis().SetTitle('Event weight')
         self.histograms['hWeight'].GetYaxis().SetTitle('Events')
 
@@ -309,21 +309,7 @@ class Ana2Mu(AnalysisBase):
         This is the core of the analysis loop. Selection is done here.
         '''
 
-        #############################
-        # Event weight ##############
-        #############################
-        pileupweight = 1.
-
-        if not self.isdata:
-            pileupweight = self.event.GenWeight()
-            if self.doPileupReweighting:
-                pileupweight *= self.puweights.getWeight(self.event.NumTruePileUpInteractions())
-
-
-        self.histograms['hWeight'].Fill(pileupweight)
-
         self.cutflow.increment('nEv_Skim')
-
 
 
         ##########################################################
@@ -369,10 +355,6 @@ class Ana2Mu(AnalysisBase):
         # require at least one good vertex
         if not goodVertices: return
         if (isVtxNdfOK and isVtxZOK): self.cutflow.increment('nEv_PV')
-
-        # fill histograms with good pvs
-        self.histograms['hVtxN'].Fill(len(goodVertices), pileupweight)
-        self.histograms['hVtxN_u'].Fill(len(goodVertices))
 
 
         #weight1 = self.event.GenWeight()
@@ -578,7 +560,6 @@ class Ana2Mu(AnalysisBase):
         isInvMassMuCutOK = False
         isPtDiMuCutOK = False
 
-        maxDiMuPt = 0
         # iterate over every (non-ordered) pair of 2 muons in goodMuons
         for pair in itertools.combinations(goodMuons, 2):
             # require opposite sign
@@ -707,13 +688,20 @@ class Ana2Mu(AnalysisBase):
         # Update event weight (MC only)                          #
         #                                                        #
         ##########################################################
+        eventweight = 1.
         if not self.isdata:
-            if self.includeTriggerScaleFactors:
-                pileupweight *= self.hltweights.getScale(goodMuons)
-                pileupweight *= self.muonweights.getIdScale(goodMuons, self.cMuID)
-            if self.includeLeptonScaleFactors:
-                # NB: the below only works for PF w/dB isolation
-                pileupweight *= self.muonweights.getIsoScale(goodMuons, self.cMuID, self.cIsoMuLevel)
+            eventweight = self.event.GenWeight()
+            if self.doPileupReweighting:
+                eventweight *= self.puweights.getWeight(self.event.NumTruePileUpInteractions())
+        #    if self.includeTriggerScaleFactors:
+        #        eventweight *= self.hltweights.getScale(goodMuons)
+        #    if self.includeLeptonScaleFactors:
+        #        eventweight *= self.muonweights.getIdScale(goodMuons, self.cMuID)
+        #        # NB: the below only works for PF w/dB isolation
+        #        eventweight *= self.muonweights.getIsoScale(goodMuons, self.cMuID, self.cIsoMuLevel)
+        self.histograms['hWeight'].Fill(eventweight)
+
+
 
         ##########################################################
         #                                                        #
@@ -723,100 +711,106 @@ class Ana2Mu(AnalysisBase):
         #############################
         # PV after selection ########
         #############################
-        self.histograms['hVtxN_after'].Fill(len(goodVertices), pileupweight)
+        # fill histograms with good pvs
+        self.histograms['hVtxN'].Fill(len(goodVertices), eventweight)
+        self.histograms['hVtxN_u'].Fill(len(goodVertices))
 
         #############################
         # Muons #####################
         #############################
-        self.histograms['hNumMu'].Fill(len(goodMuons), pileupweight)
+        self.histograms['hNumMu'].Fill(len(goodMuons), eventweight)
         for mu in goodMuons:
-            self.histograms['hMuPt'].Fill(mu.Pt(), pileupweight)
-            self.histograms['hMuEta'].Fill(mu.Eta(), pileupweight)
-            self.histograms['hMuPhi'].Fill(mu.Phi(), pileupweight)
-        # leading muon
-        if len(goodMuons) > 0:
-            self.histograms['hLeadMuPt'].Fill(goodMuons[0].Pt(), pileupweight)
-        # subleading muon
-        if len(goodMuons) > 1:
-            self.histograms['hSubLeadMuPt'].Fill(goodMuons[1].Pt(), pileupweight)
+            self.histograms['hMuPt'].Fill(mu.Pt(), eventweight)
+            self.histograms['hMuEta'].Fill(mu.Eta(), eventweight)
+            self.histograms['hMuPhi'].Fill(mu.Phi(), eventweight)
+
 
         #############################
         # Dimuon ####################
         #############################
         for mupair in diMuonPairs:
+            self.histograms['hLeadMuPt'].Fill(mupair[0].Pt(), eventweight)
+            self.histograms['hSubLeadMuPt'].Fill(mupair[1].Pt(), eventweight)
             diMuP4 = mupair[0].P4() + mupair[1].P4()
-            self.histograms['hDiMuPt'].Fill(diMuP4.Pt(), pileupweight)
-            self.histograms['hDiMuEta'].Fill(diMuP4.Eta(), pileupweight)
-            self.histograms['hDiMuPhi'].Fill(diMuP4.Phi(), pileupweight)
-            self.histograms['hDiMuInvMass'].Fill(diMuP4.M(), pileupweight)
-            self.histograms['hDiMuDeltaPt'].Fill(mupair[0].Pt() - mupair[1].Pt(), pileupweight)
-            self.histograms['hDiMuDeltaEta'].Fill(mupair[0].Eta() - mupair[1].Eta(), pileupweight)
-            self.histograms['hDiMuDeltaPhi'].Fill(mupair[0].Phi() - mupair[1].Phi(), pileupweight)
+            self.histograms['hDiMuPt'].Fill(diMuP4.Pt(), eventweight)
+            self.histograms['hDiMuEta'].Fill(diMuP4.Eta(), eventweight)
+            self.histograms['hDiMuPhi'].Fill(diMuP4.Phi(), eventweight)
+            self.histograms['hDiMuInvMass'].Fill(diMuP4.M(), eventweight)
+            self.histograms['hDiMuDeltaPt'].Fill(mupair[0].Pt() - mupair[1].Pt(), eventweight)
+            self.histograms['hDiMuDeltaEta'].Fill(mupair[0].Eta() - mupair[1].Eta(), eventweight)
+            self.histograms['hDiMuDeltaPhi'].Fill(mupair[0].Phi() - mupair[1].Phi(), eventweight)
         
 
         #############################
         # Electrons #################
         #############################
-        self.histograms['hNumE'].Fill(len(goodElectrons), pileupweight)
+        self.histograms['hNumE'].Fill(len(goodElectrons), eventweight)
         for e in goodElectrons:
-            self.histograms['hEPt'].Fill(e.Pt(), pileupweight)
-            self.histograms['hEEta'].Fill(e.Eta(), pileupweight)
-            self.histograms['hEPhi'].Fill(e.Phi(), pileupweight)
+            self.histograms['hEPt'].Fill(e.Pt(), eventweight)
+            self.histograms['hEEta'].Fill(e.Eta(), eventweight)
+            self.histograms['hEPhi'].Fill(e.Phi(), eventweight)
         # leading electron
         if len(goodElectrons) > 0:
-            self.histograms['hLeadEPt'].Fill(goodElectrons[0].Pt(), pileupweight)
+            self.histograms['hLeadEPt'].Fill(goodElectrons[0].Pt(), eventweight)
         # subleading electron
         if len(goodElectrons) > 1:
-            self.histograms['hSubLeadEPt'].Fill(goodElectrons[1].Pt(), pileupweight)
+            self.histograms['hSubLeadEPt'].Fill(goodElectrons[1].Pt(), eventweight)
 
         #############################
         # Dielectron ################
         #############################
         for epair in diElectronPairs:
             diEP4 = epair[0].P4() + epair[1].P4()
-            self.histograms['hDiEPt'].Fill(diEP4.Pt(), pileupweight)
-            self.histograms['hDiEEta'].Fill(diEP4.Eta(), pileupweight)
-            self.histograms['hDiEPhi'].Fill(diEP4.Phi(), pileupweight)
-            self.histograms['hDiEInvMass'].Fill(diEP4.M(), pileupweight)
-            self.histograms['hDiEDeltaPt'].Fill(epair[0].Pt() - epair[1].Pt(), pileupweight)
-            self.histograms['hDiEDeltaEta'].Fill(epair[0].Eta() - epair[1].Eta(), pileupweight)
-            self.histograms['hDiEDeltaPhi'].Fill(epair[0].Phi() - epair[1].Phi(), pileupweight)
+            self.histograms['hDiEPt'].Fill(diEP4.Pt(), eventweight)
+            self.histograms['hDiEEta'].Fill(diEP4.Eta(), eventweight)
+            self.histograms['hDiEPhi'].Fill(diEP4.Phi(), eventweight)
+            self.histograms['hDiEInvMass'].Fill(diEP4.M(), eventweight)
+            self.histograms['hDiEDeltaPt'].Fill(epair[0].Pt() - epair[1].Pt(), eventweight)
+            self.histograms['hDiEDeltaEta'].Fill(epair[0].Eta() - epair[1].Eta(), eventweight)
+            self.histograms['hDiEDeltaPhi'].Fill(epair[0].Phi() - epair[1].Phi(), eventweight)
 
 
         #############################
         # Jets ######################
         #############################
-        self.histograms['hNumJets'].Fill(len(goodJets), pileupweight)
+        self.histograms['hNumJets'].Fill(len(goodJets), eventweight)
         for jet in goodJets:
-            self.histograms['hJetPt'].Fill(jet.Pt(), pileupweight)
-            self.histograms['hJetEta'].Fill(jet.Eta(), pileupweight)
-            self.histograms['hJetPhi'].Fill(jet.Phi(), pileupweight)
+            self.histograms['hJetPt'].Fill(jet.Pt(), eventweight)
+            self.histograms['hJetEta'].Fill(jet.Eta(), eventweight)
+            self.histograms['hJetPhi'].Fill(jet.Phi(), eventweight)
         # leading jet
         if len(goodJets) > 0:
-            self.histograms['hLeadJetPt'].Fill(goodJets[0].Pt(), pileupweight)
+            self.histograms['hLeadJetPt'].Fill(goodJets[0].Pt(), eventweight)
         # subleading jet
         if len(goodJets) > 1:
-            self.histograms['hSubLeadJetPt'].Fill(goodJets[1].Pt(), pileupweight)
+            self.histograms['hSubLeadJetPt'].Fill(goodJets[1].Pt(), eventweight)
 
         #############################
         # Dijet #####################
         #############################
         for jetpair in diJetPairs:
             diJetP4 = jetpair[0].P4() + jetpair[1].P4()
-            self.histograms['hDiJetPt'].Fill(diJetP4.Pt(), pileupweight)
-            self.histograms['hDiJetEta'].Fill(diJetP4.Eta(), pileupweight)
-            self.histograms['hDiJetPhi'].Fill(diJetP4.Phi(), pileupweight)
-            self.histograms['hDiJetInvMass'].Fill(diJetP4.M(), pileupweight)
-            self.histograms['hDiJetDeltaPt'].Fill(jetpair[0].Pt() - jetpair[1].Pt(), pileupweight)
-            self.histograms['hDiJetDeltaEta'].Fill(jetpair[0].Eta() - jetpair[1].Eta(), pileupweight)
-            self.histograms['hDiJetDeltaPhi'].Fill(jetpair[0].Phi() - jetpair[1].Phi(), pileupweight)
+            self.histograms['hDiJetPt'].Fill(diJetP4.Pt(), eventweight)
+            self.histograms['hDiJetEta'].Fill(diJetP4.Eta(), eventweight)
+            self.histograms['hDiJetPhi'].Fill(diJetP4.Phi(), eventweight)
+            self.histograms['hDiJetInvMass'].Fill(diJetP4.M(), eventweight)
+            self.histograms['hDiJetDeltaPt'].Fill(jetpair[0].Pt() - jetpair[1].Pt(), eventweight)
+            self.histograms['hDiJetDeltaEta'].Fill(jetpair[0].Eta() - jetpair[1].Eta(), eventweight)
+            self.histograms['hDiJetDeltaPhi'].Fill(jetpair[0].Phi() - jetpair[1].Phi(), eventweight)
 
 
         #############################
         # MET #######################
         #############################
-        self.histograms['hMET'].Fill(self.met.Et(), pileupweight)
-        self.histograms['hMETPhi'].Fill(self.met.Phi(), pileupweight)
+        self.histograms['hMET'].Fill(self.met.Et(), eventweight)
+        self.histograms['hMETPhi'].Fill(self.met.Phi(), eventweight)
+
+
+
+        if not self.event.Number()%100: logging.info('histos filled with event weight {0}'.format(eventweight))
+
+
+
 
 ## ___________________________________________________________
 # actually execute the analysis
