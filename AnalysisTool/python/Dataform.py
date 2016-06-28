@@ -171,7 +171,7 @@ class PFMETTYPE1(METBase):
 class CandBase(object):
     '''
     Basic objects from reco::Candidate objects
-    P4 = TLorentzVector(Px, Py, Pz, Energy)
+    P4 = TLorentzVector(Pt, Eta, Phi, Energy)
     '''
     # constructors/helpers
     def __init__(self, tree, candName, entry):
@@ -186,12 +186,15 @@ class CandBase(object):
 
     # methods
     def P(self):      return ROOT.TVector3(self._get('px'), self._get('py'), self._get('pz'))
-    def P4(self):     return ROOT.TLorentzVector(self.P(), self.Energy())
     def Pt(self):     return self._get('pt')
     def Eta(self):    return self._get('eta')
     def AbsEta(self): return abs(self._get('eta'))
     def Phi(self):    return self._get('phi')
     def Energy(self): return self._get('energy')
+    def P4(self):
+        thisp4 = ROOT.TLorentzVector()
+        thisp4.SetPtEtaPhiE(self.Pt(), self.Eta(), self.Phi(), self.Energy())
+        return thisp4
     def Charge(self): return self._get('charge')
     def PDGID(self):  return self._get('pdgid')
 
@@ -289,7 +292,7 @@ class Muon(CommonCand):
     '''
     Muon: 
     P(), P4(), Pt(), Eta(), Phi(), and Energy() all return rochester-corrected values.
-    To use the uncorrected values, use UncorrectedP(), etc.
+    To use the uncorrected values, use UncorrP(), etc.
     '''
     # constructors/helpers
     def __init__(self, tree, entry):
@@ -300,21 +303,27 @@ class Muon(CommonCand):
     def DzError(self):  return self._get('dzerr')
     def Dxy(self):      return self._get('dxy')
     def DxyError(self): return self._get('dxyerr')
-    # uncorrected values
-    def UncorrectedP(self):      return ROOT.TVector3(self._get('px'), self._get('py'), self._get('px'))
-    def UncorrectedP4(self):     return ROOT.TLorentzVector(self.UncorrectedP(), self.UncorrectedEnergy())
-    def UncorrectedPt(self):     return self._get('pt')
-    def UncorrectedEta(self):    return self._get('eta')
-    def UncorrectedPhi(self):    return self._get('phi')
-    def UncorrectedEnergy(self): return self._get('energy')
-    # rochester corrected values
-    def P(self):      return ROOT.TVector3(self._get('rochesterPx'), self._get('rochesterPy'), self._get('rochesterPx'))
-    def P4(self):     return ROOT.TLorentzVector(self.P(), self.Energy())
+    # rochester-corrected values
+    def P(self):      return ROOT.TVector3(self._get('rochesterPx'), self._get('rochesterPy'), self._get('rochesterPz'))
     def Pt(self):     return self._get('rochesterPt')
     def Eta(self):    return self._get('rochesterEta')
     def Phi(self):    return self._get('rochesterPhi')
     def Energy(self): return self._get('rochesterEnergy')
+    def P4(self): # pt, eta, phi, e
+        thisp4 = ROOT.TLorentzVector()
+        thisp4.SetPtEtaPhiE(self.Pt(), self.Eta(), self.Phi(), self.Energy())
+        return thisp4
     def CorrectionError(self): return self._get('rochesterError')
+    # uncorrected values
+    def UncorrP(self):      return ROOT.TVector3(self._get('px'), self._get('py'), self._get('pz'))
+    def UncorrPt(self):     return self._get('pt')
+    def UncorrEta(self):    return self._get('eta')
+    def UncorrPhi(self):    return self._get('phi')
+    def UncorrEnergy(self): return self._get('energy')
+    def UncorrP4(self): # pt, eta, phi, e
+        thisp4 = ROOT.TLorentzVector()
+        thisp4.SetPtEtaPhiE(self.UncorrPt(), self.UncorrEta(), self.UncorrPhi(), self.UncorrEnergy())
+        return thisp4
 
     # energy
     def EcalEnergy(self): return self._get('ecalenergy')
