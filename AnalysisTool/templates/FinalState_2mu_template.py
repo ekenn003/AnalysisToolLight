@@ -1,4 +1,6 @@
-# VH/FinalState_4mu.py
+# FinalState_2mu.py
+# This gives examples of how to access things with class AnalysisBase.
+
 import glob
 import itertools
 import argparse
@@ -16,11 +18,22 @@ class Ana2Mu(AnalysisBase):
 
         ##########################################################
         #                                                        #
-        # Some run options                                       #
+        # Sync and debugging                                     #
         #                                                        #
         ##########################################################
         self.debug = False
 
+        self.nSyncEvents = 0
+        self.syncLow = 110. # GeV
+        self.syncHigh = 130. # GeV
+
+
+
+        ##########################################################
+        #                                                        #
+        # Some run options                                       #
+        #                                                        #
+        ##########################################################
         # careful! this will print out event info for every single event
         self.printEventInfo = False
 
@@ -48,9 +61,9 @@ class Ana2Mu(AnalysisBase):
         self.cVtxZ   = 24. # cm
 
         # muon cuts
-        self.cPtMu = 10. # GeV
+        self.cPtMu = 25. # GeV
         self.cEtaMu = 2.4
-        self.cPtMuMax = 20. # choice here should depend on HLT
+        self.cPtMuMax = 25. # choice here should depend on HLT
         self.cEtaMuMax = 2.4 # choice here should depend on HLT
         # muon pv cuts
         self.cDxyMu = 0.02 # cm
@@ -128,12 +141,11 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hVtxN'].GetXaxis().SetTitle('N_{PV}')
         self.histograms['hVtxN'].GetYaxis().SetTitle('Candidates')
         self.histograms['hVtxN_u'] = ROOT.TH1F('hVtxN_u', 'hVtxN_u', 100, 0., 100.)
-        self.histograms['hVtxN_u'].GetXaxis().SetTitle('N_{PV} before weighting')
+        self.histograms['hVtxN_u'].GetXaxis().SetTitle('N_{PV} before event weighting')
         self.histograms['hVtxN_u'].GetYaxis().SetTitle('Candidates')
-
-        self.histograms['hVtxN_after'] = ROOT.TH1F('hVtxN_after', 'hVtxN_after', 100, 0., 100.)
-        self.histograms['hVtxN_after'].GetXaxis().SetTitle('N_{PV} after selection')
-        self.histograms['hVtxN_after'].GetYaxis().SetTitle('Candidates')
+        self.histograms['hVtxN_nopu'] = ROOT.TH1F('hVtxN_nopu', 'hVtxN_nopu', 100, 0., 100.)
+        self.histograms['hVtxN_nopu'].GetXaxis().SetTitle('N_{PV} before event or PU weighting')
+        self.histograms['hVtxN_nopu'].GetYaxis().SetTitle('Candidates')
 
         self.histograms['hWeight'] = ROOT.TH1F('hWeight', 'hWeight', 100, -1000., 100.)
         self.histograms['hWeight'].GetXaxis().SetTitle('Event weight')
@@ -146,6 +158,7 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hNumMu'] = ROOT.TH1F('hNumMu', 'hNumMu', 20, 0., 20.)
         self.histograms['hNumMu'].GetXaxis().SetTitle('N_{#mu}')
         self.histograms['hNumMu'].GetYaxis().SetTitle('Candidates')
+
         self.histograms['hMuPt'] = ROOT.TH1F('hMuPt', 'hMuPt', 500, 0., 1000.)
         self.histograms['hMuPt'].GetXaxis().SetTitle('p_{T #mu}[GeV/c]')
         self.histograms['hMuPt'].GetYaxis().SetTitle('Candidates/2.0[GeV/c]')
@@ -155,6 +168,7 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hMuPhi'] = ROOT.TH1F('hMuPhi', 'hMuPhi', 34, -3.4, 3.4)
         self.histograms['hMuPhi'].GetXaxis().SetTitle('#varphi_{#mu} [rad]')
         self.histograms['hMuPhi'].GetYaxis().SetTitle('Candidates/0.2[rad]')
+
         # leading/subleading good muons
         self.histograms['hLeadMuPt'] = ROOT.TH1F('hLeadMuPt', 'hLeadMuPt', 500, 0., 1000.)
         self.histograms['hLeadMuPt'].GetXaxis().SetTitle('p_{T #mu}[GeV/c]')
@@ -162,6 +176,8 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hSubLeadMuPt'] = ROOT.TH1F('hSubLeadMuPt', 'hSubLeadMuPt', 500, 0., 1000.)
         self.histograms['hSubLeadMuPt'].GetXaxis().SetTitle('p_{T #mu}[GeV/c]')
         self.histograms['hSubLeadMuPt'].GetYaxis().SetTitle('Candidates/2.0[GeV]')
+
+
 
         #############################
         # Electrons #################
@@ -357,19 +373,6 @@ class Ana2Mu(AnalysisBase):
         if (isVtxNdfOK and isVtxZOK): self.cutflow.increment('nEv_PV')
 
 
-        #weight1 = self.event.GenWeight()
-        #weight2 = self.event.GenWeight() * self.GetPileupWeight(self.event.NumTruePileUpInteractions())
-        #weight3 = self.event.GenWeight() * self.GetPileupWeight(self.event.NumTruePileUpInteractions()) * (6025.2/self.sumweights)
-        ## check pileup reweighting
-        #if self.isdata:
-        #    self.histograms['hVtxN_evrw'].Fill(len(goodVertices), 1.)
-        #    self.histograms['hVtxN_purw'].Fill(len(goodVertices), 1.)
-        #    self.histograms['hVtxN_totrw'].Fill(len(goodVertices), 1.)
-        #else:
-        #    self.histograms['hVtxN_evrw'].Fill(len(goodVertices), weight1)
-        #    self.histograms['hVtxN_purw'].Fill(len(goodVertices), weight2)
-        #    self.histograms['hVtxN_totrw'].Fill(len(goodVertices), weight3)
-
 
         ##########################################################
         #                                                        #
@@ -505,7 +508,8 @@ class Ana2Mu(AnalysisBase):
             if not jet.AbsEta() < self.cEtaJet: continue
 
             # btag
-            # right now the choices are: passJPL, passJPM, passJPT, passCSVv2L, passCSVv2M, passCSVv2T, passCMVAv2L, passCMVAv2M, passCMVAv2T
+            # right now the choices are: passJPL, passJPM, passJPT, passCSVv2L, 
+            #     passCSVv2M, passCSVv2T, passCMVAv2L, passCMVAv2M, passCMVAv2T
             # uncomment the line below to print a list of all available btags in the ntuple
             # self.event.PrintAvailableBtags()
 
@@ -580,7 +584,9 @@ class Ana2Mu(AnalysisBase):
             # and then push back into diMuonPairs
             thispair = pair if pair[0].Pt() > pair[1].Pt() else (pair[1], pair[0])
             diMuonPairs += [thispair]
+            if (diMuonP4.M() >= self.syncLow and diMuonP4.M() <= self.syncHigh): self.nSyncEvents += 1
 
+        # leftover efficiency counters
         if isChargeMuCutOK: self.cutflow.increment('nEv_ChargeDiMu')
         if isSamePVMuCutOK: self.cutflow.increment('nEv_SamePVDiMu')
         if isInvMassMuCutOK: self.cutflow.increment('nEv_InvMassDiMu')
@@ -681,24 +687,40 @@ class Ana2Mu(AnalysisBase):
 
 
 
-
-
         ##########################################################
         #                                                        #
         # Update event weight (MC only)                          #
         #                                                        #
         ##########################################################
+        self.histograms['hVtxN_nopu'].Fill(len(goodVertices))
+
         eventweight = 1.
+
         if not self.isdata:
             eventweight = self.event.GenWeight()
             if self.doPileupReweighting:
                 eventweight *= self.puweights.getWeight(self.event.NumTruePileUpInteractions())
-        #    if self.includeTriggerScaleFactors:
-        #        eventweight *= self.hltweights.getScale(goodMuons)
-        #    if self.includeLeptonScaleFactors:
-        #        eventweight *= self.muonweights.getIdScale(goodMuons, self.cMuID)
-        #        # NB: the below only works for PF w/dB isolation
-        #        eventweight *= self.muonweights.getIsoScale(goodMuons, self.cMuID, self.cIsoMuLevel)
+
+        ##########################################################
+        #                                                        #
+        # Fill selected plots without scale factors              #
+        #                                                        #
+        ##########################################################
+        self.histograms['hVtxN_u'].Fill(len(goodVertices), eventweight)
+
+
+        ##########################################################
+        #                                                        #
+        # Include scale factors                                  #
+        #                                                        #
+        ##########################################################
+        if not self.isdata:
+            if self.includeTriggerScaleFactors:
+                eventweight *= self.hltweights.getScale(goodMuons)
+            if self.includeLeptonScaleFactors:
+                eventweight *= self.muonweights.getIdScale(goodMuons, self.cMuID)
+                # NB: the below only works for PF w/dB isolation
+                eventweight *= self.muonweights.getIsoScale(goodMuons, self.cMuID, self.cIsoMuLevel)
         self.histograms['hWeight'].Fill(eventweight)
 
 
@@ -713,7 +735,6 @@ class Ana2Mu(AnalysisBase):
         #############################
         # fill histograms with good pvs
         self.histograms['hVtxN'].Fill(len(goodVertices), eventweight)
-        self.histograms['hVtxN_u'].Fill(len(goodVertices))
 
         #############################
         # Muons #####################
@@ -723,7 +744,6 @@ class Ana2Mu(AnalysisBase):
             self.histograms['hMuPt'].Fill(mu.Pt(), eventweight)
             self.histograms['hMuEta'].Fill(mu.Eta(), eventweight)
             self.histograms['hMuPhi'].Fill(mu.Phi(), eventweight)
-
 
         #############################
         # Dimuon ####################
@@ -807,7 +827,12 @@ class Ana2Mu(AnalysisBase):
 
 
 
-        if not self.event.Number()%100: logging.info('histos filled with event weight {0}'.format(eventweight))
+
+
+
+    ## _______________________________________________________
+    def endJob(self):
+        logging.info('nSyncEvents = ' + str(self.nSyncEvents))
 
 
 
