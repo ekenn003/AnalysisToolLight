@@ -2,11 +2,15 @@
 import os, sys
 import math
 
+BASEDIR='{0}/src/AnalysisToolLight'.format(os.environ['CMSSW_BASE'])
+
 ## ___________________________________________________________
 def selectAnalysisCode(analysisname, basedir):
     '''Select analysis code'''
     if analysisname=='template':
         analysiscode = '{0}/AnalysisTool/templates/FinalState_2mu_template.py'.format(basedir)
+    elif analysisname=='2Mu':
+        analysiscode = '{0}/2Mu/python/FinalState_2mu.py'.format(basedir)
     elif analysisname=='VH4Mu':
         analysiscode = '{0}/VH/python/FinalState_4mu.py'.format(basedir)
     else:
@@ -19,7 +23,8 @@ def createSubmissionScript(dset, njob, njobs, **kwargs):
     ANALYSIS   = kwargs['ANALYSIS']
     BASEDIR    = kwargs['BASEDIR']
     RESULTSDIR = kwargs['RESULTSDIR']
-    EOSDIR     = kwargs['EOSDIR']
+    RESULTSDIR = kwargs['RESULTSDIR']
+    tmpdir     = kwargs['tmpdir']
     datasets   = kwargs['datasets']
     ANALYSISCODE = selectAnalysisCode(ANALYSIS, BASEDIR)
 
@@ -30,31 +35,31 @@ def createSubmissionScript(dset, njob, njobs, **kwargs):
     with open(scriptname, 'w') as fout:
         fout.write('#!/bin/sh\n')
         fout.write('\n')
-        fout.write('BASEDIR={0}\n'.format(BASEDIR))
-        fout.write('RESULTSDIR={0}\n'.format(RESULTSDIR))
-        fout.write('EOSDIR={0}\n'.format(EOSDIR))
-        fout.write('DATADIR={0}\n'.format(DATADIR))
-        fout.write('DATASET={0}\n'.format(dset))
-        fout.write('ANALYSIS={0}\n'.format(ANALYSIS))
-        fout.write('ANALYSISCODE={0}\n'.format(ANALYSISCODE))
+        fout.write('BASEDIR="{0}"\n'.format(BASEDIR))
+        fout.write('RESULTSDIR="{0}"\n'.format(RESULTSDIR))
+        #fout.write('EOSDIR="{0}"\n'.format(EOSDIR))
+        fout.write('DATADIR="{0}"\n'.format(DATADIR))
+        fout.write('DATASET="{0}"\n'.format(dset))
+        fout.write('ANALYSIS="{0}"\n'.format(ANALYSIS))
+        fout.write('ANALYSISCODE="{0}"\n'.format(ANALYSISCODE))
         # find input files and define output files
         datadir, inputfilename = os.path.split(datasets[dset]['inputlist'])
         inputfilename = 'job_{0}_{1}of{2}.txt'.format(inputfilename[:-4], njob+1, njobs)
-        INPUTFILE  = '{0}/AnalysisTool/batch/tmp/{1}'.format(BASEDIR, inputfilename)
+        #INPUTFILE  = '{0}/AnalysisTool/batch/tmp/{1}'.format(BASEDIR, inputfilename)
+        INPUTFILE  = '{0}/{1}/{2}'.format(BASEDIR, tmpdir, inputfilename)
         OUTPUTFILE = '{0}_{1}of{2}.root'.format(datasets[dset]['output'][:-5], njob+1, njobs)
         LOGFILE    = '{0}_{1}of{2}.log'.format(datasets[dset]['logfile'][:-4], njob+1, njobs)
-        fout.write('INPUTFILE={0}\n'.format(INPUTFILE))
-        fout.write('OUTPUTFILE={0}\n'.format(OUTPUTFILE))
-        fout.write('LOGFILE={0}\n'.format(LOGFILE))
+
+        fout.write('INPUTFILE="{0}"\n'.format(INPUTFILE))
+        fout.write('OUTPUTFILE="{0}"\n'.format(OUTPUTFILE))
+        fout.write('LOGFILE="{0}"\n'.format(LOGFILE))
         fout.write('\n')
         fout.write('cd $BASEDIR\n')
-        fout.write('cmsenv\n')
         fout.write('eval `scramv1 runtime -sh`\n')
         fout.write('\n')
         fout.write('# go to working directory\n')
         fout.write('cd $RESULTSDIR\n')
-        fout.write('\n')
-        fout.write('cp ../x509up_u* /tmp/\n')
+        fout.write('cmsenv\n')
         fout.write('\n')
         #fout.write('# mount eos\n')
         #fout.write('/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse mount $EOSDIR\n')

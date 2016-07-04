@@ -7,6 +7,7 @@ import ROOT
 # constants
 ## ___________________________________________________________
 Z_MASS = 91.1876 # GeV
+INF = float('Inf') # infinity
 
 
 

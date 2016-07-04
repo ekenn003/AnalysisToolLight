@@ -3,7 +3,7 @@ import os, sys
 import time
 import math
 import subprocess
-from AnalysisToolLight.AnalysisTool.tools.batch_helper import createSubmissionScript, splitInputFile
+from AnalysisToolLight.AnalysisTool.batch.batch_helper import *
 from AnalysisToolLight.AnalysisTool.batch.datasets import *
 
 
@@ -12,38 +12,7 @@ ANALYSIS = '2Mu'
 #version = '76X'
 version = '80X'
 
-## Datasets ##############################
-#datasets76X = {
-#    'SingleMuon2015C' : { 'njobs' : 1 },
-#    'SingleMuon2015D' : { 'njobs' : 12 },
-#    'DYJetsToLL'  : { 'njobs' : 6 },
-#    'TTJets'      : { 'njobs' : 2 },
-#    'TTZToLLNuNu' : { 'njobs' : 1 },
-#    'WWTo2L2Nu'   : { 'njobs' : 2 },
-#    'WZTo2L2q'    : { 'njobs' : 8 },
-#    'WZTo3LNu'    : { 'njobs' : 1 },
-#    'ZZTo2L2Nu'   : { 'njobs' : 2 },
-#    'ZZTo2L2q'    : { 'njobs' : 4 },
-#    'ZZTo4L'      : { 'njobs' : 2 },
-#}
-#
-#datasets80X = {
-#    'SingleMuon2015C' : { 'njobs' : 1 },
-#    'SingleMuon2015D' : { 'njobs' : 12 },
-#    'DYJetsToLL'  : { 'njobs' : 6 },
-#    'TTJets'      : { 'njobs' : 2 },
-#    'TTZToLLNuNu' : { 'njobs' : 1 },
-#    'WWTo2L2Nu'   : { 'njobs' : 2 },
-#    'WZTo2L2q'    : { 'njobs' : 8 },
-#    'WZTo3LNu'    : { 'njobs' : 1 },
-#    'ZZTo2L2Nu'   : { 'njobs' : 2 },
-#    'ZZTo2L2q'    : { 'njobs' : 4 },
-#    'ZZTo4L'      : { 'njobs' : 2 },
-#}
-
-
 # Options ###############################
-BASEDIR='{0}/src/AnalysisToolLight'.format(os.environ['CMSSW_BASE'])
 RESULTSDIR='{0}/2Mu/batch/results{1}'.format(BASEDIR, version)
 
 ## ___________________________________________________________
@@ -60,11 +29,15 @@ def main():
         'ANALYSIS' : ANALYSIS,
         'BASEDIR' : BASEDIR,
         'RESULTSDIR' : RESULTSDIR,
+        'tmpdir' : '2Mu/batch/'+tmpdir,
         #'datasets' : datasets,
     }
     
     if '76X' in version: options['datasets'] = datasets76X
     elif '80X' in version: options['datasets'] = datasets80X
+    datasets = options['datasets']
+    #if '76X' in version: datasets = datasets76X
+    #elif '80X' in version: datasets = datasets80X
 
     # loop over datasets and make input files lists, sub scripts
     for dset in datasets:
@@ -105,9 +78,14 @@ def main():
         njobs = datasets[dset]['njobs']
         for n in xrange(0, njobs):
             scriptname = '{4}/job_{0}_{1}_{2}of{3}.sh'.format(dset, ANALYSIS, n+1, njobs, tmpdir)
-            jobname = '{0}{2}{1}'.format(dset, '' if njobs==1 else '_{0}'.format(n+1), version[:-1])
-            print 'bsub -q 8nh -J {0} < {1}'.format(jobname, scriptname)
-            os.system('bsub -q 8nh -J {0} < {1}'.format(jobname, scriptname))
+            jobname = '{0}_{2}{1}'.format(dset, '' if njobs==1 else '_{0}'.format(n+1), version[:-1])
+            submitcommand = 'bsub -q 8nh -J {0} < {1}'.format(jobname, scriptname)
+            print submitcommand
+
+# debug
+            if jobname == 'DYJetsToLL_80_1': os.system(submitcommand)
+#            os.system(submitcommand)
+
             print
             time.sleep(1)
 
