@@ -291,40 +291,93 @@ class EgammaCand(CommonCand):
 class Muon(CommonCand):
     '''
     Muon: 
-    P(), P4(), Pt(), Eta(), Phi(), and Energy() all return rochester-corrected values.
-    To use the uncorrected values, use UncorrP(), etc.
+    P(), P4(), Pt(), Eta(), Phi(), and Energy() all return uncorrected values by default.
+    To use the rochester corrections (assuming they are available in the ntuple), turn on
+    the option self.useRochesterCorrections, or you can also explicitly call:
+        mu.Pt('Corr') and mu.Pt('Uncorr')
     '''
     # constructors/helpers
-    def __init__(self, tree, entry):
+    def __init__(self, tree, entry, corrected):
        super(Muon, self).__init__(tree, 'muon', entry)
+       self.corrected = corrected
 
     # methods
     def Dz(self):       return self._get('dz')
     def DzError(self):  return self._get('dzerr')
     def Dxy(self):      return self._get('dxy')
     def DxyError(self): return self._get('dxyerr')
-    # rochester-corrected values
-    def P(self):      return ROOT.TVector3(self._get('rochesterPx'), self._get('rochesterPy'), self._get('rochesterPz'))
-    def Pt(self):     return self._get('rochesterPt')
-    def Eta(self):    return self._get('rochesterEta')
-    def Phi(self):    return self._get('rochesterPhi')
-    def Energy(self): return self._get('rochesterEnergy')
-    def P4(self): # pt, eta, phi, e
+
+    # default is no rochester correction
+    def P(self, correction=''):
+        uncor = ROOT.TVector3(self._get('px'), self._get('py'), self._get('pz'))
+        cor   = ROOT.TVector3(self._get('rochesterPx'), self._get('rochesterPy'), self._get('rochesterPz'))
+        # decide which value to return
+        if correction == 'Corr':   return cor
+        if correction == 'Uncorr': return uncor
+        if self.corrected: return cor
+        return uncor
+
+    def Pt(self, correction=''):
+        uncor = self._get('pt')
+        cor   = self._get('rochesterPt')
+        # decide which value to return
+        if correction == 'Corr':   return cor
+        if correction == 'Uncorr': return uncor
+        if self.corrected: return cor
+        return uncor
+
+    def Eta(self, correction=''):
+        uncor = self._get('eta')
+        cor   = self._get('rochesterEta')
+        # decide which value to return
+        if correction == 'Corr':   return cor
+        if correction == 'Uncorr': return uncor
+        if self.corrected: return cor
+        return uncor
+
+    def AbsEta(self, correction=''):
+        uncor = abs(self._get('eta'))
+        cor   = abs(self._get('rochesterEta'))
+        # decide which value to return
+        if correction == 'Corr':   return cor
+        if correction == 'Uncorr': return uncor
+        if self.corrected: return cor
+        return uncor
+
+    def Phi(self, correction=''):
+        uncor = self._get('phi')
+        cor   = self._get('rochesterPhi')
+        # decide which value to return
+        if correction == 'Corr':   return cor
+        if correction == 'Uncorr': return uncor
+        if self.corrected: return cor
+        return uncor
+
+    def Energy(self, correction=''):
+        uncor = self._get('energy')
+        cor   = self._get('rochesterEnergy')
+        # decide which value to return
+        if correction == 'Corr':   return cor
+        if correction == 'Uncorr': return uncor
+        if self.corrected: return cor
+        return uncor
+
+    def P4(self, correction=''): # pt, eta, phi, e
         thisp4 = ROOT.TLorentzVector()
-        thisp4.SetPtEtaPhiE(self.Pt(), self.Eta(), self.Phi(), self.Energy())
-        return thisp4
-    def CorrectionError(self): return self._get('rochesterError')
-    # uncorrected values
-    def UncorrP(self):      return ROOT.TVector3(self._get('px'), self._get('py'), self._get('pz'))
-    def UncorrPt(self):     return self._get('pt')
-    def UncorrEta(self):    return self._get('eta')
-    def UncorrPhi(self):    return self._get('phi')
-    def UncorrEnergy(self): return self._get('energy')
-    def UncorrP4(self): # pt, eta, phi, e
-        thisp4 = ROOT.TLorentzVector()
-        thisp4.SetPtEtaPhiE(self.UncorrPt(), self.UncorrEta(), self.UncorrPhi(), self.UncorrEnergy())
+        # decide which value to return
+        if correction == 'Corr': 
+            thisp4.SetPtEtaPhiE(self.Pt('Corr'), self.Eta('Corr'), self.Phi('Corr'), self.Energy('Corr'))
+            return thisp4
+        if correction == 'Uncorr': return uncor
+            thisp4.SetPtEtaPhiE(self.Pt('Uncorr'), self.Eta('Uncorr'), self.Phi('Uncorr'), self.Energy('Uncorr'))
+            return thisp4
+        if self.corrected:
+            thisp4.SetPtEtaPhiE(self.Pt('Corr'), self.Eta('Corr'), self.Phi('Corr'), self.Energy('Corr'))
+            return thisp4
+        thisp4.SetPtEtaPhiE(self.Pt('Uncorr'), self.Eta('Uncorr'), self.Phi('Uncorr'), self.Energy('Uncorr'))
         return thisp4
 
+    def CorrectionError(self): return self._get('rochesterError')
     # energy
     def EcalEnergy(self): return self._get('ecalenergy')
     def HcalEnergy(self): return self._get('hcalenergy')
@@ -417,7 +470,7 @@ class Muon(CommonCand):
         result = False
         for pathname in paths:
             try:
-                result = self._get('hlt_matches_'+pathname)
+                result = result or self._get('hlt_matches_'+pathname)
             except AttributeError:
                 pass
                 #print 'Muon HLT path "' + pathname + '" not available.'
