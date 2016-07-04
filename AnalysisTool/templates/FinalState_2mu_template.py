@@ -831,7 +831,7 @@ class Ana2Mu(AnalysisBase):
 
 
     ## _______________________________________________________
-    def endJob(self):
+    def endOfJobAction(self):
         logging.info('nSyncEvents = ' + str(self.nSyncEvents))
 
 
