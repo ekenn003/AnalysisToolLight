@@ -33,7 +33,10 @@ class AnalysisBase(object):
         # put file names into a list called self.filenames
         with open(inputFileList,'r') as f:
             for line in f.readlines():
-                self.filenames += [line.strip()]
+                fname_ = line.strip()
+                if fname_.startswith('#'): continue
+                if fname_.startswith('/store'): fname_ = 'root://eoscms.cern.ch//{0}'.format(fname_)
+                self.filenames += [fname_]
 
 
         logging.info('Assembling job information...')
@@ -41,7 +44,7 @@ class AnalysisBase(object):
         self.cmsswversion = ''
         self.isdata = None
         # open first file and load info tree
-        tfile0 = ROOT.TFile(self.filenames[0])
+        tfile0 = ROOT.TFile.Open(self.filenames[0])
         infotree = tfile0.Get('{0}/{1}'.format(self.treedir, self.infoname))
         infotree.GetEntry(0)
         self.isdata = bool(infotree.isdata)
@@ -67,7 +70,7 @@ class AnalysisBase(object):
             self.nevents += lumichain.lumi_nevents
             self.sumweights += lumichain.lumi_sumweights
 
-        logging.info('Number of events found: {0} in {1} lumi sections in {2} files'.format(self.nevents, self.numlumis, len(self.filenames)))
+        logging.info('    Number of events found: {0} in {1} lumi sections in {2} files'.format(self.nevents, self.numlumis, len(self.filenames)))
         logging.info('Sample will be processed as {0}'.format('DATA' if self.isdata else 'MC'))
 
 
@@ -77,6 +80,9 @@ class AnalysisBase(object):
         self.histograms = {}
         # initialise some other options that will be overridden in the derived class
         self.pathForTriggerScaleFactors = ''
+        self.doPileupReweighting = False
+        self.includeTriggerScaleFactors = False
+        self.includeLeptonScaleFactors = False
 
         # initialize output file
         self.outfile = ROOT.TFile(self.output,'RECREATE')
@@ -120,7 +126,7 @@ class AnalysisBase(object):
         for f, fname in enumerate(self.filenames):
             logging.info('Processing file {0} of {1}:'.format(f+1, len(self.filenames)))
             # open the file and get the AC1B tree
-            tfile = ROOT.TFile(fname)
+            tfile = ROOT.TFile.Open(fname)
             tree = tfile.Get('{0}/{1}'.format(self.treedir,self.treename))
 
             # loop over each event (row)
@@ -160,6 +166,7 @@ class AnalysisBase(object):
         # end job and write histograms to output file            #
         #                                                        #
         ##########################################################
+        self.fillEfficiencies()
         self.endJob()
 
 
@@ -178,6 +185,14 @@ class AnalysisBase(object):
 
     ## _______________________________________________________
     def endJob(self):
+        '''
+        Dummy function for action taken at the end of the job. Can be overriden.
+        '''
+        pass
+
+
+    ## _______________________________________________________
+    def fillEfficiencies(self):
         '''
         At the end of the job, fill efficiencies histogram.
         '''
@@ -213,11 +228,6 @@ class AnalysisBase(object):
             self.histograms[hist].Write()
         logging.info('Output file {0} created.'.format(self.output))
         self.outfile.Close()
-
-    ## _______________________________________________________
-    #def GetPileupWeight(self, numtrueinteractions):
-    #    return self.pileupScale[int(round(numtrueinteractions))] if len(self.pileupScale) > numtrueinteractions else 0.
-
 
 
 
