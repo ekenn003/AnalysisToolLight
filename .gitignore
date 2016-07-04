@@ -1,0 +1,18 @@
+__init__.*
+*.root
+
+# Compiled source #
+###################
+*.pyc
+*.o
+*.so
+
+# LXPLUS batch jobs #
+#####################
+**/LSF*
+**/tmp*
+**/results*
+
+# misc #
+########
+*.old
