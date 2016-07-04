@@ -163,10 +163,10 @@ class AnalysisBase(object):
 
         ##########################################################
         #                                                        #
-        # end job and write histograms to output file            #
+        # end job (fill cutflow, write histograms in appropriate #
+        #     directories, and write/close output file)          #
         #                                                        #
         ##########################################################
-        self.fillEfficiencies()
         self.endJob()
 
 
@@ -181,15 +181,6 @@ class AnalysisBase(object):
         '''
         pass
 
-
-
-    ## _______________________________________________________
-    def endOfJobAction(self):
-        '''
-        Dummy function for action taken at the end of the job. Can be overriden,
-        but does not have to be.
-        '''
-        pass
 
 
     ## _______________________________________________________
@@ -223,6 +214,13 @@ class AnalysisBase(object):
         logging.info('Cutflow summary:\n\n' + efftable.get_string() + '\n')
 
 
+    ## _______________________________________________________
+    def endOfJobAction(self):
+        '''
+        Dummy function for action taken at the end of the job. Can be overriden,
+        but does not have to be.
+        '''
+        pass
 
 
     ## _______________________________________________________
