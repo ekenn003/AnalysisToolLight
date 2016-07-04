@@ -188,9 +188,9 @@ class MuonScaleFactors(ScaleFactor):
             for cut in self.muonisoeffs:
                 self.muonisoeffs[cut]['RATIO'] = ROOT.TH2F(self.mufile.Get(cut))
 
-            self.maxpt  = self.muonideffs['softID']['RATIO'].GetXaxis().GetXmax() - 1.
-            self.minpt  = self.muonideffs['softID']['RATIO'].GetXaxis().GetXmin()
-            self.maxeta = self.muonideffs['softID']['RATIO'].GetYaxis().GetXmax()
+            self.maxpt  = self.muonideffs['looseID']['RATIO'].GetXaxis().GetXmax() - 1.
+            self.minpt  = self.muonideffs['looseID']['RATIO'].GetXaxis().GetXmin()
+            self.maxeta = self.muonideffs['looseID']['RATIO'].GetYaxis().GetXmax()
 
 
     # methods
@@ -211,12 +211,6 @@ class MuonScaleFactors(ScaleFactor):
         for mu in muons:
             # make sure the muon is in range
             pt_ = min(self.maxpt, mu.Pt())
-
-
-            # workaround because the muon POG numbers only go down to 25. GeV...
-            pt_ = max(self.minpt, pt_)
-
-
             eta_ = min(self.maxeta, mu.AbsEta())
             # find efficiencies for this muon
             musf = self.muonideffs[cut]['RATIO'].GetBinContent( self.muonideffs[cut]['RATIO'].GetXaxis().FindBin(pt_) , self.muonideffs[cut]['RATIO'].GetYaxis().FindBin(eta_) )
@@ -256,10 +250,6 @@ class MuonScaleFactors(ScaleFactor):
         for mu in muons:
             # make sure the muon is in range
             pt_ = min(self.maxpt, mu.Pt())
-
-            # workaround because the muon POG numbers only go down to 25. GeV...
-            pt_ = max(self.minpt, pt_)
-
             eta_ = min(self.maxeta, mu.AbsEta())
             # find efficiencies for this muon
             musf = self.muonisoeffs[cut]['RATIO'].GetBinContent( self.muonisoeffs[cut]['RATIO'].GetXaxis().FindBin(pt_) , self.muonisoeffs[cut]['RATIO'].GetYaxis().FindBin(eta_) )

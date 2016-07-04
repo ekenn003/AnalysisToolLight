@@ -78,6 +78,7 @@ class AnalysisBase(object):
 
         # initialize map of histograms as empty
         self.histograms = {}
+        self.extraHistogramMap = {}
         # initialise some other options that will be overridden in the derived class
         self.pathForTriggerScaleFactors = ''
         self.doPileupReweighting = False
@@ -184,6 +185,34 @@ class AnalysisBase(object):
 
 
     ## _______________________________________________________
+    def bookExtraHistograms(self, histmap, appendstring, dirname):
+        '''
+        '''
+        # make new versions of all the plots
+        for name in self.histograms.keys():
+            histmap[name+appendstring] = self.histograms[name].Clone(self.histograms[name].GetName()+appendstring)
+
+    ## _______________________________________________________
+    def fill(self, name, fillvalue, fillweight):
+        self.histograms[name].Fill(fillvalue, fillweight)
+        # self.extraHistogramMap is a map of string:histogram map
+        # self.extraHistogramMap[dirname] is a map in the same form as self.histograms
+
+#        # fill any extra
+#        for histmap in self.extraHistogramMap:
+#
+#            for hist in self.extraHistogramMap[dirname]:
+#                self.extraHistogramMap[dirname][hist].Write()
+#            tdir.cd('../')
+
+
+
+
+
+
+
+
+    ## _______________________________________________________
     def fillEfficiencies(self):
         '''
         At the end of the job, fill efficiencies histogram.
@@ -214,6 +243,7 @@ class AnalysisBase(object):
         logging.info('Cutflow summary:\n\n' + efftable.get_string() + '\n')
 
 
+
     ## _______________________________________________________
     def endOfJobAction(self):
         '''
@@ -230,8 +260,23 @@ class AnalysisBase(object):
         '''
         # write histograms to output file
         self.outfile.cd()
+
         for hist in self.histograms:
             self.histograms[hist].Write()
+
+        # self.extraHistogramMap[dirname] = histmap
+        # make a directory and go into it
+        for dirname in self.extraHistogramMap.keys():
+            tdir = self.outfile.mkdir(dirname)
+            tdir.cd()
+            # write the histograms
+            # self.extraHistogramMap is a map of string:histogram map
+            # self.extraHistogramMap[dirname] is a map in the same form as self.histograms
+            for hist in self.extraHistogramMap[dirname]:
+                self.extraHistogramMap[dirname][hist].Write()
+            tdir.cd('../')
+
+
         logging.info('Output file {0} created.'.format(self.output))
         self.outfile.Close()
 
