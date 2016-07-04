@@ -175,18 +175,19 @@ class AnalysisBase(object):
         '''
         Dummy function for action taken every event. Must be overriden.
         Each physics object is available via:
-               self.muons
-               self.electrons
-               etc.
+            self.muons
+            self.electrons
+            etc.
         '''
         pass
 
 
 
     ## _______________________________________________________
-    def endJob(self):
+    def endOfJobAction(self):
         '''
-        Dummy function for action taken at the end of the job. Can be overriden.
+        Dummy function for action taken at the end of the job. Can be overriden,
+        but does not have to be.
         '''
         pass
 
@@ -222,6 +223,13 @@ class AnalysisBase(object):
         logging.info('Cutflow summary:\n\n' + efftable.get_string() + '\n')
 
 
+
+
+    ## _______________________________________________________
+    def write(self):
+        '''
+        Writes histograms to output file and closes it.
+        '''
         # write histograms to output file
         self.outfile.cd()
         for hist in self.histograms:
@@ -229,6 +237,17 @@ class AnalysisBase(object):
         logging.info('Output file {0} created.'.format(self.output))
         self.outfile.Close()
 
+    ## _______________________________________________________
+    def endJob(self):
+        '''
+        Finishes job:
+            fillEfficiencies
+            endOfJobAction
+            write
+        '''
+        self.fillEfficiencies()
+        self.endOfJobAction()
+        self.write()
 
 
 ## ___________________________________________________________
