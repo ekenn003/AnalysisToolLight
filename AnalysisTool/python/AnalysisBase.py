@@ -84,6 +84,8 @@ class AnalysisBase(object):
         self.doPileupReweighting = False
         self.includeTriggerScaleFactors = False
         self.includeLeptonScaleFactors = False
+        self.useRochesterCorrections = False
+
 
         # initialize output file
         self.outfile = ROOT.TFile(self.output,'RECREATE')
@@ -151,7 +153,7 @@ class AnalysisBase(object):
                 # load collections
                 self.event     = Event(row, self.sumweights)
                 self.vertices  = [Vertex(row, i) for i in range(row.primvertex_count)]
-                self.muons     = [Muon(row, i) for i in range(row.muon_count)]
+                self.muons     = [Muon(row, i, self.useRochesterCorrections) for i in range(row.muon_count)]
                 self.electrons = [Electron(row, i) for i in range(row.electron_count)]
                 self.photons   = [Photon(row, i) for i in range(row.photon_count)]
                 self.taus      = [Tau(row, i) for i in range(row.tau_count)]
@@ -181,35 +183,6 @@ class AnalysisBase(object):
             etc.
         '''
         pass
-
-
-
-    ## _______________________________________________________
-    def bookExtraHistograms(self, histmap, appendstring, dirname):
-        '''
-        '''
-        # make new versions of all the plots
-        for name in self.histograms.keys():
-            histmap[name+appendstring] = self.histograms[name].Clone(self.histograms[name].GetName()+appendstring)
-
-    ## _______________________________________________________
-    def fill(self, name, fillvalue, fillweight):
-        self.histograms[name].Fill(fillvalue, fillweight)
-        # self.extraHistogramMap is a map of string:histogram map
-        # self.extraHistogramMap[dirname] is a map in the same form as self.histograms
-
-#        # fill any extra
-#        for histmap in self.extraHistogramMap:
-#
-#            for hist in self.extraHistogramMap[dirname]:
-#                self.extraHistogramMap[dirname][hist].Write()
-#            tdir.cd('../')
-
-
-
-
-
-
 
 
     ## _______________________________________________________

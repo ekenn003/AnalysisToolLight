@@ -27,6 +27,10 @@ class Ana2Mu(AnalysisBase):
         self.syncLow = 110. # GeV
         self.syncHigh = 130. # GeV
 
+        # signal region for control plots
+        self.sigLow = 120. # GeV
+        self.sigHigh = 130. # GeV
+
 
 
 
@@ -35,22 +39,18 @@ class Ana2Mu(AnalysisBase):
         # Some run options                                       #
         #                                                        #
         ##########################################################
-        # careful! this will print out event info for every single event
-        self.printEventInfo = False
-
-        # the default for all of these is False
         self.doPileupReweighting = True
         self.includeTriggerScaleFactors = True
         self.includeLeptonScaleFactors = True
 
+        # use rochester corrections (default is false)
+        self.useRochesterCorrections = True
 
         ##########################################################
         #                                                        #
         # Define cuts                                            #
         #                                                        #
         ##########################################################
-
-        # list of triggers we want to check for this event
         self.hltriggers = (
             'IsoMu20',
             'IsoTkMu20',
@@ -70,7 +70,6 @@ class Ana2Mu(AnalysisBase):
         self.cDxyMu = 0.02 # cm
         self.cDzMu  = 0.14 # cm
 
-        # isolation (https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2#Muon_Isolation)
         # special function for muons
         self.cIsoMuType = 'PF_dB' # PF combined w/dB correction Loose
         #self.cIsoMuType = 'tracker' # Tracker-based
@@ -108,7 +107,6 @@ class Ana2Mu(AnalysisBase):
         # Initialize event counters                              #
         #                                                        #
         ##########################################################
-
         self.cutflow = CutFlow()
         self.cutflow.add('nEv_Skim', 'Skim number of events')
         # event selection
@@ -387,6 +385,20 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hMETPhi'].GetXaxis().SetTitle('#varphi_{MET} [rad]')
         self.histograms['hMETPhi'].GetYaxis().SetTitle('Candidates/0.2[rad]')
 
+
+
+        ##########################################################
+        #                                                        #
+        # Book control plot histograms                           #
+        #                                                        #
+        ##########################################################
+        # make control versions of all the plots - they won't all be filled though
+        self.histograms_ctrl = {}
+        for name in self.histograms.keys():
+            self.histograms_ctrl[name+'_ctrl'] = self.histograms[name].Clone(self.histograms[name].GetName()+'_ctrl')
+
+
+
     ## _______________________________________________________
     def perEventAction(self):
         '''
@@ -405,21 +417,8 @@ class Ana2Mu(AnalysisBase):
         #############################
         # Trigger ###################
         #############################
-        #evtnr = self.event.Number()
-
-        # event.PassesHLTs returns True if any of the triggers fired
         if not self.event.PassesHLTs(self.hltriggers): return
         self.cutflow.increment('nEv_Trigger')
-
-
-
-        # alerts you to any prescales
-        if self.event.AnyIsPrescaled(self.hltriggers): logging.info('WARNING! One of the selected HLT paths is prescaled.')
-
-        # How to check the prescale of a path
-        #mypathname = 'IsoTkMu20'
-        #myprescale = self.event.GetPrescale(mypathname)
-        #print 'HLT path {0} has prescale of {1}!'.format(mypathname, myprescale)
 
         #############################
         # Primary vertices ##########
@@ -470,12 +469,9 @@ class Ana2Mu(AnalysisBase):
             isEtaCutOK = True
 
             # make sure at least one HLT-matched muon passes extra cuts
-            if muon.MatchesHLTs(self.hltriggers) and muon.Pt > self.cPtMuMax and muon.AbsEta() < self.cEtaMuMax: nMuPtEtaMax += 1
+            if muon.MatchesHLTs(self.hltriggers) and muon.Pt() > self.cPtMuMax and muon.AbsEta() < self.cEtaMuMax: nMuPtEtaMax += 1
 
             # check isolation
-            # here you can also do muon.IsoR3CombinedRelIso() < stuff, muon.PFR4ChargedHadrons() etc.
-            # see Muon object in Dataform.py for all avaiable methods
-            # muons have special function to check these four choices
             if not (muon.CheckIso(self.cIsoMuType, self.cIsoMuLevel)): continue
             isIsoOK = True
 
@@ -490,7 +486,7 @@ class Ana2Mu(AnalysisBase):
                 isIDOK = True
             if not (isIDOK): continue
 
-            # check muon PV
+            # check muon PV (not really needed)
             if not (muon.Dxy() < self.cDxyMu and muon.Dz() < self.cDzMu): continue
             isTrackCutOK = True
 
@@ -702,62 +698,10 @@ class Ana2Mu(AnalysisBase):
 
 
 
-        ##########################################################
-        #                                                        #
-        # Optionally print out event info                        #
-        #                                                        #
-        ##########################################################
-        # if you want to print the event info only if the event is or is not on an event list, use the following two lines
-        # the event list has to be formatted as one event per line, RUN:LUMI:EVENTNR
-        #eventlistpath = '/afs/cern.ch/work/e/ekennedy/work/fsanalysis/ana76/root6/CMSSW_7_6_5/src/AnalysisToolLight/AnalysisTool/data/eventlist2015C_ucr.txt'
-        #if EventIsOnList(self.event.Run(), self.event.LumiBlock(), self.event.Number(), eventlistpath):
-
-        if self.printEventInfo:
-            print '\n=================================================='
-            print 'Event info for {0}:{1}:{2}'.format(self.event.Run(), self.event.LumiBlock(), self.event.Number())
-            print '=================================================='
-            # print muon info
-            print 'good muons: {0}\ngood dimuon pairs: {1}'.format(len(goodMuons) if goodMuons else 0, len(diMuonPairs) if diMuonPairs else 0)
-            for i, m in enumerate(goodMuons):
-                print '    Muon({2}):\n    pT = {0:0.4f}\n    eta = {1:0.4f}'.format(m.Pt(), m.Eta(), i)
-            print
-            for i, p in enumerate(diMuonPairs):
-                print '    Pair({0}):'.format(i)
-                print '        Muon(0):\n        pT = {0:0.4f}\n        eta = {1:0.4f}'.format(p[0].Pt(), p[0].Eta())
-                print '        Muon(1):\n        pT = {0:0.4f}\n        eta = {1:0.4f}\n'.format(p[1].Pt(), p[1].Eta())
-
-            # print electron info
-            print 'good electrons: {0}\ngood dielectron pairs: {1}'.format(len(goodElectrons) if goodElectrons else 0, len(diElectronPairs) if diElectronPairs else 0)
-            for i, e in enumerate(goodElectrons):
-                print '    Electron({2}):\n        pT = {0:0.4f}\n        eta = {1:0.4f}'.format(e.Pt(), e.Eta(), i)
-            print
-            for i, p in enumerate(diElectronPairs):
-                print '    Pair({0}):'.format(i)
-                print '        Electron(0):\n        pT = {0:0.4f}\n        eta = {1:0.4f}'.format(p[0].Pt(), p[0].Eta())
-                print '        Electron(1):\n        pT = {0:0.4f}\n        eta = {1:0.4f}\n'.format(p[1].Pt(), p[1].Eta())
-
-            # print jet info
-            print 'good jets: {0}\ngood dijet pairs: {1}'.format(len(goodJets) if goodJets else 0, len(diJetPairs) if diJetPairs else 0)
-            for i, e in enumerate(goodJets):
-                print '    Jet({2}):\n        pT = {0:0.4f}\n        eta = {1:0.4f}'.format(e.Pt(), e.Eta(), i)
-            print
-            for i, p in enumerate(diJetPairs):
-                print '    Pair({0}):'.format(i)
-                print '        Jet(0):\n        pT = {0:0.4f}\n        eta = {1:0.4f}'.format(p[0].Pt(), p[0].Eta())
-                print '        Jet(1):\n        pT = {0:0.4f}\n        eta = {1:0.4f}\n'.format(p[1].Pt(), p[1].Eta())
-
-            # print met info
-            print 'MET: {0}'.format(evtmet)
-
-            # if you want to print out taus etc. add that here
-
-            print '==================================================\n'
-
-
 
         ##########################################################
         #                                                        #
-        # Update event weight (MC only)                          #
+        # Include pileup reweighting                             #
         #                                                        #
         ##########################################################
         self.histograms['hVtxN_nopu'].Fill(len(goodVertices))
@@ -769,40 +713,35 @@ class Ana2Mu(AnalysisBase):
             if self.doPileupReweighting:
                 eventweight *= self.puweights.getWeight(self.event.NumTruePileUpInteractions())
 
-        ##########################################################
-        #                                                        #
-        # Fill selected plots without scale factors              #
-        #                                                        #
-        ##########################################################
+        # Fill selected plots without scale factors
         self.histograms['hVtxN_u'].Fill(len(goodVertices), eventweight)
-
         # without Roch corr
         for mu in goodMuons:
-            self.histograms['hMuPt_nrc_u'].Fill(mu.UncorrPt(), eventweight)
-            self.histograms['hMuEta_nrc_u'].Fill(mu.UncorrEta(), eventweight)
-            self.histograms['hMuPhi_nrc_u'].Fill(mu.UncorrPhi(), eventweight)
+            self.histograms['hMuPt_nrc_u'].Fill(mu.Pt('Uncorr'), eventweight)
+            self.histograms['hMuEta_nrc_u'].Fill(mu.Eta('Uncorr'), eventweight)
+            self.histograms['hMuPhi_nrc_u'].Fill(mu.Phi('Uncorr'), eventweight)
         for mupair in diMuonPairs:
-            self.histograms['hLeadMuPt_nrc_u'].Fill(mupair[0].UncorrPt(), eventweight)
-            self.histograms['hSubLeadMuPt_nrc_u'].Fill(mupair[1].UncorrPt(), eventweight)
-            diMuP4 = mupair[0].UncorrP4() + mupair[1].UncorrP4()
+            self.histograms['hLeadMuPt_nrc_u'].Fill(mupair[0].Pt('Uncorr'), eventweight)
+            self.histograms['hSubLeadMuPt_nrc_u'].Fill(mupair[1].Pt('Uncorr'), eventweight)
+            diMuP4 = mupair[0].P4('Uncorr') + mupair[1].P4('Uncorr')
             self.histograms['hDiMuPt_nrc_u'].Fill(diMuP4.Pt(), eventweight)
             self.histograms['hDiMuInvMass_nrc_u'].Fill(diMuP4.M(), eventweight)
         # with Roch corr
         for mu in goodMuons:
-            self.histograms['hMuPt_u'].Fill(mu.Pt(), eventweight)
-            self.histograms['hMuEta_u'].Fill(mu.Eta(), eventweight)
-            self.histograms['hMuPhi_u'].Fill(mu.Phi(), eventweight)
+            self.histograms['hMuPt_u'].Fill(mu.Pt('Corr'), eventweight)
+            self.histograms['hMuEta_u'].Fill(mu.Eta('Corr'), eventweight)
+            self.histograms['hMuPhi_u'].Fill(mu.Phi('Corr'), eventweight)
         for mupair in diMuonPairs:
-            self.histograms['hLeadMuPt_u'].Fill(mupair[0].Pt(), eventweight)
-            self.histograms['hSubLeadMuPt_u'].Fill(mupair[1].Pt(), eventweight)
-            diMuP4 = mupair[0].P4() + mupair[1].P4()
+            self.histograms['hLeadMuPt_u'].Fill(mupair[0].Pt('Corr'), eventweight)
+            self.histograms['hSubLeadMuPt_u'].Fill(mupair[1].Pt('Corr'), eventweight)
+            diMuP4 = mupair[0].P4('Corr') + mupair[1].P4('Corr')
             self.histograms['hDiMuPt_u'].Fill(diMuP4.Pt(), eventweight)
             self.histograms['hDiMuInvMass_u'].Fill(diMuP4.M(), eventweight)
 
 
         ##########################################################
         #                                                        #
-        # Include scale factors                                  #
+        # Update event weight (MC only)                          #
         #                                                        #
         ##########################################################
         if not self.isdata:
@@ -817,15 +756,17 @@ class Ana2Mu(AnalysisBase):
 
         # without Roch corr
         for mu in goodMuons:
-            self.histograms['hMuPt_nrc'].Fill(mu.UncorrPt(), eventweight)
-            self.histograms['hMuEta_nrc'].Fill(mu.UncorrEta(), eventweight)
-            self.histograms['hMuPhi_nrc'].Fill(mu.UncorrPhi(), eventweight)
+            self.histograms['hMuPt_nrc'].Fill(mu.Pt('Uncorr'), eventweight)
+            self.histograms['hMuEta_nrc'].Fill(mu.Eta('Uncorr'), eventweight)
+            self.histograms['hMuPhi_nrc'].Fill(mu.Phi('Uncorr'), eventweight)
         for mupair in diMuonPairs:
-            self.histograms['hLeadMuPt_nrc'].Fill(mupair[0].UncorrPt(), eventweight)
-            self.histograms['hSubLeadMuPt_nrc'].Fill(mupair[1].UncorrPt(), eventweight)
-            diMuP4 = mupair[0].UncorrP4() + mupair[1].UncorrP4()
+            self.histograms['hLeadMuPt_nrc'].Fill(mupair[0].Pt('Uncorr'), eventweight)
+            self.histograms['hSubLeadMuPt_nrc'].Fill(mupair[1].Pt('Uncorr'), eventweight)
+            diMuP4 = mupair[0].P4('Uncorr') + mupair[1].P4('Uncorr')
             self.histograms['hDiMuPt_nrc'].Fill(diMuP4.Pt(), eventweight)
             self.histograms['hDiMuInvMass_nrc'].Fill(diMuP4.M(), eventweight)
+
+
 
         ##########################################################
         #                                                        #
@@ -933,7 +874,7 @@ class Ana2Mu(AnalysisBase):
 
 
     ## _______________________________________________________
-    def endJob(self):
+    def endOfJobAction(self):
         logging.info('nSyncEvents = ' + str(self.nSyncEvents))
 
 
