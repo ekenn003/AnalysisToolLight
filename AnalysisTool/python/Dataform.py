@@ -66,7 +66,8 @@ class Event(object):
         result = False
         for pathname in paths:
             try:
-                result = self._get('event_hlt_passes_'+pathname)
+                #result = self._get('event_hlt_passes_'+pathname)
+                result = self._get('passes_'+pathname)
             except AttributeError:
                 pass
                 #print 'PassesHLTs: Event HLT path "' + pathname + '" not available.'
@@ -368,7 +369,7 @@ class Muon(CommonCand):
         if correction == 'Corr': 
             thisp4.SetPtEtaPhiE(self.Pt('Corr'), self.Eta('Corr'), self.Phi('Corr'), self.Energy('Corr'))
             return thisp4
-        if correction == 'Uncorr': return uncor
+        if correction == 'Uncorr':
             thisp4.SetPtEtaPhiE(self.Pt('Uncorr'), self.Eta('Uncorr'), self.Phi('Uncorr'), self.Energy('Uncorr'))
             return thisp4
         if self.corrected:
@@ -470,7 +471,7 @@ class Muon(CommonCand):
         result = False
         for pathname in paths:
             try:
-                result = result or self._get('hlt_matches_'+pathname)
+                result = result or self._get('matches_'+pathname)
             except AttributeError:
                 pass
                 #print 'Muon HLT path "' + pathname + '" not available.'
@@ -531,7 +532,7 @@ class Electron(EgammaCand):
         result = False
         for pathname in paths:
             try:
-                result = self._get('hlt_matches_'+pathname)
+                result = self._get('matches_'+pathname)
             except AttributeError:
                 pass
                 #print 'Electron HLT path "{0}" not available.'.format(pathname)

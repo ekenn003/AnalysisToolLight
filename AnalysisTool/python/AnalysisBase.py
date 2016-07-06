@@ -28,7 +28,7 @@ class AnalysisBase(object):
         self.treename = 'AC1B'
         inputFileList  = args.inputFileList
         self.output    = args.outputFileName
-        self.dataDir = args.dataDir
+        self.dataDir   = args.dataDir
 
         # put file names into a list called self.filenames
         with open(inputFileList,'r') as f:
