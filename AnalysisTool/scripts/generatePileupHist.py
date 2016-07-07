@@ -19,12 +19,23 @@ def getMixingProb(version, pudir):
 
     mixfile = '{0}/{1}'.format(pudir, mixfile)
 
+    x, y = -1, -1
     with open(mixfile, 'r') as f:
         for line in f:
+            # find numbins
+            if 'probFunctionVariable' in line:
+                for i, c in enumerate(line):
+                    if c==',': x=i
+                    if c==')':
+                        y=i
+                        break
+                numbins = int(line[x+1:y]) + 1
+            # fill bins
             if 'probValue' in line:
                 for l, line in enumerate(f):
-                    # only 50 bins in probValue
-                    if l==50: break
+                    if l == numbins: 
+                        #print 'reached bin {0}, breaking'.format(numbins)
+                        break
                     thisbin = ''.join(c for c in line.rstrip() if (c.isdigit() or c in ['e', '-', '.']))
                     pileupDist += [float(thisbin)]
 
