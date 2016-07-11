@@ -143,7 +143,11 @@ class HLTScaleFactors(ScaleFactor):
 
     ## _______________________________________________________
     def __del__(self):
-        self.hltfile.Close()
+        #if self.hltfile: self.hltfile.Close()
+        try:
+            self.hltfile.Close()
+        except AttributeError:
+            pass
 
 
 ## ___________________________________________________________
@@ -263,5 +267,8 @@ class MuonScaleFactors(ScaleFactor):
 
     ## _______________________________________________________
     def __del__(self):
-        self.mufile.Close()
+        try:
+            self.mufile.Close()
+        except AttributeError:
+            pass
 
