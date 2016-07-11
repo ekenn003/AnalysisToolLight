@@ -30,14 +30,11 @@ def main():
         'BASEDIR' : BASEDIR,
         'RESULTSDIR' : RESULTSDIR,
         'tmpdir' : '2Mu/batch/'+tmpdir,
-        #'datasets' : datasets,
     }
     
     if '76X' in version: options['datasets'] = datasets76X
     elif '80X' in version: options['datasets'] = datasets80X
     datasets = options['datasets']
-    #if '76X' in version: datasets = datasets76X
-    #elif '80X' in version: datasets = datasets80X
 
     # loop over datasets and make input files lists, sub scripts
     for dset in datasets:
@@ -45,7 +42,6 @@ def main():
 
         # calculate number of jobs to run
         print '    calculating number of jobs and creating inputs'
-        #datasets[dset]['inputlist'] = '{0}/AnalysisTool/data/inputfiles_{1}.txt'.format(BASEDIR, dset)
         datasets[dset]['inputlist'] = '{0}/AnalysisTool/data/{2}/inputfiles_{1}.txt'.format(BASEDIR, dset, version)
         datasets[dset]['output']    = '{0}/ana_{1}_{2}.root'.format(RESULTSDIR, ANALYSIS, dset)
         datasets[dset]['logfile']   = '{0}/log_{1}_{2}.log'.format(RESULTSDIR, ANALYSIS, dset)
@@ -83,8 +79,8 @@ def main():
             print submitcommand
 
 # debug
-            if jobname == 'DYJetsToLL_80_1': os.system(submitcommand)
-#            os.system(submitcommand)
+#            if jobname=='DYJetsToLL_76_1': os.system(submitcommand)
+            os.system(submitcommand)
 
             print
             time.sleep(1)
