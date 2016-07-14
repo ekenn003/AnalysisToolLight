@@ -47,13 +47,16 @@ def main():
         datasets[dset]['logfile']   = '{0}/log_{1}_{2}.log'.format(RESULTSDIR, ANALYSIS, dset)
 
         # create input file lists
+        # count total input files
         with open(datasets[dset]['inputlist'], 'r') as f:
-            for i, line in enumerate(f):
+            for totallines, line in enumerate(f):
                 pass
-        i+=1
+        totallines += 1
         njobs = datasets[dset]['njobs']
-        nlinesperjob = int(math.ceil(float(i)/njobs))
-        nlineslastjob = i - (njobs-1)*nlinesperjob
+        # if we asked for more jobs than input files, just do one job per file
+        if njobs >= totallines: njobs = totallines
+        nlinesperjob = int(math.ceil(float(totallines)/njobs))
+        nlineslastjob = totallines - (njobs-1)*nlinesperjob
 
         # print a warning if the last job is <15% the size of the others
         if (float(nlineslastjob)/float(nlinesperjob)) < 0.15:
@@ -74,12 +77,12 @@ def main():
         njobs = datasets[dset]['njobs']
         for n in xrange(0, njobs):
             scriptname = '{4}/job_{0}_{1}_{2}of{3}.sh'.format(dset, ANALYSIS, n+1, njobs, tmpdir)
-            jobname = '{0}_{2}{1}'.format(dset, '' if njobs==1 else '_{0}'.format(n+1), version[:-1])
+            jobname = '2Mu-{0}_{2}{1}'.format(dset, '' if njobs==1 else '_{0}'.format(n+1), version[:-1])
             submitcommand = 'bsub -q 8nh -J {0} < {1}'.format(jobname, scriptname)
             print submitcommand
 
 # debug
-#            if jobname=='DYJetsToLL_76_1': os.system(submitcommand)
+#            if 'SingleMuon' in jobname: os.system(submitcommand)
             os.system(submitcommand)
 
             print
