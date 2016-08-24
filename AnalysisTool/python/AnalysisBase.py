@@ -4,6 +4,7 @@ import argparse
 import glob
 import os, sys, time
 import ROOT
+from array import array
 from prettytable import PrettyTable
 from Dataform import *
 from ScaleFactors import *
@@ -48,6 +49,7 @@ class AnalysisBase(object):
         infotree = tfile0.Get('{0}/{1}'.format(self.treedir, self.infoname))
         infotree.GetEntry(0)
         self.isdata = bool(infotree.isdata)
+        self.ismc = not self.isdata
         self.cmsswversion = str(infotree.CMSSW_version)
         tfile0.Close('R')
         # get short CMSSW version that was used to produce these
@@ -85,10 +87,13 @@ class AnalysisBase(object):
         self.includeTriggerScaleFactors = False
         self.includeLeptonScaleFactors = False
         self.useRochesterCorrections = False
+        #initialise some other crap
+        self.cutflow = None
 
-
-        # initialize output file
+        # initialize output file and create tree to save wum of weights
         self.outfile = ROOT.TFile(self.output,'RECREATE')
+
+
 
 
     ## _______________________________________________________
@@ -105,16 +110,19 @@ class AnalysisBase(object):
         #                                                        #
         ##########################################################
         # pileup
-        logging.info('Loading pileup info...')
-        self.puweights = PileupWeights(self.cmsswversion, self.dataDir)
+        if self.doPileupReweighting:
+            logging.info('Loading pileup info...')
+            self.puweights = PileupWeights(self.cmsswversion, self.dataDir)
 
         # trigger scale factors
-        logging.info('Loading trigger scale factor info...')
-        self.hltweights = HLTScaleFactors(self.cmsswversion, self.dataDir, self.pathForTriggerScaleFactors)
+        if self.includeTriggerScaleFactors:
+            logging.info('Loading trigger scale factor info...')
+            self.hltweights = HLTScaleFactors(self.cmsswversion, self.dataDir, self.pathForTriggerScaleFactors)
 
         # lepton scale factors
-        logging.info('Loading lepton scale factor info...')
-        self.muonweights = MuonScaleFactors(self.cmsswversion, self.dataDir)
+        if self.includeLeptonScaleFactors:
+            logging.info('Loading lepton scale factor info...')
+            self.muonweights = MuonScaleFactors(self.cmsswversion, self.dataDir)
 
         eventsprocessed = 0
         # how often (in number of events) should we print out progress updates?
@@ -201,10 +209,6 @@ class AnalysisBase(object):
             self.histograms['hEfficiencies'].GetXaxis().SetBinLabel(i+1, name)
 
         # print cutflow table
-        logging.info('Job complete.')
-        logging.info('NEVENTS:    {0}'.format(self.nevents))
-        logging.info('SUMWEIGHTS: {0}'.format(self.sumweights))
-
         efftable = PrettyTable(['Selection', 'Events', 'Eff.(Skim) [%]', 'Rel.Eff. [%]'])
         efftable.align = 'r'
         efftable.align['Selection'] = 'l'
@@ -233,11 +237,21 @@ class AnalysisBase(object):
         '''
         # write histograms to output file
         self.outfile.cd()
+        sumw_ = self.sumweights if self.sumweights != 0. else self.nevents
 
-        for hist in self.histograms:
+        #sumwts = array('f', [sumwts_])
+        #testtree = ROOT.TTree('testtree', 'testtree')
+        #testtree.Branch('sumw', sumwts, 'sumw/F')
+        #testtree.Write()
+
+        sumw = ROOT.TH1F('hSumWeights', 'hSumWeights', 3, 0, 3)
+        sumw.SetBinContent(1, sumw_)
+        sumw.Write()
+
+        #for hist in self.histograms:
+        for hist in sorted(self.histograms):
             self.histograms[hist].Write()
 
-        # self.extraHistogramMap[dirname] = histmap
         # make a directory and go into it
         for dirname in self.extraHistogramMap.keys():
             tdir = self.outfile.mkdir(dirname)
@@ -246,7 +260,9 @@ class AnalysisBase(object):
             # self.extraHistogramMap is a map of string:histogram map
             # self.extraHistogramMap[dirname] is a map in the same form as self.histograms
             for hist in self.extraHistogramMap[dirname]:
-                self.extraHistogramMap[dirname][hist].Write()
+                # only write histograms that aren't empty
+                if self.extraHistogramMap[dirname][hist].GetEntries():
+                    self.extraHistogramMap[dirname][hist].Write()
             tdir.cd('../')
 
 
@@ -261,9 +277,13 @@ class AnalysisBase(object):
             endOfJobAction
             write
         '''
-        self.fillEfficiencies()
+        if self.cutflow: self.fillEfficiencies()
         self.endOfJobAction()
         self.write()
+        logging.info('Job complete.')
+        logging.info('NEVENTS:    {0}'.format(self.nevents))
+        logging.info('SUMWEIGHTS: {0}'.format(self.sumweights))
+
 
 
 ## ___________________________________________________________
