@@ -80,3 +80,6 @@ echo "Created the following files:"
 echo "${pileupdir}/PileUpData${v}.root"
 echo "${pileupdir}/PileUpData${v}_Up.root"
 echo "${pileupdir}/PileUpData${v}_Down.root"
+echo
+echo "Now you can run the following command:"
+echo "    python generatePileupHist.py -version \"${v}\""
