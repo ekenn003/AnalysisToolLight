@@ -2,9 +2,9 @@
 
 Below is a description of the structure of this repo:
 - **AnalysisTool**
-      - **batch**: directory for batch work: jobs can be submitted from here. output goes in results directory of main repo (AnalysisToolLight/results/)
-         - **results**: results of batch jobs go in here
-         - `batch.sh`: batch job script, eg. used in bsub command
+   - **batch**: directory for batch work: jobs can be submitted from here. output goes in results directory of main repo (AnalysisToolLight/results/)
+      - **results**: results of batch jobs go in here
+      - `batch.sh`: batch job script, eg. used in bsub command
    - **data** input for jobs: input file lists, scale factors, etc.
       - **pileup**: contains rootfiles output by the pileup scripts in the scripts directory
    - **python**
@@ -19,10 +19,16 @@ Below is a description of the structure of this repo:
    - **scripts**
       - `getDataPileupDist.sh`: creates a root file with the data pileup histogram, given a JSON and min bias cross section. The root file is then used by generatePileupDist.py
       - `generatePileupDist.py`: generates a root file with scale factors for MC, given the CMSSW version that the original miniAODs were created from and the root files output by getDataPileupDist.sh. This creates AnalysisTool/data/pileup/pileup_76X.root
+      - `getMultiplePileupDists.sh` and `generateMultiplePileupHists.py` do the same as above but for many min bias cross sections 
+      - `collectMuonScaleFactors.py`: collects muon ID/iso scale factors and creates the file AnalysisTool/data/scalefactors/muonidiso_76X.root
+      - `collectTriggerScaleFactors.py`: collects single-muon HLT scale factors and creates the file AnalysisTool/data/scalefactors/singlemuontrigger_76X.root
+      - `refreshDatasetList.py`: refreshes the lists in AnalysisTool/data/ (requires a lot of customization - don't use OOTB!)
    - **templates**
       - `FinalState_2mu_template.py`: template analysis with examples of how to access all objects and some methods
+
 - **VH**: directory for analysis of VH channel
    - **python**: code for each final state (in VH) to be analysed goes here
       - `FinalState_4mu.py`: analysis code for VH->4muon final state
+
 - `run_local.sh`: example of how to run an analysis job locally
 
