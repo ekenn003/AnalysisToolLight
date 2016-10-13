@@ -5,7 +5,6 @@ v="80X"
 # Common                     #
 ##############################
 pileupdir=$CMSSW_BASE/src/AnalysisToolLight/AnalysisTool/data/pileup
-#pileupdir=$CMSSW_BASE/src/AnalysisToolLight/AnalysisTool/python/tools
 
 
 
@@ -58,7 +57,8 @@ fi
 
 
 # make files
-for xsec in 68000 69000 70000 70500 71000 71500 72000 72500 73000 74000 75000; do
+#for xsec in [68000 68500 69000 69500 70000 70500 71000 71500 72000 72500 73000, 74000]; do
+for xsec in [68000, 68500, 69000, 69500, 70000, 70500, 71000, 71500, 72000, 72500, 73000]; do
     echo $xsec
     #pileupCalc.py -i $lumimask --inputLumiJSON $pileupjson --calcMode true  --minBiasXsec $xsec --maxPileupBin 80 --numPileupBins 80 $pileupdir/PileUpData_$xsec.root
     pileupCalc.py -i $lumimask --inputLumiJSON $pileupjson --calcMode true  --minBiasXsec $xsec --maxPileupBin 80 --numPileupBins 80 $pileupdir/PileUpData${v}_${xsec}.root
