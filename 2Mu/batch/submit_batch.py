@@ -55,7 +55,7 @@ def main():
         njobs = datasets[dset]['njobs']
         # if we asked for more jobs than input files, just do one job per file
         if njobs >= totallines: njobs = totallines
-        nlinesperjob = int(math.ceil(float(totallines)/njobs))
+        nlinesperjob = int(math.floor(float(totallines)/njobs))
         nlineslastjob = totallines - (njobs-1)*nlinesperjob
 
         # print a warning if the last job is <15% the size of the others
@@ -78,7 +78,7 @@ def main():
         for n in xrange(0, njobs):
             scriptname = '{4}/job_{0}_{1}_{2}of{3}.sh'.format(dset, ANALYSIS, n+1, njobs, tmpdir)
             jobname = '2Mu-{0}_{2}{1}'.format(dset, '' if njobs==1 else '_{0}'.format(n+1), version[:-1])
-            submitcommand = 'bsub -q 8nh -J {0} < {1}'.format(jobname, scriptname)
+            submitcommand = 'LSB_JOB_REPORT_MAIL=N bsub -q 8nh -J {0} < {1}'.format(jobname, scriptname)
             print submitcommand
 
 # debug
