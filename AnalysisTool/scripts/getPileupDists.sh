@@ -1,3 +1,6 @@
+#!/bin/bash
+# chmod me and run me with ./getPileupDists.sh
+
 v="76X"
 #v="80X"
 
