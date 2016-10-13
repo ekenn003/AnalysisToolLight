@@ -42,6 +42,8 @@ class Ana2Mu(AnalysisBase):
         self.includeTriggerScaleFactors = True
         self.includeLeptonScaleFactors = True
 
+        # use rochester corrections (default is false)
+        self.useRochesterCorrections = True
 
         ##########################################################
         #                                                        #
@@ -383,6 +385,8 @@ class Ana2Mu(AnalysisBase):
         #############################
         # MUONS #####################
         #############################
+        # check if rochester corrections are turned on
+        mucorr = self.useRochesterCorrections
         # loop over muons and save the good ones
         goodMuons = []
         isGAndTr = False
@@ -396,13 +400,13 @@ class Ana2Mu(AnalysisBase):
             # muon cuts
             if not (muon.IsGlobal() and muon.IsTracker()): continue
             isGAndTr = True
-            if not muon.Pt() > self.cPtMu: continue
+            if not muon.Pt(mucorr) > self.cPtMu: continue
             isPtCutOK = True
-            if not muon.AbsEta() < self.cEtaMu: continue
+            if not muon.AbsEta(mucorr) < self.cEtaMu: continue
             isEtaCutOK = True
 
             # make sure at least one HLT-matched muon passes extra cuts
-            if muon.MatchesHLTs(self.hltriggers) and muon.Pt > self.cPtMuMax and muon.AbsEta() < self.cEtaMuMax: nMuPtEtaMax += 1
+            if muon.MatchesHLTs(self.hltriggers) and muon.Pt(mucorr) > self.cPtMuMax and muon.AbsEta(mucorr) < self.cEtaMuMax: nMuPtEtaMax += 1
 
             # check isolation
             # here you can also do muon.IsoR3CombinedRelIso() < stuff, muon.PFR4ChargedHadrons() etc.
@@ -422,7 +426,7 @@ class Ana2Mu(AnalysisBase):
                 isIDOK = True
             if not (isIDOK): continue
 
-            # check muon PV
+            # check muon PV (not really needed, included in muon ID)
             if not (muon.Dxy() < self.cDxyMu and muon.Dz() < self.cDzMu): continue
             isTrackCutOK = True
 
@@ -573,7 +577,7 @@ class Ana2Mu(AnalysisBase):
             if not (abs(pair[0].Dz() - pair[1].Dz()) < 0.14): continue
             isSamePVMuCutOK = True
             # create composite four-vector
-            diMuonP4 = pair[0].P4() + pair[1].P4()
+            diMuonP4 = pair[0].P4(mucorr) + pair[1].P4(mucorr)
             # require min pT and min InvMass
             if not (diMuonP4.M() > self.cDiMuInvMass): continue
             isInvMassMuCutOK = True
@@ -582,7 +586,7 @@ class Ana2Mu(AnalysisBase):
 
             # if we reach this part, we have a pair! set thispair to the pair, ordered by pT
             # and then push back into diMuonPairs
-            thispair = pair if pair[0].Pt() > pair[1].Pt() else (pair[1], pair[0])
+            thispair = pair if pair[0].Pt(mucorr) > pair[1].Pt(mucorr) else (pair[1], pair[0])
             diMuonPairs += [thispair]
             if (diMuonP4.M() >= self.syncLow and diMuonP4.M() <= self.syncHigh): self.nSyncEvents += 1
 
