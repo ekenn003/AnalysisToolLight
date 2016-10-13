@@ -4,7 +4,7 @@ Below is a description of the structure of this repo:
 - **AnalysisTool**
    - **batch**: directory for batch work: jobs can be submitted from here. output goes in results directory of main repo (AnalysisToolLight/results/)
       - **results**: results of batch jobs go in here
-      - `batch.sh`: batch job script, eg. used in bsub command
+      - `batch.sh`: an example of a batch job script, eg. used in bsub command
    - **data** input for jobs: input file lists, scale factors, etc.
       - **pileup**: contains rootfiles output by the pileup scripts in the scripts directory
    - **python**
