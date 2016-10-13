@@ -63,8 +63,7 @@ class Event(object):
     ## _______________________________________________________
     # event.PassesHLTs returns True if any of the triggers fired
     def PassesHLTs(self, paths):
-        # MC has no trigger info in 80X
-        if (self.cmsswversion=='80X' and not self.isdata): return True
+        # NB: MC has no trigger info in 80X!!!!
         result = False
         for pathname in paths:
             try:
