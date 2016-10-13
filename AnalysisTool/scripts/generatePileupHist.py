@@ -10,7 +10,7 @@ import ROOT
 
 ## ___________________________________________________________
 def getMixingProb(version, pudir):
-    pileupDist = []
+    pileup_dist = []
     if version == '76X': 
         mixfile = 'mix_2015_25ns_FallMC_matchData_PoissonOOTPU_cfi.py'
     elif version == '80X':
@@ -37,9 +37,9 @@ def getMixingProb(version, pudir):
                         #print 'reached bin {0}, breaking'.format(numbins)
                         break
                     thisbin = ''.join(c for c in line.rstrip() if (c.isdigit() or c in ['e', '-', '.']))
-                    pileupDist += [float(thisbin)]
+                    pileup_dist += [float(thisbin)]
 
-    return pileupDist
+    return pileup_dist
 
 
 ## ___________________________________________________________
@@ -52,14 +52,14 @@ def main(argv=None):
 
     histName = 'pileup'
     pileup_dir = '{0}/src/AnalysisToolLight/AnalysisTool/data/pileup'.format(os.environ['CMSSW_BASE'])
-    outputFileName = '{0}/pileup_{1}.root'.format(pileup_dir, cmsswversion)
+    output_filename = '{0}/pileup_{1}.root'.format(pileup_dir, cmsswversion)
 
-    pileupDist = getMixingProb(cmsswversion, pileup_dir)
-    rootfile = ROOT.TFile(outputFileName,'recreate')
+    pileup_dist = getMixingProb(cmsswversion, pileup_dir)
+    rootfile = ROOT.TFile(output_filename,'recreate')
     
     # create mc pileup dist
-    histmc = ROOT.TH1D(histName+'_MC', histName+'_MC', len(pileupDist), 0, len(pileupDist))
-    for b, val in enumerate(pileupDist):
+    histmc = ROOT.TH1D(histName+'_MC', histName+'_MC', len(pileup_dist), 0, len(pileup_dist))
+    for b, val in enumerate(pileup_dist):
         histmc.SetBinContent(b+1,val)
     histmc.Scale(1./histmc.Integral())
     histmc.Write()
@@ -67,14 +67,14 @@ def main(argv=None):
     # read data
     #for datatype in ['','_up','_down','_69000','_71000']:
     for datatype in ['','_up','_down']:
-        dataFileName = '{0}/PileUpData{1}{2}.root'.format(pileup_dir, cmsswversion, datatype)
-        datafile = ROOT.TFile(dataFileName)
+        data_filename = '{0}/PileUpData{1}{2}.root'.format(pileup_dir, cmsswversion, datatype)
+        datafile = ROOT.TFile(data_filename)
         histdata = datafile.Get(histName)
         histdata.SetTitle('{0}_Data{1}'.format(histName, datatype))
         histdata.SetName('{0}_Data{1}'.format(histName, datatype))
         histdata.Scale(1./histdata.Integral())
         rootfile.cd()
-        print 'Rewriting {0}'.format(dataFileName)
+        print 'Rewriting {0}'.format(data_filename)
         histdata.Write()
     
         # now use the histograms to get scalefactors
@@ -88,7 +88,7 @@ def main(argv=None):
         histscale.Write()
     
     rootfile.Write()
-    print 'Writing {0}'.format(outputFileName)
+    print 'Writing {0}'.format(output_filename)
     rootfile.Close()
 
 

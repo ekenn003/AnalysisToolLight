@@ -11,15 +11,15 @@ def main():
     '''
 
     cmsswversion = '76X'
-    pogIdFileName  = 'MuonID_Z_RunCD_Reco76X_Feb15.root'
-    pogIsoFileName = 'MuonIso_Z_RunCD_Reco76X_Feb15.root'
+    pog_id_fileName  = 'MuonID_Z_RunCD_Reco76X_Feb15.root'
+    pog_iso_fileName = 'MuonIso_Z_RunCD_Reco76X_Feb15.root'
 
-    sfDir = '{0}/src/AnalysisToolLight/AnalysisTool/data/scalefactors'.format(os.environ['CMSSW_BASE'])
-    outputFileName = '{0}/muonidiso_{1}.root'.format(sfDir, cmsswversion)
+    sf_dir = '{0}/src/AnalysisToolLight/AnalysisTool/data/scalefactors'.format(os.environ['CMSSW_BASE'])
+    output_filename = '{0}/muonidiso_{1}.root'.format(sf_dir, cmsswversion)
 
-    pogIdFile  = ROOT.TFile('{0}/{1}'.format(sfDir, pogIdFileName))
-    pogIsoFile = ROOT.TFile('{0}/{1}'.format(sfDir, pogIsoFileName))
-    outfile = ROOT.TFile(outputFileName,'recreate')
+    pog_id_file  = ROOT.TFile('{0}/{1}'.format(sf_dir, pog_id_fileName))
+    pog_iso_file = ROOT.TFile('{0}/{1}'.format(sf_dir, pog_iso_fileName))
+    outfile = ROOT.TFile(output_filename,'recreate')
 
     muonideffs = {
         'looseID' : {
@@ -57,13 +57,13 @@ def main():
     for cut in muonideffs:
         muonideffs[cut]['hdir'] = 'MC_NUM_{0}_DEN_genTracks_PAR_pt_spliteta_bin1/pt_abseta_ratio'.format(muonideffs[cut]['hdir'])
         print 'trying to get hist at ' + muonideffs[cut]['hdir']
-        muonideffs[cut]['RATIO'] = ROOT.TH2F(pogIdFile.Get(muonideffs[cut]['hdir']))
+        muonideffs[cut]['RATIO'] = ROOT.TH2F(pog_id_file.Get(muonideffs[cut]['hdir']))
         muonideffs[cut]['RATIO'].SetName(cut)
 
     for cut in muonisoeffs:
         muonisoeffs[cut]['hdir'] = 'MC_NUM_{0}_PAR_pt_spliteta_bin1/pt_abseta_ratio'.format(muonisoeffs[cut]['hdir'])
         print 'trying to get hist at ' + muonisoeffs[cut]['hdir']
-        muonisoeffs[cut]['RATIO'] = ROOT.TH2F(pogIsoFile.Get(muonisoeffs[cut]['hdir']))
+        muonisoeffs[cut]['RATIO'] = ROOT.TH2F(pog_iso_file.Get(muonisoeffs[cut]['hdir']))
         muonisoeffs[cut]['RATIO'].SetName(cut)
 
     # combine efficiencies for isolations on top of ids
@@ -84,8 +84,8 @@ def main():
 
     outfile.Write()
     outfile.Close()
-    pogIdFile.Close()
-    pogIsoFile.Close()
+    pog_id_file.Close()
+    pog_iso_file.Close()
 
 
 if __name__ == "__main__":

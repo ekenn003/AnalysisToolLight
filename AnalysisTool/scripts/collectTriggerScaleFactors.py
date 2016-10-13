@@ -17,14 +17,14 @@ def main():
     '''
 
     cmsswversion = '76X'
-    pogFileName = 'SingleMuonTrigger_Z_RunCD_Reco76X_Feb15.root'
+    pog_filename = 'SingleMuonTrigger_Z_RunCD_Reco76X_Feb15.root'
 
-    sfDir = '{0}/src/AnalysisToolLight/AnalysisTool/data/scalefactors'.format(os.environ['CMSSW_BASE'])
-    outputFileName = '{0}/singlemuontrigger_{1}.root'.format(sfDir, cmsswversion)
+    sf_dir = '{0}/src/AnalysisToolLight/AnalysisTool/data/scalefactors'.format(os.environ['CMSSW_BASE'])
+    output_filename = '{0}/singlemuontrigger_{1}.root'.format(sf_dir, cmsswversion)
 
 
-    pogFile = ROOT.TFile('{0}/{1}'.format(sfDir, pogFileName))
-    outfile = ROOT.TFile(outputFileName,'recreate')
+    pog_file = ROOT.TFile('{0}/{1}'.format(sf_dir, pog_filename))
+    outfile = ROOT.TFile(output_filename,'recreate')
 
     # find lumi with eg:
     # brilcalc lumi --normtag <my normtag> -i <my json> --hltpath "HLT_IsoMu20_v*"
@@ -50,16 +50,16 @@ def main():
         totlumi += singlemuoneffs[path]['lumi']
 
     # get hist for each path
-    mchist0 = ROOT.TH2F(pogFile.Get(singlemuoneffs['runC_IsoMu20_OR_IsoTkMu20']['MC']))
-    dahist0 = ROOT.TH2F(pogFile.Get(singlemuoneffs['runC_IsoMu20_OR_IsoTkMu20']['DATA']))
+    mchist0 = ROOT.TH2F(pog_file.Get(singlemuoneffs['runC_IsoMu20_OR_IsoTkMu20']['MC']))
+    dahist0 = ROOT.TH2F(pog_file.Get(singlemuoneffs['runC_IsoMu20_OR_IsoTkMu20']['DATA']))
     weight0 = singlemuoneffs['runC_IsoMu20_OR_IsoTkMu20']['lumi'] / totlumi
 
-    mchist1 = ROOT.TH2F(pogFile.Get(singlemuoneffs['runD_IsoMu20_OR_IsoTkMu20_HLTv4p2']['MC']))
-    dahist1 = ROOT.TH2F(pogFile.Get(singlemuoneffs['runD_IsoMu20_OR_IsoTkMu20_HLTv4p2']['DATA']))
+    mchist1 = ROOT.TH2F(pog_file.Get(singlemuoneffs['runD_IsoMu20_OR_IsoTkMu20_HLTv4p2']['MC']))
+    dahist1 = ROOT.TH2F(pog_file.Get(singlemuoneffs['runD_IsoMu20_OR_IsoTkMu20_HLTv4p2']['DATA']))
     weight1 = singlemuoneffs['runD_IsoMu20_OR_IsoTkMu20_HLTv4p2']['lumi'] / totlumi
 
-    mchist2 = ROOT.TH2F(pogFile.Get(singlemuoneffs['runD_IsoMu20_OR_IsoTkMu20_HLTv4p3']['MC']))
-    dahist2 = ROOT.TH2F(pogFile.Get(singlemuoneffs['runD_IsoMu20_OR_IsoTkMu20_HLTv4p3']['DATA']))
+    mchist2 = ROOT.TH2F(pog_file.Get(singlemuoneffs['runD_IsoMu20_OR_IsoTkMu20_HLTv4p3']['MC']))
+    dahist2 = ROOT.TH2F(pog_file.Get(singlemuoneffs['runD_IsoMu20_OR_IsoTkMu20_HLTv4p3']['DATA']))
     weight2 = singlemuoneffs['runD_IsoMu20_OR_IsoTkMu20_HLTv4p3']['lumi'] / totlumi
 
     # create result hists
@@ -102,7 +102,7 @@ def main():
     DAhist.Write()
     outfile.Write()
     outfile.Close()
-    pogFile.Close()
+    pog_file.Close()
 
 
 if __name__ == "__main__":
