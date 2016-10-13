@@ -108,7 +108,8 @@ class ZH4Mu(AnalysisBase):
         self.cutflow.add('nEv_SamePVDiMu',  'Dimu pair has same pv mus')
         self.cutflow.add('nEv_InvMassDiMu', 'Dimu pair has invariant mass > {0}'.format(self.cDiMuInvMass))
         self.cutflow.add('nEv_PtDiMu',      'Dimu pair has pT > {0}'.format(self.cPtDiMu))
-        self.cutflow.add('nEv_2DiMu',       'Require aat least 2 "good" dimuon pairs')
+        self.cutflow.add('nEv_2DiMu',       'Require at least 2 dimuon pairs')
+        self.cutflow.add('nEv_2RealDiMu',   'Require at least 2 "good" dimuon pairs')
 
 
 
@@ -392,10 +393,6 @@ class ZH4Mu(AnalysisBase):
             jetIsClean = True
             for mu in goodMuons:
                 if DeltaR(mu, jet) < self.cDeltaR: jetIsClean = False
-            for e in goodElectrons:
-                if DeltaR(e, jet) < self.cDeltaR: jetIsClean = False
-            for t in goodTaus:
-                if DeltaR(t, jet) < self.cDeltaR: jetIsClean = False
             if not jetIsClean: continue
             
             # save good jet
@@ -477,6 +474,11 @@ class ZH4Mu(AnalysisBase):
             if pair[0] in pairZ: continue
             if pair[1] in pairZ: continue
             pairH = pair
+            break
+
+        # make sure we got two distinct pairs
+        if not (pairZ and pairH): return
+        self.cutflow.increment('nEv_2RealDiMu')
 
 
 
@@ -584,33 +586,6 @@ class ZH4Mu(AnalysisBase):
             self.histograms['hDiMuDeltaPhi'].Fill(mupair[0].Phi() - mupair[1].Phi(), eventweight)
         
 
-        #############################
-        # Electrons #################
-        #############################
-        self.histograms['hNumE'].Fill(len(goodElectrons), eventweight)
-        for e in goodElectrons:
-            self.histograms['hEPt'].Fill(e.Pt(), eventweight)
-            self.histograms['hEEta'].Fill(e.Eta(), eventweight)
-            self.histograms['hEPhi'].Fill(e.Phi(), eventweight)
-        # leading electron
-        if len(goodElectrons) > 0:
-            self.histograms['hLeadEPt'].Fill(goodElectrons[0].Pt(), eventweight)
-        # subleading electron
-        if len(goodElectrons) > 1:
-            self.histograms['hSubLeadEPt'].Fill(goodElectrons[1].Pt(), eventweight)
-
-        #############################
-        # Dielectron ################
-        #############################
-        for epair in diElectronPairs:
-            diEP4 = epair[0].P4() + epair[1].P4()
-            self.histograms['hDiEPt'].Fill(diEP4.Pt(), eventweight)
-            self.histograms['hDiEEta'].Fill(diEP4.Eta(), eventweight)
-            self.histograms['hDiEPhi'].Fill(diEP4.Phi(), eventweight)
-            self.histograms['hDiEInvMass'].Fill(diEP4.M(), eventweight)
-            self.histograms['hDiEDeltaPt'].Fill(epair[0].Pt() - epair[1].Pt(), eventweight)
-            self.histograms['hDiEDeltaEta'].Fill(epair[0].Eta() - epair[1].Eta(), eventweight)
-            self.histograms['hDiEDeltaPhi'].Fill(epair[0].Phi() - epair[1].Phi(), eventweight)
 
 
         #############################
@@ -628,25 +603,12 @@ class ZH4Mu(AnalysisBase):
         if len(goodJets) > 1:
             self.histograms['hSubLeadJetPt'].Fill(goodJets[1].Pt(), eventweight)
 
-        #############################
-        # Dijet #####################
-        #############################
-        for jetpair in diJetPairs:
-            diJetP4 = jetpair[0].P4() + jetpair[1].P4()
-            self.histograms['hDiJetPt'].Fill(diJetP4.Pt(), eventweight)
-            self.histograms['hDiJetEta'].Fill(diJetP4.Eta(), eventweight)
-            self.histograms['hDiJetPhi'].Fill(diJetP4.Phi(), eventweight)
-            self.histograms['hDiJetInvMass'].Fill(diJetP4.M(), eventweight)
-            self.histograms['hDiJetDeltaPt'].Fill(jetpair[0].Pt() - jetpair[1].Pt(), eventweight)
-            self.histograms['hDiJetDeltaEta'].Fill(jetpair[0].Eta() - jetpair[1].Eta(), eventweight)
-            self.histograms['hDiJetDeltaPhi'].Fill(jetpair[0].Phi() - jetpair[1].Phi(), eventweight)
 
 
         #############################
         # MET #######################
         #############################
         self.histograms['hMET'].Fill(self.met.Et(), eventweight)
-        self.histograms['hMETPhi'].Fill(self.met.Phi(), eventweight)
 
 
 
