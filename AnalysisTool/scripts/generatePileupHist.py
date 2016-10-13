@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Run me with:
-#     python generatePileupHist.py -version "76X"
+#     python generatePileupHist.py -version "80X"
 #
 
 import os, sys
@@ -51,10 +51,10 @@ def main(argv=None):
     print 'version = ' + cmsswversion
 
     histName = 'pileup'
-    pileupDir = '{0}/src/AnalysisToolLight/AnalysisTool/data/pileup'.format(os.environ['CMSSW_BASE'])
-    outputFileName = '{0}/pileup_{1}.root'.format(pileupDir, cmsswversion)
+    pileup_dir = '{0}/src/AnalysisToolLight/AnalysisTool/data/pileup'.format(os.environ['CMSSW_BASE'])
+    outputFileName = '{0}/pileup_{1}.root'.format(pileup_dir, cmsswversion)
 
-    pileupDist = getMixingProb(cmsswversion, pileupDir)
+    pileupDist = getMixingProb(cmsswversion, pileup_dir)
     rootfile = ROOT.TFile(outputFileName,'recreate')
     
     # create mc pileup dist
@@ -67,7 +67,7 @@ def main(argv=None):
     # read data
     #for datatype in ['','_up','_down','_69000','_71000']:
     for datatype in ['','_up','_down']:
-        dataFileName = '{0}/PileUpData{1}{2}.root'.format(pileupDir, cmsswversion, datatype)
+        dataFileName = '{0}/PileUpData{1}{2}.root'.format(pileup_dir, cmsswversion, datatype)
         datafile = ROOT.TFile(dataFileName)
         histdata = datafile.Get(histName)
         histdata.SetTitle('{0}_Data{1}'.format(histName, datatype))

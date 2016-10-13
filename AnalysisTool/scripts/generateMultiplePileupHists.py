@@ -51,10 +51,10 @@ def main(argv=None):
     print 'version = ' + cmsswversion
 
     histName = 'pileup'
-    pileupDir = '{0}/src/AnalysisToolLight/AnalysisTool/data/pileup'.format(os.environ['CMSSW_BASE'])
-    outputFileName = '{0}/pileup_{1}_68-75.root'.format(pileupDir, cmsswversion)
+    pileup_dir = '{0}/src/AnalysisToolLight/AnalysisTool/data/pileup'.format(os.environ['CMSSW_BASE'])
+    outputFileName = '{0}/pileup_{1}_68-75.root'.format(pileup_dir, cmsswversion)
 
-    pileupDist = getMixingProb(cmsswversion, pileupDir)
+    pileupDist = getMixingProb(cmsswversion, pileup_dir)
     rootfile = ROOT.TFile(outputFileName,'recreate')
     
     # create mc pileup dist
@@ -66,8 +66,9 @@ def main(argv=None):
     
     # read data
     #for datatype in ['','_up','_down','_69000','_71000']:
-    for datatype in ['_68000','_69000','_70000','_70500','_71000','_71500','_72000','_72500','_73000','_74000','_75000']:
-        dataFileName = '{0}/PileUpData{1}{2}.root'.format(pileupDir, cmsswversion, datatype)
+    #for datatype in ['_68000','_69000','_70000','_70500','_71000','_71500','_72000','_72500','_73000','_74000','_75000']:
+    for datatype in ['_68000','_68500','_69000','_69500','_70000','_70500','_71000','_71500','_72000','_72500','_73000','_74000']:
+        dataFileName = '{0}/PileUpData{1}{2}.root'.format(pileup_dir, cmsswversion, datatype)
         datafile = ROOT.TFile(dataFileName)
         histdata = datafile.Get(histName)
         histdata.SetTitle('{0}_Data{1}'.format(histName, datatype))
