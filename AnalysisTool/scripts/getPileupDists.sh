@@ -5,7 +5,6 @@ v="80X"
 # Common                     #
 ##############################
 pileupdir=$CMSSW_BASE/src/AnalysisToolLight/AnalysisTool/data/pileup
-#pileupdir=$CMSSW_BASE/src/AnalysisToolLight/AnalysisTool/python/tools
 
 
 
@@ -61,14 +60,14 @@ fi
 
 # make files
 xsec=$minbias
-echo "Making PU files for $v with min bias xsec $minbias."
+echo "Making PU files for $v with min bias xsec ${minbias}."
 up=$(echo "$xsec*1.05" | bc)
 down=$(echo "$xsec*0.95" | bc)
 echo $xsec
 pileupCalc.py -i $lumimask --inputLumiJSON $pileupjson --calcMode true  --minBiasXsec $xsec --maxPileupBin 80 --numPileupBins 80 $pileupdir/PileUpData${v}.root
-echo $up
-pileupCalc.py -i $lumimask --inputLumiJSON $pileupjson --calcMode true  --minBiasXsec $up --maxPileupBin 80 --numPileupBins 80 $pileupdir/PileUpData${v}_up.root
-echo $down
-pileupCalc.py -i $lumimask --inputLumiJSON $pileupjson --calcMode true  --minBiasXsec $down --maxPileupBin 80 --numPileupBins 80 $pileupdir/PileUpData${v}_down.root
+echo "up = ${up}"
+pileupCalc.py -i $lumimask --inputLumiJSON $pileupjson --calcMode true  --minBiasXsec $up --maxPileupBin 80 --numPileupBins 80 $pileupdir/PileUpData${v}_Up.root
+echo "down = ${down}"
+pileupCalc.py -i $lumimask --inputLumiJSON $pileupjson --calcMode true  --minBiasXsec $down --maxPileupBin 80 --numPileupBins 80 $pileupdir/PileUpData${v}_Down.root
 
 echo "done"
