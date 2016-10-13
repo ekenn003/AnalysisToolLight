@@ -9,10 +9,14 @@ def selectAnalysisCode(analysisname, basedir):
     '''Select analysis code'''
     if analysisname=='template':
         analysiscode = '{0}/AnalysisTool/templates/FinalState_2mu_template.py'.format(basedir)
+    elif analysisname=='PU':
+        analysiscode = '{0}/AnalysisTool/pileupstudy/FinalState_2mu.py'.format(basedir)
     elif analysisname=='2Mu':
         analysiscode = '{0}/2Mu/python/FinalState_2mu.py'.format(basedir)
     elif analysisname=='VH4Mu':
         analysiscode = '{0}/VH/python/FinalState_4mu.py'.format(basedir)
+    elif analysisname=='ZH2J2Mu':
+        analysiscode = '{0}/ZH/python/FinalState_2j2mu.py'.format(basedir)
     else:
         raise ValueError('Analysis choice "{0}" not recognised.'.format(analysisname))
     return analysiscode
@@ -91,3 +95,4 @@ def splitInputFile(inputfile, njobs, linesperfile):
             # write line to fout
             fout.write(line)
         fout.close()
+
