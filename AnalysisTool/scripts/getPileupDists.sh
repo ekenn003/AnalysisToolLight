@@ -22,7 +22,7 @@ if [ $v == "76X" ]; then
     # 76X samples with pileup matching data
     mixurl="https://raw.githubusercontent.com/cms-sw/cmssw/CMSSW_7_6_X/SimGeneral/MixingModule/python/"
     mixfile="mix_2015_25ns_FallMC_matchData_PoissonOOTPU_cfi.py"
-    minbias=71000
+    minbias=69000
 
 ##############################
 # 80X                        #
@@ -37,7 +37,7 @@ elif [ $v == "80X" ]; then
     # 80X sample with startup pileup
     mixurl="https://raw.githubusercontent.com/cms-sw/cmssw/CMSSW_8_0_X/SimGeneral/MixingModule/python/"
     mixfile="mix_2016_25ns_SpringMC_PUScenarioV1_PoissonOOTPU_cfi.py"
-    minbias=71300
+    minbias=69200
 
 ##############################
 # Those are the only choices #
