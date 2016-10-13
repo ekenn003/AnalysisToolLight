@@ -8,6 +8,7 @@ import ROOT
 from collections import OrderedDict
 from AnalysisToolLight.AnalysisTool.AnalysisBase import AnalysisBase
 from AnalysisToolLight.AnalysisTool.AnalysisBase import main as analysisBaseMain
+from AnalysisToolLight.AnalysisTool.ScaleFactors import VariablePileupWeights
 
 ## ___________________________________________________________
 class PU2Mu(AnalysisBase):
@@ -26,12 +27,9 @@ class PU2Mu(AnalysisBase):
         # Some run options                                       #
         #                                                        #
         ##########################################################
-        self.doPileupReweighting = True
-        #self.includeTriggerScaleFactors = True
-        #self.includeLeptonScaleFactors = True
-
-        ## use rochester corrections (default is false)
-        #self.useRochesterCorrections = True
+        pufilerange = '68-75'
+        self.puWeights = VariablePileupWeights(self.cmsswversion, self.data_dir, pufilerange)
+        self.minBiasChoices = self.puWeights.getMinBiasRange()
 
         ##########################################################
         #                                                        #
@@ -59,18 +57,10 @@ class PU2Mu(AnalysisBase):
         self.histograms['hVtxN'] = ROOT.TH1F('hVtxN', 'hVtxN', 100, 0., 100.)
         self.histograms['hVtxN'].GetXaxis().SetTitle('N_{PV}')
         self.histograms['hVtxN'].GetYaxis().SetTitle('Candidates')
-        self.histograms['hVtxN_u'] = ROOT.TH1F('hVtxN_u', 'hVtxN_u', 100, 0., 100.)
-        self.histograms['hVtxN_u'].GetXaxis().SetTitle('N_{PV} before event weighting')
-        self.histograms['hVtxN_u'].GetYaxis().SetTitle('Candidates')
-        self.histograms['hVtxN_nopu'] = ROOT.TH1F('hVtxN_nopu', 'hVtxN_nopu', 100, 0., 100.)
-        self.histograms['hVtxN_nopu'].GetXaxis().SetTitle('N_{PV} before event or PU weighting')
-        self.histograms['hVtxN_nopu'].GetYaxis().SetTitle('Candidates')
 
-        self.histograms['hWeight'] = ROOT.TH1F('hWeight', 'hWeight', 100, -1000., 100.)
-        self.histograms['hWeight'].GetXaxis().SetTitle('Event weight')
-        self.histograms['hWeight'].GetYaxis().SetTitle('Events')
-
-
+        for name in self.histograms.keys():
+            for x in self.minBiasChoices:
+                self.histograms['{0}_{1}'.format(name, x)] = self.histograms[name].Clone('{0}_{1}'.format(self.histograms[name].GetName(), x))
 
 
     ## _______________________________________________________
@@ -94,7 +84,6 @@ class PU2Mu(AnalysisBase):
         else:
             passesHLT = self.event.PassesHLTs(self.hltriggers)
         if not passesHLT: return
-        self.cutflow.increment('nEv_Trigger')
 
         #############################
         # Primary vertices ##########
@@ -113,44 +102,72 @@ class PU2Mu(AnalysisBase):
 
         # require at least one good vertex
         if not goodVertices: return
-        if (isVtxNdfOK and isVtxZOK): self.cutflow.increment('nEv_PV')
+
+
+
+
+
+
+
+        #############################
+        # MUONS #####################
+        #############################
+        # loop over muons and save the good ones
+        goodMuons = []
+        isGAndTr = False
+        isPtCutOK = False
+        isEtaCutOK = False
+        isIsoOK = False
+        isIDOK = False
+        for muon in self.muons:
+            # muon cuts
+            if not (muon.IsGlobal() and muon.IsTracker()): continue
+            isGAndTr = True
+            if not muon.Pt() > 25.: continue
+            isPtCutOK = True
+            if not muon.AbsEta() < 2.4: continue
+            isEtaCutOK = True
+
+            # check isolation
+            if not (muon.CheckIso('PF_dB', 'tight')): continue
+            isIsoOK = True
+
+            # check muon ID
+            isIDOK = muon.IsTightMuon()
+            if not (isIDOK): continue
+
+            # if we get to this point, push muon into goodMuons
+            goodMuons += [muon]
+
+
+        # require at least 2 good muons in this event
+        if len(goodMuons) < 2: return
+
 
         ##########################################################
         #                                                        #
         # Include pileup reweighting                             #
         #                                                        #
         ##########################################################
-        self.histograms['hVtxN_nopu'].Fill(len(goodVertices))
+        baseEventWeight = 1.
+        if self.ismc:
+            baseEventWeight = self.event.GenWeight()
+            #if self.doPileupReweighting:
+            #    eventweight *= self.puweights.getWeight(self.event.NumTruePileUpInteractions())
 
-        eventweight = 1.
+        self.histograms['hVtxN'].Fill(len(goodVertices), baseEventWeight)
+        for x in self.minBiasChoices:
+            if self.ismc:
+                eventWeight = baseEventWeight
+                eventWeight *= self.puWeights.getWeightForXSec(x, self.event.NumTruePileUpInteractions())
+            else: eventWeight = 1.
 
-        if not self.isdata:
-            eventweight = self.event.GenWeight()
-            if self.doPileupReweighting:
-                eventweight *= self.puweights.getWeight(self.event.NumTruePileUpInteractions())
+            self.histograms['hVtxN_{0}'.format(x)].Fill(len(goodVertices), eventWeight)
 
-        # Fill selected plots without scale factors
-        self.histograms['hVtxN_u'].Fill(len(goodVertices), eventweight)
 
-        ##########################################################
-        #                                                        #
-        # Update event weight (MC only)                          #
-        #                                                        #
-        ##########################################################
-        if not self.isdata:
-            if self.includeTriggerScaleFactors:
-                eventweight *= self.hltweights.getScale(goodMuons)
-            if self.includeLeptonScaleFactors:
-                eventweight *= self.muonweights.getIdScale(goodMuons, self.cMuID)
-                # NB: the below only works for PF w/dB isolation
-                eventweight *= self.muonweights.getIsoScale(goodMuons, self.cMuID, self.cIsoMuLevel)
-        self.histograms['hWeight'].Fill(eventweight)
 
-        #############################
-        # PV after selection ########
-        #############################
-        # fill histograms with good pvs
-        self.histograms['hVtxN'].Fill(len(goodVertices), eventweight)
+
+
 
 
 

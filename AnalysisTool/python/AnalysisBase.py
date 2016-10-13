@@ -27,16 +27,21 @@ class AnalysisBase(object):
         self.infoname = 'AC1Binfo'
         self.luminame = 'AC1Blumi'
         self.treename = 'AC1B'
-        inputFileList  = args.inputFileList
-        self.output    = args.outputFileName
-        self.dataDir   = args.dataDir
+        input_file_list  = args.input_file_list
+        self.output    = args.output_filename
+        self.data_dir   = args.data_dir
 
         # put file names into a list called self.filenames
-        with open(inputFileList,'r') as f:
+        with open(input_file_list,'r') as f:
             for line in f.readlines():
                 fname_ = line.strip()
                 if fname_.startswith('#'): continue
-                if fname_.startswith('/store'): fname_ = 'root://eoscms.cern.ch//{0}'.format(fname_)
+
+                # personal storage options
+                if fname_.startswith('T2_CH_CERN'): fname_ = 'root://eoscms.cern.ch/{0}'.format(fname_[10:])
+                # use global redirector for UCSD until I learn the real one
+                elif fname_.startswith('T2_US_UCSD'): fname_ = 'root://cms-xrd-global.cern.ch/{0}'.format(fname_[10:])
+
                 self.filenames += [fname_]
 
 
@@ -68,6 +73,7 @@ class AnalysisBase(object):
         logging.info('Counting events and lumiblocks...')
         self.numlumis = lumichain.GetEntries()
         for entry in xrange(self.numlumis):
+            print 'getting entry {0}/{1}'.format(entry,self.numlumis)
             lumichain.GetEntry(entry)
             self.nevents += lumichain.lumi_nevents
             self.sumweights += lumichain.lumi_sumweights
@@ -87,7 +93,7 @@ class AnalysisBase(object):
         self.includeTriggerScaleFactors = False
         self.includeLeptonScaleFactors = False
         self.useRochesterCorrections = False
-        #initialise some other crap
+        # initialise cutflow object to None... why
         self.cutflow = None
 
         # initialize output file and create tree to save wum of weights
@@ -112,17 +118,17 @@ class AnalysisBase(object):
         # pileup
         if self.doPileupReweighting:
             logging.info('Loading pileup info...')
-            self.puweights = PileupWeights(self.cmsswversion, self.dataDir)
+            self.puweights = PileupWeights(self.cmsswversion, self.data_dir)
 
         # trigger scale factors
         if self.includeTriggerScaleFactors:
             logging.info('Loading trigger scale factor info...')
-            self.hltweights = HLTScaleFactors(self.cmsswversion, self.dataDir, self.pathForTriggerScaleFactors)
+            self.hltweights = HLTScaleFactors(self.cmsswversion, self.data_dir, self.pathForTriggerScaleFactors)
 
         # lepton scale factors
         if self.includeLeptonScaleFactors:
             logging.info('Loading lepton scale factor info...')
-            self.muonweights = MuonScaleFactors(self.cmsswversion, self.dataDir)
+            self.muonweights = MuonScaleFactors(self.cmsswversion, self.data_dir)
 
         eventsprocessed = 0
         # how often (in number of events) should we print out progress updates?
@@ -158,15 +164,16 @@ class AnalysisBase(object):
                     logging.info('  Processing event {0}/{1} ({2:0.0f}%) [{3}:{4:02d}:{5:02d}]'.format(eventsprocessed, self.nevents, (100.*eventsprocessed)/self.nevents, hoursleft, minutesleft, secondsleft))
 
 
-                # load collections
+                # load required collections
                 self.event     = Event(row, self.sumweights)
                 self.vertices  = [Vertex(row, i) for i in range(row.primvertex_count)]
                 self.muons     = [Muon(row, i, self.useRochesterCorrections) for i in range(row.muon_count)]
-                self.electrons = [Electron(row, i) for i in range(row.electron_count)]
-                self.photons   = [Photon(row, i) for i in range(row.photon_count)]
-                self.taus      = [Tau(row, i) for i in range(row.tau_count)]
-                self.jets      = [Jet(row, i) for i in range(row.ak4pfchsjet_count)]
-                self.met       = PFMETTYPE1(row, 0) # MET is a vector of size 1
+                # load optional collections
+                self.electrons = [Electron(row, i) for i in range(row.electron_count)] if hasattr(row,'electron_count') else []
+                self.photons   = [Photon(row, i) for i in range(row.photon_count)] if hasattr(row,'photon_count') else []
+                self.taus      = [Tau(row, i) for i in range(row.tau_count)] if hasattr(row,'tau_count') else []
+                self.jets      = [Jet(row, i) for i in range(row.ak4pfchsjet_count)] if hasattr(row,'ak4pfchsjet_count') else []
+                self.met       = PFMETTYPE1(row, 0) if hasattr(row,'pfmettype1_count') else [] # MET is a vector of size 1
 
                 # do the event analysis!
                 # call the perEventAction method (which is overridden in the derived class)
@@ -291,11 +298,11 @@ def parse_command_line(argv):
     parser = argparse.ArgumentParser(description='Run analyzer')
 
     # line below is an example of a required argument
-    parser.add_argument('inputFileList', type=str, help='List of input files (AC1B*.root)')
-    parser.add_argument('outputFileName', type=str, help='Output file name')
-    parser.add_argument('dataDir', type=str, help='Data directory (usually AnalysisTool/data/)')
+    parser.add_argument('input_file_list', type=str, help='List of input files (AC1B*.root)')
+    parser.add_argument('output_filename', type=str, help='Output file name')
+    parser.add_argument('data_dir', type=str, help='Data directory (usually AnalysisTool/data/)')
     # line below is an example of an optional argument
-    #parser.add_argument('--outputFileName', type=str, default='ana.out', help='Output file name')
+    #parser.add_argument('--output_filename', type=str, default='ana.out', help='Output file name')
 
     return parser.parse_args(argv)
 
