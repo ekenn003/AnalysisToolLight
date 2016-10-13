@@ -43,7 +43,7 @@ class Ana2Mu(AnalysisBase):
         self.includeTriggerScaleFactors = True
         self.includeLeptonScaleFactors = True
 
-        # use rochester corrections (default is false)
+        ## use rochester corrections (default is false)
         self.useRochesterCorrections = True
 
         ##########################################################
@@ -396,6 +396,8 @@ class Ana2Mu(AnalysisBase):
         self.histograms_ctrl = {}
         for name in self.histograms.keys():
             self.histograms_ctrl[name+'_ctrl'] = self.histograms[name].Clone(self.histograms[name].GetName()+'_ctrl')
+        # add it to the extra histogram map
+        self.extraHistogramMap['control'] = self.histograms_ctrl
 
 
 
@@ -417,7 +419,12 @@ class Ana2Mu(AnalysisBase):
         #############################
         # Trigger ###################
         #############################
-        if not self.event.PassesHLTs(self.hltriggers): return
+        passesHLT = False
+        if (self.cmsswversion=='80X' and self.ismc):
+            passesHLT = True # 80X MC has no HLT 
+        else:
+            passesHLT = self.event.PassesHLTs(self.hltriggers)
+        if not passesHLT: return
         self.cutflow.increment('nEv_Trigger')
 
         #############################
@@ -605,10 +612,6 @@ class Ana2Mu(AnalysisBase):
         evtmet = self.met.Et()
         evtmetphi = self.met.Phi()
 
-        #############################
-        # PHOTONS ###################
-        #############################
-        # you can also do photons, but why would you
 
 
 
@@ -728,6 +731,9 @@ class Ana2Mu(AnalysisBase):
             self.histograms['hDiMuInvMass_nrc_u'].Fill(diMuP4.M(), eventweight)
         # with Roch corr
         for mu in goodMuons:
+            #print 'cor   = {0}'.format(mu.Pt('Corr'))
+            #print 'uncor = {0}'.format(mu.Pt('Uncorr'))
+            #print
             self.histograms['hMuPt_u'].Fill(mu.Pt('Corr'), eventweight)
             self.histograms['hMuEta_u'].Fill(mu.Eta('Corr'), eventweight)
             self.histograms['hMuPhi_u'].Fill(mu.Phi('Corr'), eventweight)
@@ -738,6 +744,11 @@ class Ana2Mu(AnalysisBase):
             self.histograms['hDiMuPt_u'].Fill(diMuP4.Pt(), eventweight)
             self.histograms['hDiMuInvMass_u'].Fill(diMuP4.M(), eventweight)
 
+            CorrdiMuP4 = mupair[0].P4('Corr') + mupair[1].P4('Corr')
+            UncorrdiMuP4 = mupair[0].P4('Uncorr') + mupair[1].P4('Uncorr')
+            #print 'cor inv mass   = {0}'.format(CorrdiMuP4.M())
+            #print 'uncor inv mass = {0}'.format(UncorrdiMuP4.M())
+            #print
 
         ##########################################################
         #                                                        #
@@ -773,6 +784,14 @@ class Ana2Mu(AnalysisBase):
         # Fill histograms                                        #
         #                                                        #
         ##########################################################
+
+        # decide on control plots
+        # control region = events without dimuon in signal region
+        fillControlPlots = False
+        for mupair in diMuonPairs:
+            mupairP4 = mupair[0].P4() + mupair[1].P4()
+            if (mupairP4.M() < self.sigLow or mupairP4.M() > self.sigHigh): fillControlPlots = True
+
         #############################
         # PV after selection ########
         #############################
@@ -787,6 +806,11 @@ class Ana2Mu(AnalysisBase):
             self.histograms['hMuPt'].Fill(mu.Pt(), eventweight)
             self.histograms['hMuEta'].Fill(mu.Eta(), eventweight)
             self.histograms['hMuPhi'].Fill(mu.Phi(), eventweight)
+            # fill comtrol plots
+            if fillControlPlots:
+                self.histograms_ctrl['hMuPt_ctrl'].Fill(mu.Pt(), eventweight)
+                self.histograms_ctrl['hMuEta_ctrl'].Fill(mu.Eta(), eventweight)
+                self.histograms_ctrl['hMuPhi_ctrl'].Fill(mu.Phi(), eventweight)
 
         #############################
         # Dimuon ####################
@@ -802,6 +826,17 @@ class Ana2Mu(AnalysisBase):
             self.histograms['hDiMuDeltaPt'].Fill(mupair[0].Pt() - mupair[1].Pt(), eventweight)
             self.histograms['hDiMuDeltaEta'].Fill(mupair[0].Eta() - mupair[1].Eta(), eventweight)
             self.histograms['hDiMuDeltaPhi'].Fill(mupair[0].Phi() - mupair[1].Phi(), eventweight)
+            # fill comtrol plots
+            if fillControlPlots:
+                self.histograms_ctrl['hLeadMuPt_ctrl'].Fill(mupair[0].Pt(), eventweight)
+                self.histograms_ctrl['hSubLeadMuPt_ctrl'].Fill(mupair[1].Pt(), eventweight)
+                self.histograms_ctrl['hDiMuPt_ctrl'].Fill(diMuP4.Pt(), eventweight)
+                self.histograms_ctrl['hDiMuEta_ctrl'].Fill(diMuP4.Eta(), eventweight)
+                self.histograms_ctrl['hDiMuPhi_ctrl'].Fill(diMuP4.Phi(), eventweight)
+                self.histograms_ctrl['hDiMuInvMass_ctrl'].Fill(diMuP4.M(), eventweight)
+                self.histograms_ctrl['hDiMuDeltaPt_ctrl'].Fill(mupair[0].Pt() - mupair[1].Pt(), eventweight)
+                self.histograms_ctrl['hDiMuDeltaEta_ctrl'].Fill(mupair[0].Eta() - mupair[1].Eta(), eventweight)
+                self.histograms_ctrl['hDiMuDeltaPhi_ctrl'].Fill(mupair[0].Phi() - mupair[1].Phi(), eventweight)
         
 
         #############################
