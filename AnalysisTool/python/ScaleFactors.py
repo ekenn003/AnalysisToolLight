@@ -64,25 +64,74 @@ class PileupWeights(ScaleFactor):
     ## _______________________________________________________
     def getWeight(self, numtrueinteractions):
         if self.error: return 1.
-        elif len(self.pileupScale) > numtrueinteractions:
+        if len(self.pileupScale) > numtrueinteractions:
             return self.pileupScale[int(round(numtrueinteractions))]
         else:
             return 0.
     ## _______________________________________________________
     def getWeightUp(self, numtrueinteractions):
         if self.error: return 1.
-        elif len(self.pileupScale_up) > numtrueinteractions:
+        if len(self.pileupScale_up) > numtrueinteractions:
             return self.pileupScale_up[int(round(numtrueinteractions))]
         else:
             return 0.
     ## _______________________________________________________
     def getWeightDown(self, numtrueinteractions):
         if self.error: return 1.
-        elif len(self.pileupScale_down) > numtrueinteractions:
+        if len(self.pileupScale_down) > numtrueinteractions:
             return self.pileupScale_down[int(round(numtrueinteractions))]
         else:
             return 0.
 
+
+## ___________________________________________________________
+class VariablePileupWeights(ScaleFactor):
+    # constructors/helpers
+    def __init__(self, cmsswversion, datadir, fname):
+        super(VariablePileupWeights, self).__init__(cmsswversion, datadir)
+        self.error = False
+
+        self.xsecRange = [68000, 68500, 69000, 69500, 70000, 70500, 71000, 71500, 72000, 72500, 73000]
+
+
+        self.pileupScaleMap = {}
+        for xsec in self.xsecRange:
+            self.pileupScaleMap[xsec] = []
+
+        filename = '{0}/pileup/pileup_{1}_{2}.root'.format(self.datadir, cmsswversion, fname)
+
+        logging.info('  Looking for pileup file at {0}'.format(filename))
+        if not os.path.exists(filename):
+            self.error = True
+            logging.info('       *   ')
+            logging.info('    *******')
+            logging.info('    WARNING: Can\'t find Pileup file.')
+            logging.info('    *******')
+            logging.info('       *   ')
+        else:
+            pufile = ROOT.TFile(filename)
+            for xsec in self.xsecRange:
+                scalehist_ = pufile.Get('pileup_scale_{0}'.format(xsec))
+                for b in range(scalehist_.GetNbinsX()):
+                    self.pileupScaleMap[xsec].append(scalehist_.GetBinContent(b+1))
+                    
+            pufile.Close()
+
+    # methods 
+    ## _______________________________________________________
+    def getMinBiasRange(self):
+        return self.xsecRange
+
+    ## _______________________________________________________
+    def getWeightForXSec(self, minbiasxsec, numtrueinteractions):
+        if minbiasxsec not in self.xsecRange:
+            raise ValueError('{0} is not an available min bias xsec'.format(minbiasxsec))
+        if self.error: return 1.
+
+        if len(self.pileupScaleMap[minbiasxsec]) > numtrueinteractions:
+            return self.pileupScaleMap[minbiasxsec][int(round(numtrueinteractions))]
+        else:
+            return 0.
 
 
 
