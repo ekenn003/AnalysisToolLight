@@ -20,8 +20,8 @@ Below is a description of the structure of this repo:
       - `generatePileupDist.py`: generates a root file with scale factors for MC, given the CMSSW version that the original miniAODs were created from and the root files output by getDataPileupDist.sh. This creates AnalysisTool/data/pileup/pileup_76X.root
    - **templates**
       - `FinalState_2mu_template.py`: template analysis with examples of how to access all objects and some methods
-   - **VH**: directory for analysis of VH channel
-      - **python**: code for each final state (in VH) to be analysed goes here
-         - `FinalState_4mu.py`: analysis code for VH->4muon final state
-   - `run_local.sh`: example of how to run an analysis job locally
+- **VH**: directory for analysis of VH channel
+   - **python**: code for each final state (in VH) to be analysed goes here
+      - `FinalState_4mu.py`: analysis code for VH->4muon final state
+- `run_local.sh`: example of how to run an analysis job locally
 
