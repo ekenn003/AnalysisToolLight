@@ -6,6 +6,7 @@ import itertools
 import argparse
 import sys, logging
 import ROOT
+from array import array
 from collections import OrderedDict
 from AnalysisToolLight.AnalysisTool.tools.tools import DeltaR, Z_MASS, EventIsOnList
 from AnalysisToolLight.AnalysisTool.AnalysisBase import AnalysisBase, CutFlow
@@ -399,6 +400,14 @@ class Ana2Mu(AnalysisBase):
         # add it to the extra histogram map
         self.extraHistogramMap['control'] = self.histograms_ctrl
 
+        ##########################################################
+        #                                                        #
+        # Set up tree used for limit calculation                 #
+        #                                                        #
+        ##########################################################
+        # add branches
+        dimuon_mass_all = array('f',[0.])
+        self.dimuon_mass_tree.Branch('dimuon_mass_all', dimuon_mass_all, 'dimuon_mass_all/F')
 
 
     ## _______________________________________________________
@@ -826,7 +835,11 @@ class Ana2Mu(AnalysisBase):
             self.histograms['hDiMuDeltaPt'].Fill(mupair[0].Pt() - mupair[1].Pt(), eventweight)
             self.histograms['hDiMuDeltaEta'].Fill(mupair[0].Eta() - mupair[1].Eta(), eventweight)
             self.histograms['hDiMuDeltaPhi'].Fill(mupair[0].Phi() - mupair[1].Phi(), eventweight)
-            # fill comtrol plots
+
+            dimuon_mass_all = [(diMuP4.M() * eventweight)]
+            self.dimuon_mass_tree.Fill()
+
+            # fill control plots
             if fillControlPlots:
                 self.histograms_ctrl['hLeadMuPt_ctrl'].Fill(mupair[0].Pt(), eventweight)
                 self.histograms_ctrl['hSubLeadMuPt_ctrl'].Fill(mupair[1].Pt(), eventweight)

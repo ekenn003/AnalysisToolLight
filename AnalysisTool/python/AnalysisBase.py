@@ -33,7 +33,6 @@ class AnalysisBase(object):
         # outputs
         self.output = args.output_filename
         self.dimuon_tree_name = 'dimuon'
-        self.dimuon_tree_branches = ['dimuon_mass_all']
 
         # put file names into a list called self.filenames
         with open(input_file_list,'r') as f:
@@ -105,9 +104,6 @@ class AnalysisBase(object):
 
         # initialise dimuon mass tree we will use for limit calculations
         self.dimuon_mass_tree = ROOT.TTree(self.dimuon_tree_name, self.dimuon_tree_name)
-        # add branches
-        for branch in self.dimuon_tree_branches:
-            self.dimuon_mass_tree.Branch(branch, array('f',[0.]), '{0}/F'.format(branch))
 
 
     ## _______________________________________________________
@@ -253,7 +249,7 @@ class AnalysisBase(object):
         '''
         # write histograms to output file
         self.outfile.cd()
-        sumw_ = self.sumweights if self.sumweights != 0. else self.nevents
+        sumw_ = self.sumweights if self.sumweights != 0. else self.eventsprocessed
 
         #sumwts = array('f', [sumwts_])
         #testtree = ROOT.TTree('testtree', 'testtree')
@@ -282,6 +278,7 @@ class AnalysisBase(object):
                     self.extraHistogramMap[dirname][hist].Write()
             tdir.cd('../')
 
+        self.dimuon_mass_tree.Write()
 
         logging.info('Output file {0} created.'.format(self.output))
         self.outfile.Close()
