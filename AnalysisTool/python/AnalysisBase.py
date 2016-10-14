@@ -4,7 +4,7 @@ import argparse
 import glob
 import os, sys, time
 import ROOT
-from array import array
+#from array import array
 from prettytable import PrettyTable
 from Dataform import *
 from ScaleFactors import *
@@ -88,6 +88,8 @@ class AnalysisBase(object):
         # initialize map of histograms as empty
         self.histograms = {}
         self.extraHistogramMap = {}
+        # initialise list of category trees
+        self.category_trees = []
         # initialise some other options that will be overridden in the derived class
         self.pathForTriggerScaleFactors = ''
         self.doPileupReweighting = False
@@ -97,7 +99,7 @@ class AnalysisBase(object):
         # initialise cutflow object to None... why
         self.cutflow = None
 
-        # initialize output file and create tree to save wum of weights
+        # initialize output file and create tree to save sum of weights
         self.outfile = ROOT.TFile(self.output,'RECREATE')
 
 
@@ -273,7 +275,11 @@ class AnalysisBase(object):
                     self.extraHistogramMap[dirname][hist].Write()
             tdir.cd('../')
 
-        logging.info('Output file {0} created.'.format(self.output))
+        for tree in self.category_trees:
+            tree.Write()
+
+	logging.info('Created the following file:')
+        logging.info('    {0}'.format(self.output))
         self.outfile.Close()
 
     ## _______________________________________________________
@@ -288,10 +294,10 @@ class AnalysisBase(object):
         self.endOfJobAction()
         self.write()
         logging.info('Job complete.')
-        logging.info('NEVENTS processed: {0}/{1} ({2}%)'.format(self.eventsprocessed, self.nevents, 100*(self.eventsprocessed/self.nevents)))
+        logging.info('    NEVENTS processed: {0}/{1} ({2}%)'.format(self.eventsprocessed, self.nevents, (100*self.eventsprocessed)/self.nevents))
         logging.info('Sample information:')
-        logging.info('NEVENTS:    {0}'.format(self.nevents))
-        logging.info('SUMWEIGHTS: {0}'.format(self.sumweights))
+        logging.info('    NEVENTS:    {0}'.format(self.nevents))
+        logging.info('    SUMWEIGHTS: {0}'.format(self.sumweights))
 
 
 
@@ -315,3 +321,4 @@ def main(argv=None):
         argv = sys.argv[1:]
     args = parse_command_line(argv)
     return args
+
