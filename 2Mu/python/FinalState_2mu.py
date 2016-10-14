@@ -400,14 +400,35 @@ class Ana2Mu(AnalysisBase):
         # add it to the extra histogram map
         self.extraHistogramMap['control'] = self.histograms_ctrl
 
+
+
+
         ##########################################################
         #                                                        #
-        # Set up tree used for limit calculation                 #
+        # Set up trees for limit calculations                    #
         #                                                        #
         ##########################################################
-        # add branches
-        dimuon_mass_all = array('f',[0.])
-        self.dimuon_mass_tree.Branch('dimuon_mass_all', dimuon_mass_all, 'dimuon_mass_all/F')
+        # python array: 'L' = unsigned long, 'l' = signed long, 'f' = float
+        # TBranch: 'l' = unsigned long, 'L' = signed long, 'F' = float
+        self.ftreeCat1 = ROOT.TTree('Category1', 'Category1')
+        self.category_trees += [self.ftreeCat1]
+
+        self.tEventNr = array('L', [0])
+        self.ftreeCat1.Branch('tEventNr', self.tEventNr, 'tEventNr/l')
+        self.tLumiNr  = array('L', [0])
+        self.ftreeCat1.Branch('tLumiNr', self.tLumiNr, 'tLumiNr/l')
+        self.tRunNr   = array('L', [0])
+        self.ftreeCat1.Branch('tRunNr', self.tRunNr, 'tRunNr/l')
+        self.tInvMass = array('f', [0.])
+        self.ftreeCat1.Branch('tInvMass', self.tInvMass, 'tInvMass/F')
+        self.tEventWt = array('f', [0.])
+        self.ftreeCat1.Branch('tEventWt', self.tEventWt, 'tEventWt/F')
+
+
+
+
+
+
 
 
     ## _______________________________________________________
@@ -836,9 +857,6 @@ class Ana2Mu(AnalysisBase):
             self.histograms['hDiMuDeltaEta'].Fill(mupair[0].Eta() - mupair[1].Eta(), eventweight)
             self.histograms['hDiMuDeltaPhi'].Fill(mupair[0].Phi() - mupair[1].Phi(), eventweight)
 
-            dimuon_mass_all = [(diMuP4.M() * eventweight)]
-            self.dimuon_mass_tree.Fill()
-
             # fill control plots
             if fillControlPlots:
                 self.histograms_ctrl['hLeadMuPt_ctrl'].Fill(mupair[0].Pt(), eventweight)
@@ -850,7 +868,9 @@ class Ana2Mu(AnalysisBase):
                 self.histograms_ctrl['hDiMuDeltaPt_ctrl'].Fill(mupair[0].Pt() - mupair[1].Pt(), eventweight)
                 self.histograms_ctrl['hDiMuDeltaEta_ctrl'].Fill(mupair[0].Eta() - mupair[1].Eta(), eventweight)
                 self.histograms_ctrl['hDiMuDeltaPhi_ctrl'].Fill(mupair[0].Phi() - mupair[1].Phi(), eventweight)
-        
+
+        # pick which inv mass to put in limit tree
+        mytInvMass = ( diMuonPairs[0][0].P4() + diMuonPairs[0][1].P4() ).M()
 
         #############################
         # Electrons #################
@@ -917,14 +937,29 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hMETPhi'].Fill(self.met.Phi(), eventweight)
 
 
-
+        ##########################################################
+        #                                                        #
+        # Fill limit trees                                       #
+        #                                                        #
+        ##########################################################
+        self.tEventNr = array('L', [self.event.Number()])
+        self.tLumiNr  = array('L', [self.event.LumiBlock()])
+        self.tRunNr   = array('L', [self.event.Run()])
+        self.tInvMass = array('f', [mytInvMass])
+        self.tEventWt = array('f', [eventweight])
+        #print 'filling cat1 tree with the following values:'
+        #print '    self.tEventNr = {0}'.format(self.event.Number())
+        #print '    self.tLumiNr = {0}'.format(self.event.LumiBlock())
+        #print '    self.tRunNr = {0}'.format(self.event.Run())
+        #print '    self.tInvMass = {0}'.format(mytInvMass)
+        #print '    self.tEventWt = {0}'.format(eventweight)
+        self.ftreeCat1.Fill()
 
 
 
     ## _______________________________________________________
     def endOfJobAction(self):
         logging.info('nSyncEvents = ' + str(self.nSyncEvents))
-
 
 
 
