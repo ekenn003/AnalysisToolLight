@@ -942,11 +942,11 @@ class Ana2Mu(AnalysisBase):
         # Fill limit trees                                       #
         #                                                        #
         ##########################################################
-        self.tEventNr = array('L', [self.event.Number()])
-        self.tLumiNr  = array('L', [self.event.LumiBlock()])
-        self.tRunNr   = array('L', [self.event.Run()])
-        self.tInvMass = array('f', [mytInvMass])
-        self.tEventWt = array('f', [eventweight])
+        self.tEventNr[0] = self.event.Number()
+        self.tLumiNr[0]  = self.event.LumiBlock()
+        self.tRunNr[0]   = self.event.Run()
+        self.tInvMass[0] = mytInvMass
+        self.tEventWt[0] = eventweight
         #print 'filling cat1 tree with the following values:'
         #print '    self.tEventNr = {0}'.format(self.event.Number())
         #print '    self.tLumiNr = {0}'.format(self.event.LumiBlock())
