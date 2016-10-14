@@ -32,7 +32,6 @@ class AnalysisBase(object):
         self.data_dir   = args.data_dir
         # outputs
         self.output = args.output_filename
-        self.dimuon_tree_name = 'dimuon'
 
         # put file names into a list called self.filenames
         with open(input_file_list,'r') as f:
@@ -101,9 +100,6 @@ class AnalysisBase(object):
         # initialize output file and create tree to save wum of weights
         self.outfile = ROOT.TFile(self.output,'RECREATE')
 
-
-        # initialise dimuon mass tree we will use for limit calculations
-        self.dimuon_mass_tree = ROOT.TTree(self.dimuon_tree_name, self.dimuon_tree_name)
 
 
     ## _______________________________________________________
@@ -249,13 +245,12 @@ class AnalysisBase(object):
         '''
         # write histograms to output file
         self.outfile.cd()
-        sumw_ = self.sumweights if self.sumweights != 0. else self.eventsprocessed
+        sumw_ = self.sumweights if self.sumweights != 0. else self.nevents
 
         #sumwts = array('f', [sumwts_])
         #testtree = ROOT.TTree('testtree', 'testtree')
         #testtree.Branch('sumw', sumwts, 'sumw/F')
         #testtree.Write()
-        self.dimuon_mass_tree.Write()
 
         sumw = ROOT.TH1F('hSumWeights', 'hSumWeights', 3, 0, 3)
         sumw.SetBinContent(1, sumw_)
@@ -278,8 +273,6 @@ class AnalysisBase(object):
                     self.extraHistogramMap[dirname][hist].Write()
             tdir.cd('../')
 
-        self.dimuon_mass_tree.Write()
-
         logging.info('Output file {0} created.'.format(self.output))
         self.outfile.Close()
 
@@ -295,7 +288,9 @@ class AnalysisBase(object):
         self.endOfJobAction()
         self.write()
         logging.info('Job complete.')
-        logging.info('NEVENTS:    {0}'.format(self.eventsprocessed))
+        logging.info('NEVENTS processed: {0}/{1} ({2}%)'.format(self.eventsprocessed, self.nevents, 100*(self.eventsprocessed/self.nevents)))
+        logging.info('Sample information:')
+        logging.info('NEVENTS:    {0}'.format(self.nevents))
         logging.info('SUMWEIGHTS: {0}'.format(self.sumweights))
 
 
