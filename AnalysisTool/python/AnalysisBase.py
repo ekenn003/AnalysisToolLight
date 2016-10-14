@@ -22,14 +22,18 @@ class AnalysisBase(object):
         logging.info('Beginning job...')
 
         # set defaults. These can be overridden with command line arguments (after adding to Base)
+        # inputs
         self.filenames = []
         self.treedir  = 'makeroottree'
         self.infoname = 'AC1Binfo'
         self.luminame = 'AC1Blumi'
         self.treename = 'AC1B'
-        input_file_list  = args.input_file_list
-        self.output    = args.output_filename
+        input_file_list = args.input_file_list
         self.data_dir   = args.data_dir
+        # outputs
+        self.output = args.output_filename
+        self.dimuon_tree_name = 'dimuon'
+        self.dimuon_tree_branches = ['dimuon_mass_all']
 
         # put file names into a list called self.filenames
         with open(input_file_list,'r') as f:
@@ -73,7 +77,6 @@ class AnalysisBase(object):
         logging.info('Counting events and lumiblocks...')
         self.numlumis = lumichain.GetEntries()
         for entry in xrange(self.numlumis):
-            print 'getting entry {0}/{1}'.format(entry,self.numlumis)
             lumichain.GetEntry(entry)
             self.nevents += lumichain.lumi_nevents
             self.sumweights += lumichain.lumi_sumweights
@@ -100,6 +103,11 @@ class AnalysisBase(object):
         self.outfile = ROOT.TFile(self.output,'RECREATE')
 
 
+        # initialise dimuon mass tree we will use for limit calculations
+        self.dimuon_mass_tree = ROOT.TTree(self.dimuon_tree_name, self.dimuon_tree_name)
+        # add branches
+        for branch in self.dimuon_tree_branches:
+            self.dimuon_mass_tree.Branch(branch, array('f',[0.]), '{0}/F'.format(branch))
 
 
     ## _______________________________________________________
@@ -130,7 +138,7 @@ class AnalysisBase(object):
             logging.info('Loading lepton scale factor info...')
             self.muonweights = MuonScaleFactors(self.cmsswversion, self.data_dir)
 
-        eventsprocessed = 0
+        self.eventsprocessed = 0
         # how often (in number of events) should we print out progress updates?
         updateevery = 1000
 
@@ -148,20 +156,21 @@ class AnalysisBase(object):
 
             # loop over each event (row)
             for row in tree:
-                eventsprocessed += 1
+                self.eventsprocessed += 1
 
                 # progress updates
-                if eventsprocessed==2:
+                if self.eventsprocessed==2:
                     starttime = time.time()
-                elif eventsprocessed==updateevery:
-                    logging.info('  Processing event {0}/{1} ({2:0.0f}%) [est. time remaining]'.format(eventsprocessed, self.nevents, (100.*eventsprocessed)/self.nevents))
-                if eventsprocessed > updateevery and eventsprocessed % updateevery == 0:
+                elif self.eventsprocessed==updateevery:
+                    logging.info('  Processing event {0}/{1} ({2:0.0f}%) [est. time remaining]'.format(self.eventsprocessed, self.nevents, (100.*self.eventsprocessed)/self.nevents))
+                if self.eventsprocessed > updateevery and self.eventsprocessed % updateevery == 0:
                     currenttime = time.time()
                     timeelapsed = currenttime - starttime
-                    timeleft = (float(self.nevents) - float(eventsprocessed)) * (float(timeelapsed) / float(eventsprocessed))
+                    timeleft = (float(self.nevents) - float(self.eventsprocessed)) * (float(timeelapsed) / float(self.eventsprocessed))
                     minutesleft, secondsleft = divmod(int(timeleft), 60)
                     hoursleft, minutesleft = divmod(minutesleft, 60)
-                    logging.info('  Processing event {0}/{1} ({2:0.0f}%) [{3}:{4:02d}:{5:02d}]'.format(eventsprocessed, self.nevents, (100.*eventsprocessed)/self.nevents, hoursleft, minutesleft, secondsleft))
+                    logging.info('  Processing event {0}/{1} ({2:0.0f}%) [{3}:{4:02d}:{5:02d}]'.format(self.eventsprocessed, self.nevents, (100.*self.eventsprocessed)/self.nevents, hoursleft, minutesleft, secondsleft))
+                if self.eventsprocessed > 50000: break
 
 
                 # load required collections
@@ -250,6 +259,7 @@ class AnalysisBase(object):
         #testtree = ROOT.TTree('testtree', 'testtree')
         #testtree.Branch('sumw', sumwts, 'sumw/F')
         #testtree.Write()
+        self.dimuon_mass_tree.Write()
 
         sumw = ROOT.TH1F('hSumWeights', 'hSumWeights', 3, 0, 3)
         sumw.SetBinContent(1, sumw_)
@@ -288,7 +298,7 @@ class AnalysisBase(object):
         self.endOfJobAction()
         self.write()
         logging.info('Job complete.')
-        logging.info('NEVENTS:    {0}'.format(self.nevents))
+        logging.info('NEVENTS:    {0}'.format(self.eventsprocessed))
         logging.info('SUMWEIGHTS: {0}'.format(self.sumweights))
 
 
