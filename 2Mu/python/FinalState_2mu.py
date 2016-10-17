@@ -408,21 +408,27 @@ class Ana2Mu(AnalysisBase):
         # Set up trees for limit calculations                    #
         #                                                        #
         ##########################################################
-        # python array: 'L' = unsigned long, 'l' = signed long, 'f' = float
-        # TBranch: 'l' = unsigned long, 'L' = signed long, 'F' = float
+        self.tEventNr = array('L', [0])
+        self.tLumiNr  = array('L', [0])
+        self.tRunNr   = array('L', [0])
+        self.tInvMass = array('f', [0.])
+        self.tEventWt = array('f', [0.])
+
         self.ftreeCat1 = ROOT.TTree('Category1', 'Category1')
         self.category_trees += [self.ftreeCat1]
-
-        self.tEventNr = array('L', [0])
         self.ftreeCat1.Branch('tEventNr', self.tEventNr, 'tEventNr/l')
-        self.tLumiNr  = array('L', [0])
         self.ftreeCat1.Branch('tLumiNr', self.tLumiNr, 'tLumiNr/l')
-        self.tRunNr   = array('L', [0])
         self.ftreeCat1.Branch('tRunNr', self.tRunNr, 'tRunNr/l')
-        self.tInvMass = array('f', [0.])
         self.ftreeCat1.Branch('tInvMass', self.tInvMass, 'tInvMass/F')
-        self.tEventWt = array('f', [0.])
         self.ftreeCat1.Branch('tEventWt', self.tEventWt, 'tEventWt/F')
+
+        self.ftreeCat2 = ROOT.TTree('Category2', 'Category2')
+        self.category_trees += [self.ftreeCat2]
+        self.ftreeCat2.Branch('tEventNr', self.tEventNr, 'tEventNr/l')
+        self.ftreeCat2.Branch('tLumiNr', self.tLumiNr, 'tLumiNr/l')
+        self.ftreeCat2.Branch('tRunNr', self.tRunNr, 'tRunNr/l')
+        self.ftreeCat2.Branch('tInvMass', self.tInvMass, 'tInvMass/F')
+        self.ftreeCat2.Branch('tEventWt', self.tEventWt, 'tEventWt/F')
 
 
 
@@ -947,13 +953,12 @@ class Ana2Mu(AnalysisBase):
         self.tRunNr[0]   = self.event.Run()
         self.tInvMass[0] = mytInvMass
         self.tEventWt[0] = eventweight
-        #print 'filling cat1 tree with the following values:'
-        #print '    self.tEventNr = {0}'.format(self.event.Number())
-        #print '    self.tLumiNr = {0}'.format(self.event.LumiBlock())
-        #print '    self.tRunNr = {0}'.format(self.event.Run())
-        #print '    self.tInvMass = {0}'.format(mytInvMass)
-        #print '    self.tEventWt = {0}'.format(eventweight)
-        self.ftreeCat1.Fill()
+
+        # debug
+        if (self.event.Number() % 10):
+            self.ftreeCat1.Fill()
+        else:
+            self.ftreeCat2.Fill()
 
 
 
