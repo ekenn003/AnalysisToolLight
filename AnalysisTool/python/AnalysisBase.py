@@ -4,7 +4,7 @@ import argparse
 import glob
 import os, sys, time
 import ROOT
-#from array import array
+from array import array
 from prettytable import PrettyTable
 from Dataform import *
 from ScaleFactors import *
@@ -29,7 +29,9 @@ class AnalysisBase(object):
         self.luminame = 'AC1Blumi'
         self.treename = 'AC1B'
         input_file_list = args.input_file_list
-        self.data_dir   = args.data_dir
+        self.max_events = args.nevents
+        #self.data_dir   = args.data_dir
+        self.data_dir   = '{0}/src/AnalysisToolLight/AnalysisTool/data'.format(os.environ['CMSSW_BASE'])
         # outputs
         self.output = args.output_filename
 
@@ -99,7 +101,19 @@ class AnalysisBase(object):
         # initialise cutflow object to None... why
         self.cutflow = None
 
-        # initialize output file and create tree to save sum of weights
+        # summary tree
+        self.summary_tree = ROOT.TTree('Summary', 'Summary')
+        # branches of summary tree
+        # python array: 'L' = unsigned long, 'l' = signed long, 'f' = float
+        # TBranch: 'l' = unsigned long, 'L' = signed long, 'F' = float
+        self.nevents_a    = array('L', [self.nevents])
+        self.summary_tree.Branch('tNumEvts', self.nevents_a, 'tNumEvts/l')
+        self.sumweights_a = array('f', [self.sumweights])
+        self.summary_tree.Branch('tSumWts', self.sumweights_a, 'tSumWts/F')
+        self.summary_tree.Fill()
+
+
+        # initialize output file`
         self.outfile = ROOT.TFile(self.output,'RECREATE')
 
 
@@ -164,7 +178,6 @@ class AnalysisBase(object):
                     minutesleft, secondsleft = divmod(int(timeleft), 60)
                     hoursleft, minutesleft = divmod(minutesleft, 60)
                     logging.info('  Processing event {0}/{1} ({2:0.0f}%) [{3}:{4:02d}:{5:02d}]'.format(self.eventsprocessed, self.nevents, (100.*self.eventsprocessed)/self.nevents, hoursleft, minutesleft, secondsleft))
-                if self.eventsprocessed > 50000: break
 
 
                 # load required collections
@@ -181,6 +194,9 @@ class AnalysisBase(object):
                 # do the event analysis!
                 # call the perEventAction method (which is overridden in the derived class)
                 self.perEventAction()
+
+                # debug
+                if (self.max_events is not -1) and (self.eventsprocessed >= self.max_events): break
 
         ##########################################################
         #                                                        #
@@ -249,10 +265,10 @@ class AnalysisBase(object):
         self.outfile.cd()
         sumw_ = self.sumweights if self.sumweights != 0. else self.nevents
 
-        #sumwts = array('f', [sumwts_])
-        #testtree = ROOT.TTree('testtree', 'testtree')
-        #testtree.Branch('sumw', sumwts, 'sumw/F')
-        #testtree.Write()
+        self.summary_tree.Write()
+
+        for tree in self.category_trees:
+            tree.Write()
 
         sumw = ROOT.TH1F('hSumWeights', 'hSumWeights', 3, 0, 3)
         sumw.SetBinContent(1, sumw_)
@@ -275,8 +291,6 @@ class AnalysisBase(object):
                     self.extraHistogramMap[dirname][hist].Write()
             tdir.cd('../')
 
-        for tree in self.category_trees:
-            tree.Write()
 
 	logging.info('Created the following file:')
         logging.info('    {0}'.format(self.output))
@@ -306,11 +320,11 @@ def parse_command_line(argv):
     parser = argparse.ArgumentParser(description='Run analyzer')
 
     # line below is an example of a required argument
-    parser.add_argument('input_file_list', type=str, help='List of input files (AC1B*.root)')
-    parser.add_argument('output_filename', type=str, help='Output file name')
-    parser.add_argument('data_dir', type=str, help='Data directory (usually AnalysisTool/data/)')
+    parser.add_argument('-i', '--input_file_list', type=str, help='List of input files (AC1B*.root)')
+    parser.add_argument('-o', '--output_filename', type=str, help='Output file name')
+    #parser.add_argument('data_dir', type=str, help='Data directory (usually AnalysisTool/data/)')
     # line below is an example of an optional argument
-    #parser.add_argument('--output_filename', type=str, default='ana.out', help='Output file name')
+    parser.add_argument('-n', '--nevents', type=int, default=-1, help='Max number of events to process')
 
     return parser.parse_args(argv)
 
