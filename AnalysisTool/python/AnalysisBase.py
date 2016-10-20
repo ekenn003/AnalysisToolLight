@@ -43,8 +43,7 @@ class AnalysisBase(object):
 
                 # personal storage options
                 if fname_.startswith('T2_CH_CERN'): fname_ = 'root://eoscms.cern.ch/{0}'.format(fname_[10:])
-                # use global redirector for UCSD until I learn the real one
-                elif fname_.startswith('T2_US_UCSD'): fname_ = 'root://cms-xrd-global.cern.ch/{0}'.format(fname_[10:])
+                elif fname_.startswith('T2_US_UCSD'): fname_ = 'root://xrootd.t2.ucsd.edu/{0}'.format(fname_[10:])
 
                 self.filenames += [fname_]
 
@@ -324,7 +323,7 @@ def parse_command_line(argv):
     parser.add_argument('-o', '--output_filename', type=str, help='Output file name')
     #parser.add_argument('data_dir', type=str, help='Data directory (usually AnalysisTool/data/)')
     # line below is an example of an optional argument
-    parser.add_argument('-n', '--nevents', type=int, default=-1, help='Max number of events to process')
+    parser.add_argument('-n', '--nevents', type=int, default=-1, help='Max number of events to process (should be only used for debugging; results in incorrect sumweights)')
 
     return parser.parse_args(argv)
 
