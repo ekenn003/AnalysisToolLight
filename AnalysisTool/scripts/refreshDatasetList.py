@@ -11,11 +11,25 @@ era = 'oct16'
 version = '76X'
 #version = '80X'
 
-
 #ds = ['SingleMuon2016D', 'SingleMuon2016E']
-ds = []
-ms = ['DYJetsToLL', 'TTJets']
+ds = [
+    'SingleMuon_Run2015C',
+    'SingleMuon_Run2015D'
+]
 
+ms = [
+    'DYJetsToLL',
+    'GluGlu_HToMuMu_M125',
+    'TTJets',
+    'TTZToLLNuNu',
+    'VBF_HToMuMu_M125',
+    'WWTo2L2Nu',
+    'WZTo2L2Q',
+    'WZTo3LNu',
+    'ZZTo2L2Nu',
+    'ZZTo2L2Q',
+    'ZZTo4L',
+]
 
 
 
@@ -65,7 +79,8 @@ def main():
     
     # execute commands
     for c in commandlist:
-        #print c
+        print
+        print c
         os.system(c)
 
     # prepend with correct path
@@ -76,7 +91,8 @@ def main():
         with open(f) as fin:
             with open(f_.name, 'w') as fout:
                 for line in fin:
-                    fout.write(''.join([t2, '/', partialpath, '/', line]))
+                    #fout.write(''.join([t2, '/', partialpath, '/', dset, '/', line]))
+                    fout.write('{0}/{1}/{2}/{3}'.format(t2, partialpath, dset, line))
         move(f_.name, f)
         print '    ' + f
 
