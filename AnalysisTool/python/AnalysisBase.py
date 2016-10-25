@@ -1,13 +1,15 @@
 # AnalysisToolLight/AnalysisTool/python/AnalysisBase.py
 import logging
 import argparse
-import glob
+import re
 import os, sys, time
-import ROOT
+from ROOT import TTree, TFile, TChain, TH1F
+#import ROOT
 from array import array
 from prettytable import PrettyTable
 from Dataform import *
 from ScaleFactors import *
+from xsec import xsecs
 
 ## ___________________________________________________________
 class AnalysisBase(object):
@@ -30,7 +32,6 @@ class AnalysisBase(object):
         self.treename = 'AC1B'
         input_file_list = args.input_file_list
         self.max_events = args.nevents
-        #self.data_dir   = args.data_dir
         self.data_dir   = '{0}/src/AnalysisToolLight/AnalysisTool/data'.format(os.environ['CMSSW_BASE'])
         # outputs
         self.output = args.output_filename
@@ -42,7 +43,7 @@ class AnalysisBase(object):
                 if fname_.startswith('#'): continue
 
                 # personal storage options
-                if fname_.startswith('T2_CH_CERN'): fname_ = 'root://eoscms.cern.ch/{0}'.format(fname_[10:])
+                if fname_.startswith('T2_CH_CERN'):   fname_ = 'root://eoscms.cern.ch/{0}'.format(fname_[10:])
                 elif fname_.startswith('T2_US_UCSD'): fname_ = 'root://xrootd.t2.ucsd.edu/{0}'.format(fname_[10:])
 
                 self.filenames += [fname_]
@@ -51,21 +52,35 @@ class AnalysisBase(object):
         logging.info('Assembling job information...')
         # things we will check in the first file
         self.cmsswversion = ''
+        self.dataset_source = ''
         self.isdata = None
         # open first file and load info tree
-        tfile0 = ROOT.TFile.Open(self.filenames[0])
+        tfile0 = TFile.Open(self.filenames[0])
         infotree = tfile0.Get('{0}/{1}'.format(self.treedir, self.infoname))
         infotree.GetEntry(0)
         self.isdata = bool(infotree.isdata)
         self.ismc = not self.isdata
         self.cmsswversion = str(infotree.CMSSW_version)
+        # strip " and / from parent dataset name
+        self.dataset_source = ''.join( c for c in str(infotree.source_dataset) if c not in '"/')
+
         tfile0.Close('R')
+
         # get short CMSSW version that was used to produce these
         self.cmsswversion = ''.join(self.cmsswversion.split('_')[1:3] + ['X'])
-
+        # get dataset cross section
+        try:
+            self.nom_xsec = xsecs[self.dataset_source]
+        except:
+            logging.info('       *   ')
+            logging.info('    *******')
+            logging.info('    No cross section information found for source "{0}".'.format(self.dataset_source))
+            logging.info('    *******')
+            logging.info('       *   ')
+            self.nom_xsec = 1.
 
         # set up lumi info and see how many events we have to process
-        lumichain = ROOT.TChain('{0}/{1}'.format(self.treedir, self.luminame))
+        lumichain = TChain('{0}/{1}'.format(self.treedir, self.luminame))
         self.numlumis   = 0
         self.sumweights = 0
         self.nevents    = 0
@@ -82,6 +97,7 @@ class AnalysisBase(object):
 
         logging.info('    Number of events found: {0} in {1} lumi sections in {2} files'.format(self.nevents, self.numlumis, len(self.filenames)))
         logging.info('Sample will be processed as {0}'.format('DATA' if self.isdata else 'MC'))
+        logging.info('Sample has been identified as coming from {0} with a nominal cross section of {1} pb.'.format(self.dataset_source, self.nom_xsec))
 
 
 
@@ -101,7 +117,7 @@ class AnalysisBase(object):
         self.cutflow = None
 
         # summary tree
-        self.summary_tree = ROOT.TTree('Summary', 'Summary')
+        self.summary_tree = TTree('Summary', 'Summary')
         # branches of summary tree
         # python array: 'L' = unsigned long, 'l' = signed long, 'f' = float
         # TBranch: 'l' = unsigned long, 'L' = signed long, 'F' = float
@@ -109,11 +125,14 @@ class AnalysisBase(object):
         self.summary_tree.Branch('tNumEvts', self.nevents_a, 'tNumEvts/l')
         self.sumweights_a = array('f', [self.sumweights])
         self.summary_tree.Branch('tSumWts', self.sumweights_a, 'tSumWts/F')
+        self.nom_xsec_a   = array('f', [self.nom_xsec])
+        self.summary_tree.Branch('tCrossSec', self.nom_xsec_a, 'tCrossSec/F')
+
         self.summary_tree.Fill()
 
 
         # initialize output file`
-        self.outfile = ROOT.TFile(self.output,'RECREATE')
+        self.outfile = TFile(self.output,'RECREATE')
 
 
 
@@ -158,7 +177,7 @@ class AnalysisBase(object):
         for f, fname in enumerate(self.filenames):
             logging.info('Processing file {0} of {1}:'.format(f+1, len(self.filenames)))
             # open the file and get the AC1B tree
-            tfile = ROOT.TFile.Open(fname)
+            tfile = TFile.Open(fname)
             tree = tfile.Get('{0}/{1}'.format(self.treedir,self.treename))
 
             # loop over each event (row)
@@ -224,7 +243,7 @@ class AnalysisBase(object):
         At the end of the job, fill efficiencies histogram.
         '''
         # initialise cutflow histogram
-        self.histograms['hEfficiencies'] = ROOT.TH1F('hEfficiencies', 'hEfficiencies', self.cutflow.numBins(), 0, self.cutflow.numBins())
+        self.histograms['hEfficiencies'] = TH1F('hEfficiencies', 'hEfficiencies', self.cutflow.numBins(), 0, self.cutflow.numBins())
         self.histograms['hEfficiencies'].GetXaxis().SetTitle('')
         self.histograms['hEfficiencies'].GetYaxis().SetTitle('Events')
         # fill histogram
@@ -269,7 +288,7 @@ class AnalysisBase(object):
         for tree in self.category_trees:
             tree.Write()
 
-        sumw = ROOT.TH1F('hSumWeights', 'hSumWeights', 3, 0, 3)
+        sumw = TH1F('hSumWeights', 'hSumWeights', 3, 0, 3)
         sumw.SetBinContent(1, sumw_)
         sumw.Write()
 
@@ -303,14 +322,17 @@ class AnalysisBase(object):
             endOfJobAction
             write
         '''
-        if self.cutflow: self.fillEfficiencies()
+        if self.cutflow is not None: self.fillEfficiencies()
         self.endOfJobAction()
         self.write()
-        logging.info('Job complete.')
+        logging.info('\nJob complete.')
         logging.info('    NEVENTS processed: {0}/{1} ({2}%)'.format(self.eventsprocessed, self.nevents, (100*self.eventsprocessed)/self.nevents))
         logging.info('Sample information:')
+        logging.info('    DATASET:    {0}'.format(self.dataset_source))
         logging.info('    NEVENTS:    {0}'.format(self.nevents))
         logging.info('    SUMWEIGHTS: {0}'.format(self.sumweights))
+        logging.info('    CROSS SEC.: {0} pb'.format(self.nom_xsec))
+
 
 
 
