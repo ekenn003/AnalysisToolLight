@@ -3,8 +3,8 @@
 See RootMaker/RootMaker/python/objectBase.py
 '''
 
-import ROOT
-#import math
+from ROOT import TVector3, TLorentzVector
+import math
 from collections import OrderedDict, namedtuple
 
 
@@ -152,11 +152,23 @@ class METBase(object):
     def _get(self, var): return getattr(self.tree, '{0}_{1}'.format(self.metName, var))[self.entry]
 
     # methods
-    def E(self):   return ROOT.TVector3(self._get('ex'), self._get('ey'), 0.)
-    def Et(self):  return self._get('et')
-    def Phi(self): return self._get('phi')
+    def E(self):  return TVector3(self._get('ex'), self._get('ey'), 0.)
+    def Et(self): return self._get('et')
+    def P4(self): 
+        thisp4 = TLorentzVector()
+        thisp4.SetPtEtaPhiM(self._get('et'), 0., self._get('phi'), 0.)
+        return thisp4
+
+    def Phi(self):    return self._get('phi')
     def RawEt(self):  return self._get('rawet')
     def RawPhi(self): return self._get('rawphi')
+    def MtWith(self, *cands):
+        myP4 = self.P4()
+        lepP4 = TLorentzVector()
+        for lep in cands: lepP4 += lep.p4()
+        # squared transverse mass of system = (met.Et + lep.Et)^2 - (met + lep).Pt)^2
+        mt = math.sqrt(abs((lepP4.Et() + myP4.Et())**2 - ((lepP4 + myP4).Pt())**2))
+        return mt
 
 
 ## ___________________________________________________________
@@ -187,14 +199,14 @@ class CandBase(object):
     def deltaR(self, cand): return deltaR(self, cand)
 
     # methods
-    def P(self):      return ROOT.TVector3(self._get('px'), self._get('py'), self._get('pz'))
+    def P(self):      return TVector3(self._get('px'), self._get('py'), self._get('pz'))
     def Pt(self):     return self._get('pt')
     def Eta(self):    return self._get('eta')
     def AbsEta(self): return abs(self._get('eta'))
     def Phi(self):    return self._get('phi')
     def Energy(self): return self._get('energy')
     def P4(self):
-        thisp4 = ROOT.TLorentzVector()
+        thisp4 = TLorentzVector()
         thisp4.SetPtEtaPhiE(self.Pt(), self.Eta(), self.Phi(), self.Energy())
         return thisp4
     def Charge(self): return self._get('charge')
@@ -311,8 +323,8 @@ class Muon(CommonCand):
 
     # default is no rochester correction
     def P(self, correction=''):
-        uncor = ROOT.TVector3(self._get('px'), self._get('py'), self._get('pz'))
-        cor   = ROOT.TVector3(self._get('rochesterPx'), self._get('rochesterPy'), self._get('rochesterPz'))
+        uncor = TVector3(self._get('px'), self._get('py'), self._get('pz'))
+        cor   = TVector3(self._get('rochesterPx'), self._get('rochesterPy'), self._get('rochesterPz'))
         # decide which value to return
         if correction == 'Corr':   return cor
         if correction == 'Uncorr': return uncor
@@ -365,7 +377,7 @@ class Muon(CommonCand):
         return uncor
 
     def P4(self, correction=''): # pt, eta, phi, e
-        thisp4 = ROOT.TLorentzVector()
+        thisp4 = TLorentzVector()
         # decide which value to return
         if correction == 'Corr': 
             thisp4.SetPtEtaPhiE(self.Pt('Corr'), self.Eta('Corr'), self.Phi('Corr'), self.Energy('Corr'))
