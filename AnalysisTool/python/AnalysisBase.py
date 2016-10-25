@@ -310,7 +310,7 @@ class AnalysisBase(object):
             tdir.cd('../')
 
 
-	logging.info('Created the following file:')
+	logging.info('\nCreated the following file:')
         logging.info('    {0}'.format(self.output))
         self.outfile.Close()
 
