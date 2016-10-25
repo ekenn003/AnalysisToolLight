@@ -88,6 +88,7 @@ class AnalysisBase(object):
             logging.info('Adding file {0}: {1}'.format(f+1, fname))
             lumichain.Add(fname)
         # iterate over lumis to find total number of events and summed event weights
+        logging.info('')
         logging.info('Counting events and lumiblocks...')
         self.numlumis = lumichain.GetEntries()
         for entry in xrange(self.numlumis):
@@ -151,16 +152,19 @@ class AnalysisBase(object):
         ##########################################################
         # pileup
         if self.doPileupReweighting:
+            logging.info('')
             logging.info('Loading pileup info...')
             self.puweights = PileupWeights(self.cmsswversion, self.data_dir)
 
         # trigger scale factors
         if self.includeTriggerScaleFactors:
+            logging.info('')
             logging.info('Loading trigger scale factor info...')
             self.hltweights = HLTScaleFactors(self.cmsswversion, self.data_dir, self.pathForTriggerScaleFactors)
 
         # lepton scale factors
         if self.includeLeptonScaleFactors:
+            logging.info('')
             logging.info('Loading lepton scale factor info...')
             self.muonweights = MuonScaleFactors(self.cmsswversion, self.data_dir)
 
@@ -175,6 +179,7 @@ class AnalysisBase(object):
         ##########################################################
         # loop over each input file
         for f, fname in enumerate(self.filenames):
+            logging.info('')
             logging.info('Processing file {0} of {1}:'.format(f+1, len(self.filenames)))
             # open the file and get the AC1B tree
             tfile = TFile.Open(fname)
@@ -261,6 +266,7 @@ class AnalysisBase(object):
         for i, name in enumerate(self.cutflow.getNames()):
             efftable.add_row([self.cutflow.getPretty(name), format(self.cutflow.count(name), '0.0f'), self.cutflow.getSkimEff(i), self.cutflow.getRelEff(i)])
 
+        logging.info('')
         logging.info('Cutflow summary:\n\n' + efftable.get_string() + '\n')
 
 
