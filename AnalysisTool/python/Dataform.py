@@ -165,7 +165,7 @@ class METBase(object):
     def MtWith(self, *cands):
         myP4 = self.P4()
         lepP4 = TLorentzVector()
-        for lep in cands: lepP4 += lep.p4()
+        for lep in cands: lepP4 += lep.P4()
         # squared transverse mass of system = (met.Et + lep.Et)^2 - (met + lep).Pt)^2
         mt = math.sqrt(abs((lepP4.Et() + myP4.Et())**2 - ((lepP4 + myP4).Pt())**2))
         return mt
