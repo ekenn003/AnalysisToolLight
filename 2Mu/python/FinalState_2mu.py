@@ -414,6 +414,7 @@ class Ana2Mu(AnalysisBase):
         self.tInvMass = array('f', [0.])
         self.tEventWt = array('f', [0.])
 
+        self.fnumCat1 = 0
         self.ftreeCat1 = ROOT.TTree('Category1', 'Category1')
         self.category_trees += [self.ftreeCat1]
         self.ftreeCat1.Branch('tEventNr', self.tEventNr, 'tEventNr/l')
@@ -422,13 +423,14 @@ class Ana2Mu(AnalysisBase):
         self.ftreeCat1.Branch('tInvMass', self.tInvMass, 'tInvMass/F')
         self.ftreeCat1.Branch('tEventWt', self.tEventWt, 'tEventWt/F')
 
-        self.ftreeCat2 = ROOT.TTree('Category2', 'Category2')
-        self.category_trees += [self.ftreeCat2]
-        self.ftreeCat2.Branch('tEventNr', self.tEventNr, 'tEventNr/l')
-        self.ftreeCat2.Branch('tLumiNr', self.tLumiNr, 'tLumiNr/l')
-        self.ftreeCat2.Branch('tRunNr', self.tRunNr, 'tRunNr/l')
-        self.ftreeCat2.Branch('tInvMass', self.tInvMass, 'tInvMass/F')
-        self.ftreeCat2.Branch('tEventWt', self.tEventWt, 'tEventWt/F')
+#        self.fnumCat2 = 0
+#        self.ftreeCat2 = ROOT.TTree('Category2', 'Category2')
+#        self.category_trees += [self.ftreeCat2]
+#        self.ftreeCat2.Branch('tEventNr', self.tEventNr, 'tEventNr/l')
+#        self.ftreeCat2.Branch('tLumiNr', self.tLumiNr, 'tLumiNr/l')
+#        self.ftreeCat2.Branch('tRunNr', self.tRunNr, 'tRunNr/l')
+#        self.ftreeCat2.Branch('tInvMass', self.tInvMass, 'tInvMass/F')
+#        self.ftreeCat2.Branch('tEventWt', self.tEventWt, 'tEventWt/F')
 
 
 
@@ -953,18 +955,25 @@ class Ana2Mu(AnalysisBase):
         self.tRunNr[0]   = self.event.Run()
         self.tInvMass[0] = mytInvMass
         self.tEventWt[0] = eventweight
+        self.ftreeCat1.Fill()
 
-        # debug
-        if (self.event.Number() % 10):
-            self.ftreeCat1.Fill()
-        else:
-            self.ftreeCat2.Fill()
+        ## debug
+        #if (self.event.Number() % 10):
+        #    self.ftreeCat1.Fill()
+        #    self.fnumCat1 += 1
+        #else:
+        #    self.ftreeCat2.Fill()
+        #    self.fnumCat2 += 1
 
 
 
     ## _______________________________________________________
     def endOfJobAction(self):
         logging.info('nSyncEvents = ' + str(self.nSyncEvents))
+        logging.info('')
+        logging.info('Category1 events = ' + str(self.fnumCat1))
+        #logging.info('Category2 events = ' + str(self.fnumCat2))
+        logging.info('')
 
 
 
