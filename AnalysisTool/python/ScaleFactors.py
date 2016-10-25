@@ -27,9 +27,9 @@ class PileupWeights(ScaleFactor):
         super(PileupWeights, self).__init__(cmsswversion, datadir)
         self.error = False
 
-        self.pileupScale = []
-        self.pileupScale_up = []
-        self.pileupScale_down = []
+        self.pileup_scale = []
+        self.pileup_scale_up = []
+        self.pileup_scale_down = []
         filename = '{0}/pileup/pileup_{1}.root'.format(self.datadir, self.cmsswversion)
 
         logging.info('  Looking for pileup file at {0}'.format(filename))
@@ -47,15 +47,15 @@ class PileupWeights(ScaleFactor):
             scalehist_ = pufile.Get('pileup_scale')
 
             # save scale factors in vectors where each index corresponds to the NumTruePileupInteractions
-            # for each histogram, set (b)th entry in self.pileupScale to bin content of (b+1)th bin (0th bin is underflow)
+            # for each histogram, set (b)th entry in self.pileup_scale to bin content of (b+1)th bin (0th bin is underflow)
             for b in range(scalehist_.GetNbinsX()):
-                self.pileupScale.append(scalehist_.GetBinContent(b+1))
+                self.pileup_scale.append(scalehist_.GetBinContent(b+1))
             scalehist_ = pufile.Get('pileup_scale_up')
             for b in range(scalehist_.GetNbinsX()):
-                self.pileupScale_up.append(scalehist_.GetBinContent(b+1))
+                self.pileup_scale_up.append(scalehist_.GetBinContent(b+1))
             scalehist_ = pufile.Get('pileup_scale_down')
             for b in range(scalehist_.GetNbinsX()):
-                self.pileupScale_down.append(scalehist_.GetBinContent(b+1))
+                self.pileup_scale_down.append(scalehist_.GetBinContent(b+1))
 
             pufile.Close()
 
@@ -64,22 +64,22 @@ class PileupWeights(ScaleFactor):
     ## _______________________________________________________
     def getWeight(self, numtrueinteractions):
         if self.error: return 1.
-        if len(self.pileupScale) > numtrueinteractions:
-            return self.pileupScale[int(round(numtrueinteractions))]
+        if len(self.pileup_scale) > numtrueinteractions:
+            return self.pileup_scale[int(round(numtrueinteractions))]
         else:
             return 0.
     ## _______________________________________________________
     def getWeightUp(self, numtrueinteractions):
         if self.error: return 1.
-        if len(self.pileupScale_up) > numtrueinteractions:
-            return self.pileupScale_up[int(round(numtrueinteractions))]
+        if len(self.pileup_scale_up) > numtrueinteractions:
+            return self.pileup_scale_up[int(round(numtrueinteractions))]
         else:
             return 0.
     ## _______________________________________________________
     def getWeightDown(self, numtrueinteractions):
         if self.error: return 1.
-        if len(self.pileupScale_down) > numtrueinteractions:
-            return self.pileupScale_down[int(round(numtrueinteractions))]
+        if len(self.pileup_scale_down) > numtrueinteractions:
+            return self.pileup_scale_down[int(round(numtrueinteractions))]
         else:
             return 0.
 
@@ -94,9 +94,9 @@ class VariablePileupWeights(ScaleFactor):
         self.xsecRange = [68000, 68500, 69000, 69500, 70000, 70500, 71000, 71500, 72000, 72500, 73000]
 
 
-        self.pileupScaleMap = {}
+        self.pileup_scale_map = {}
         for xsec in self.xsecRange:
-            self.pileupScaleMap[xsec] = []
+            self.pileup_scale_map[xsec] = []
 
         filename = '{0}/pileup/pileup_{1}_{2}.root'.format(self.datadir, cmsswversion, fname)
 
@@ -113,7 +113,7 @@ class VariablePileupWeights(ScaleFactor):
             for xsec in self.xsecRange:
                 scalehist_ = pufile.Get('pileup_scale_{0}'.format(xsec))
                 for b in range(scalehist_.GetNbinsX()):
-                    self.pileupScaleMap[xsec].append(scalehist_.GetBinContent(b+1))
+                    self.pileup_scale_map[xsec].append(scalehist_.GetBinContent(b+1))
                     
             pufile.Close()
 
@@ -128,8 +128,8 @@ class VariablePileupWeights(ScaleFactor):
             raise ValueError('{0} is not an available min bias xsec'.format(minbiasxsec))
         if self.error: return 1.
 
-        if len(self.pileupScaleMap[minbiasxsec]) > numtrueinteractions:
-            return self.pileupScaleMap[minbiasxsec][int(round(numtrueinteractions))]
+        if len(self.pileup_scale_map[minbiasxsec]) > numtrueinteractions:
+            return self.pileup_scale_map[minbiasxsec][int(round(numtrueinteractions))]
         else:
             return 0.
 
