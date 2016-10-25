@@ -310,7 +310,8 @@ class AnalysisBase(object):
             tdir.cd('../')
 
 
-	logging.info('\nCreated the following file:')
+	logging.info('')
+	logging.info('Created the following file:')
         logging.info('    {0}'.format(self.output))
         self.outfile.Close()
 
@@ -325,7 +326,8 @@ class AnalysisBase(object):
         if self.cutflow is not None: self.fillEfficiencies()
         self.endOfJobAction()
         self.write()
-        logging.info('\nJob complete.')
+        logging.info('')
+        logging.info('Job complete.')
         logging.info('    NEVENTS processed: {0}/{1} ({2}%)'.format(self.eventsprocessed, self.nevents, (100*self.eventsprocessed)/self.nevents))
         logging.info('Sample information:')
         logging.info('    DATASET:    {0}'.format(self.dataset_source))
