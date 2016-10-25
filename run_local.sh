@@ -8,8 +8,8 @@ set -e
 BASEDIR=$CMSSW_BASE/src/AnalysisToolLight
 
 
-#maxevents=50000
-maxevents=-1
+maxevents=50000
+#maxevents=-1
 
 #########################################
 # Analysis to run #######################
