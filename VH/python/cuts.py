@@ -13,26 +13,26 @@
 
 vh_cuts = {
     # event selection
-    'cVtxNdf' : 4
-    'cVtxZ'   : 24. # cm
+    'cVtxNdf' : 4,
+    'cVtxZ'   : 24., # cm
 
     # preselection
     'cBJetAlg' : 'CSVv2medium',
     'cBJetPt'  : 30., # GeV
     'cBJetEta' : 2.4,
     # delta R to clean jets
-    'cDeltaR' : 0.4
+    'cDeltaR' : 0.4,
 
     # MET cut
     'cMET' : 40.,
 
     # regular mu cuts
-    'cMuDxy' : 0.02 # cm
-    'cMuDz'  : 0.14 # cm
     'cMuPt'  : 10., # GeV
     'cMuEta' : 2.4,
-    'cMuIsoMax' : 'tight',
+    'cMuIso' : 'tight',
     'cMuID'  : 'medium',
+    'cMuDxy' : 0.02, # cm
+    'cMuDz'  : 0.14, # cm
 
     # trigger-matched mu cuts
     'cMuPtMax'  : 24., # GeV
@@ -41,8 +41,9 @@ vh_cuts = {
     'cMuIDMax'  : 'medium',
 
     # electron cuts
-    'cEPt' : 10., # GeV
-    'cEID' : 'cbmedium',
+    'cEPt'  : 10., # GeV
+    'cEEta' : 2.4,
+    'cEID'  : 'cbmedium',
 
     # h candidate cuts
     'cDiMuInvMass' : 60., # GeV
