@@ -1,4 +1,4 @@
-# python/xsections.py
+# python/xsec.py
 
 pb = 1. # picobarns
 
