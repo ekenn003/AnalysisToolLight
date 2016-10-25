@@ -65,8 +65,8 @@ def main(argv=None):
     histmc.Write()
     
     # read data
-    #for datatype in ['','_Up','_Down','_69000','_71000']:
-    for datatype in ['','_Up','_Down']:
+    #for datatype in ['','_up','_down','_69000','_71000']:
+    for datatype in ['','_up','_down']:
         data_filename = '{0}/PileUpData{1}{2}.root'.format(pileup_dir, cmsswversion, datatype)
         datafile = ROOT.TFile(data_filename)
         histdata = datafile.Get(histName)

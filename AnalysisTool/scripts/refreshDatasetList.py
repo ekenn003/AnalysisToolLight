@@ -11,7 +11,6 @@ era = 'oct16'
 version = '76X'
 #version = '80X'
 
-#ds = ['SingleMuon2016D', 'SingleMuon2016E']
 ds = [
     'SingleMuon_Run2015C',
     'SingleMuon_Run2015D'
@@ -35,7 +34,7 @@ ms = [
 
 # common
 datadir = '{0}/src/AnalysisToolLight/AnalysisTool/data/{1}'.format(os.environ['CMSSW_BASE'], version)
-partialpath = 'store/user/ekennedy/smh2mu/{0}/{1}'.format(version, era)
+partialpath = 'store/user/ekennedy/{0}/smh2mu/{1}/{2}'.format(t2, version, era)
 
 
 
@@ -70,7 +69,7 @@ def main():
         print
     
         for dset in ds+ms:
-            fullpath = 'cms/{0}/{2}/{1}/'.format(partialpath, dset, 'data' if (dset in ds) else 'mc')
+            fullpath = 'cms/{0}/{1}/{2}/'.format(partialpath, 'data' if (dset in ds) else 'mc', dset)
             command = 'ssh ekennedy@uaf-4.t2.ucsd.edu "cd /hadoop/{0}; ls" >> {1}/inputfiles_{2}.txt'.format(fullpath, datadir, dset)
             commandlist += [command]
         
@@ -92,7 +91,7 @@ def main():
             with open(f_.name, 'w') as fout:
                 for line in fin:
                     #fout.write(''.join([t2, '/', partialpath, '/', dset, '/', line]))
-                    fout.write('{0}/{1}/{2}/{3}'.format(t2, partialpath, dset, line))
+                    fout.write('{0}/{1}/{2}/{3}/{4}'.format(t2, partialpath, 'data' if (dset in ds) else 'mc', dset, line))
         move(f_.name, f)
         print '    ' + f
 
