@@ -41,6 +41,7 @@ class AnalysisBase(object):
             for line in f.readlines():
                 fname_ = line.strip()
                 if fname_.startswith('#'): continue
+                if not fname_: continue
 
                 # personal storage options
                 if fname_.startswith('T2_CH_CERN'):   fname_ = 'root://eoscms.cern.ch/{0}'.format(fname_[10:])
@@ -63,6 +64,7 @@ class AnalysisBase(object):
         self.ismc = not self.isdata
         self.cmsswversion = str(infotree.CMSSW_version)
         # strip " and / from parent dataset name
+        print 'dsest = {0}'.format(str(infotree.source_dataset))
         self.dataset_source = ''.join( c for c in str(infotree.source_dataset) if c not in '"/')
 
         tfile0.Close('R')
@@ -81,6 +83,9 @@ class AnalysisBase(object):
             self.nom_xsec = -1.
 
         # set up lumi info and see how many events we have to process
+        infochain = TChain('{0}/{1}'.format(self.treedir, self.infoname))
+        self.nevents_to_process  = 0
+        # find original sum weights
         lumichain = TChain('{0}/{1}'.format(self.treedir, self.luminame))
         self.numlumis   = 0
         self.sumweights = 0
@@ -88,16 +93,21 @@ class AnalysisBase(object):
         for f, fname in enumerate(self.filenames):
             logging.info('Adding file {0}: {1}'.format(f+1, fname))
             lumichain.Add(fname)
+            infochain.Add(fname)
         # iterate over lumis to find total number of events and summed event weights
         logging.info('')
         logging.info('Counting events and lumiblocks...')
         self.numlumis = lumichain.GetEntries()
+        self.numinfos = infochain.GetEntries()
         for entry in xrange(self.numlumis):
             lumichain.GetEntry(entry)
             self.nevents += lumichain.lumi_nevents
             self.sumweights += lumichain.lumi_sumweights
+        for entry in xrange(self.numinfos):
+            infochain.GetEntry(entry)
+            self.nevents_to_process += infochain.nevents_filled
 
-        logging.info('    Number of events found: {0} in {1} lumi sections in {2} files'.format(self.nevents, self.numlumis, len(self.filenames)))
+        logging.info('    Number of events found: {0} in {1} lumi sections in {2} files'.format(self.nevents_to_process, self.numlumis, len(self.filenames)))
         logging.info('Sample will be processed as {0}'.format('DATA' if self.isdata else 'MC'))
         if self.ismc:
             logging.info('Sample has been identified as coming from {0} with a nominal cross section of {1} pb.'.format(self.dataset_source, self.nom_xsec))
@@ -197,14 +207,14 @@ class AnalysisBase(object):
                 if self.eventsprocessed==2:
                     starttime = time.time()
                 elif self.eventsprocessed==updateevery:
-                    logging.info('  Processing event {0}/{1} ({2:0.0f}%) [est. time remaining]'.format(self.eventsprocessed, self.nevents, (100.*self.eventsprocessed)/self.nevents))
+                    logging.info('  Processing event {0}/{1} ({2:0.0f}%) [est. time remaining]'.format(self.eventsprocessed, self.nevents_to_process, (100.*self.eventsprocessed)/self.nevents_to_process))
                 if self.eventsprocessed > updateevery and self.eventsprocessed % updateevery == 0:
                     currenttime = time.time()
                     timeelapsed = currenttime - starttime
-                    timeleft = (float(self.nevents) - float(self.eventsprocessed)) * (float(timeelapsed) / float(self.eventsprocessed))
+                    timeleft = (float(self.nevents_to_process) - float(self.eventsprocessed)) * (float(timeelapsed) / float(self.eventsprocessed))
                     minutesleft, secondsleft = divmod(int(timeleft), 60)
                     hoursleft, minutesleft = divmod(minutesleft, 60)
-                    logging.info('  Processing event {0}/{1} ({2:0.0f}%) [{3}:{4:02d}:{5:02d}]'.format(self.eventsprocessed, self.nevents, (100.*self.eventsprocessed)/self.nevents, hoursleft, minutesleft, secondsleft))
+                    logging.info('  Processing event {0}/{1} ({2:0.0f}%) [{3}:{4:02d}:{5:02d}]'.format(self.eventsprocessed, self.nevents_to_process, (100.*self.eventsprocessed)/self.nevents_to_process, hoursleft, minutesleft, secondsleft))
 
 
                 # load required collections
@@ -338,13 +348,14 @@ class AnalysisBase(object):
         self.write()
         logging.info('')
         logging.info('Job complete.')
-        logging.info('    NEVENTS processed: {0}/{1} ({2}%)'.format(self.eventsprocessed, self.nevents, (100*self.eventsprocessed)/self.nevents))
+        logging.info('    NEVENTS processed: {0}/{1} ({2}%)'.format(self.eventsprocessed, self.nevents_to_process, (100*self.eventsprocessed)/self.nevents_to_process))
         logging.info('Sample information:')
-        logging.info('    DATASET:    {0}'.format(self.dataset_source))
-        logging.info('    NEVENTS:    {0}'.format(self.nevents))
-        logging.info('    SUMWEIGHTS: {0}'.format(self.sumweights))
+        logging.info('    NEVENTS (skim) : {0}'.format(self.nevents_to_process))
+        logging.info('    NEVENTS (orig) : {0}'.format(self.nevents))
+        logging.info('    SUMWEIGHTS     : {0}'.format(self.sumweights))
+        logging.info('    DATASET    : {0}'.format(self.dataset_source))
         if self.ismc:
-            logging.info('    CROSS SEC.: {0} pb'.format(self.nom_xsec))
+            logging.info('    CROSS SEC. : {0} pb'.format(self.nom_xsec if self.nom_xsec != -1. else '-'))
 
 
 
