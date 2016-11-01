@@ -64,7 +64,6 @@ class AnalysisBase(object):
         self.ismc = not self.isdata
         self.cmsswversion = str(infotree.CMSSW_version)
         # strip " and / from parent dataset name
-        print 'dsest = {0}'.format(str(infotree.source_dataset))
         self.dataset_source = ''.join( c for c in str(infotree.source_dataset) if c not in '"/')
 
         tfile0.Close('R')
