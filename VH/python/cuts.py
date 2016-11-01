@@ -1,6 +1,6 @@
 
 # bjet algorithm choices:
-#     '[CSVv2,JP,CMVAv2][loose,medium,tight]'
+#     '[CSVv2,JP,CMVAv2][L,M,T]' (ie. Loose, Medium, Tight)
 # muon isolation choices:
 #     'loose', 'tight', 'tkloose', 'tktight'
 #     https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2#Muon_Isolation
@@ -17,14 +17,18 @@ vh_cuts = {
     'cVtxZ'   : 24., # cm
 
     # preselection
-    'cBJetAlg' : 'CSVv2medium',
+    'cBJetAlg' : 'CSVv2M',
     'cBJetPt'  : 30., # GeV
     'cBJetEta' : 2.4,
-    # delta R to clean jets
-    'cDeltaR' : 0.4,
 
     # MET cut
     'cMET' : 40.,
+
+    # regular jets
+    'cJetPt'  : 30., # GeV
+    'cJetEta' : 4.7,
+    # delta R to clean jets
+    'cDeltaR' : 0.4,
 
     # regular mu cuts
     'cMuPt'  : 10., # GeV
