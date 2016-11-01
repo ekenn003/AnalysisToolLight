@@ -45,6 +45,7 @@ class AnalysisBase(object):
                 # personal storage options
                 if fname_.startswith('T2_CH_CERN'):   fname_ = 'root://eoscms.cern.ch/{0}'.format(fname_[10:])
                 elif fname_.startswith('T2_US_UCSD'): fname_ = 'root://xrootd.t2.ucsd.edu/{0}'.format(fname_[10:])
+                #elif fname_.startswith('T2_US_UCSD'): fname_ = 'root://cms-xrd-global.cern.ch/{0}'.format(fname_[10:])
 
                 self.filenames += [fname_]
 
@@ -77,7 +78,7 @@ class AnalysisBase(object):
             logging.info('    No cross section information found for source "{0}".'.format(self.dataset_source))
             logging.info('    *******')
             logging.info('       *   ')
-            self.nom_xsec = 1.
+            self.nom_xsec = -1.
 
         # set up lumi info and see how many events we have to process
         lumichain = TChain('{0}/{1}'.format(self.treedir, self.luminame))
@@ -98,7 +99,10 @@ class AnalysisBase(object):
 
         logging.info('    Number of events found: {0} in {1} lumi sections in {2} files'.format(self.nevents, self.numlumis, len(self.filenames)))
         logging.info('Sample will be processed as {0}'.format('DATA' if self.isdata else 'MC'))
-        logging.info('Sample has been identified as coming from {0} with a nominal cross section of {1} pb.'.format(self.dataset_source, self.nom_xsec))
+        if self.ismc:
+            logging.info('Sample has been identified as coming from {0} with a nominal cross section of {1} pb.'.format(self.dataset_source, self.nom_xsec))
+        else:
+            logging.info('Sample has been identified as coming from {0}'.format(self.dataset_source))
 
 
 
@@ -339,7 +343,8 @@ class AnalysisBase(object):
         logging.info('    DATASET:    {0}'.format(self.dataset_source))
         logging.info('    NEVENTS:    {0}'.format(self.nevents))
         logging.info('    SUMWEIGHTS: {0}'.format(self.sumweights))
-        logging.info('    CROSS SEC.: {0} pb'.format(self.nom_xsec))
+        if self.ismc:
+            logging.info('    CROSS SEC.: {0} pb'.format(self.nom_xsec))
 
 
 
