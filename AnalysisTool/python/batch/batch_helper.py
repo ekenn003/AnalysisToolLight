@@ -15,6 +15,8 @@ def selectAnalysisCode(analysisname, basedir):
         analysiscode = '{0}/2Mu/python/FinalState_2mu.py'.format(basedir)
     elif analysisname=='VH4Mu':
         analysiscode = '{0}/VH/python/FinalState_4mu.py'.format(basedir)
+    elif analysisname=='VH2Mu':
+        analysiscode = '{0}/VH/python/FinalState_2mu.py'.format(basedir)
     elif analysisname=='ZH2J2Mu':
         analysiscode = '{0}/ZH/python/FinalState_2j2mu.py'.format(basedir)
     else:
@@ -42,7 +44,7 @@ def createSubmissionScript(dset, njob, njobs, **kwargs):
         fout.write('BASEDIR="{0}"\n'.format(BASEDIR))
         fout.write('RESULTSDIR="{0}"\n'.format(RESULTSDIR))
         #fout.write('EOSDIR="{0}"\n'.format(EOSDIR))
-        fout.write('DATADIR="{0}"\n'.format(DATADIR))
+#        fout.write('DATADIR="{0}"\n'.format(DATADIR))
         fout.write('DATASET="{0}"\n'.format(dset))
         fout.write('ANALYSIS="{0}"\n'.format(ANALYSIS))
         fout.write('ANALYSISCODE="{0}"\n'.format(ANALYSISCODE))
@@ -60,16 +62,17 @@ def createSubmissionScript(dset, njob, njobs, **kwargs):
         fout.write('\n')
         fout.write('cd $BASEDIR\n')
         fout.write('eval `scramv1 runtime -sh`\n')
+        fout.write('export XRD_NETWORKSTACK=IPv4\n')
         fout.write('\n')
         fout.write('# go to working directory\n')
         fout.write('cd $RESULTSDIR\n')
         fout.write('cmsenv\n')
-        fout.write('\n')
-        #fout.write('# mount eos\n')
-        #fout.write('/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse mount $EOSDIR\n')
+        fout.write('# copy grid auth\n')
+        fout.write('find /tmp/x5* -user ekennedy -exec cp -f {} . \;\n')
         fout.write('\n')
         fout.write('# submit job\n')
-        fout.write('python $ANALYSISCODE $INPUTFILE $OUTPUTFILE $DATADIR > $LOGFILE 2>&1\n')
+        #fout.write('python $ANALYSISCODE $INPUTFILE $OUTPUTFILE $DATADIR > $LOGFILE 2>&1\n')
+        fout.write('python $ANALYSISCODE -i $INPUTFILE -o $OUTPUTFILE > $LOGFILE 2>&1\n')
         fout.write('\n')
 
     os.system('chmod +x {0}'.format(scriptname))
