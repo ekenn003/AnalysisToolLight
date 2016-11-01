@@ -50,7 +50,7 @@ class Ana2Mu(AnalysisBase):
 
         ##########################################################
         #                                                        #
-        # Define cuts                                            #
+        # Define event HLT requirement                           #
         #                                                        #
         ##########################################################
         self.hltriggers = (
@@ -61,67 +61,38 @@ class Ana2Mu(AnalysisBase):
 
 
 
-        # PV cuts
-        self.cVtxNdf = cuts['cVtxNdf']
-        self.cVtxZ   = cuts['cVtxZ']
-        # muon cuts
-        self.cMuPt     = cuts['cMuPt']
-        self.cMuEta    = cuts['cMuEta']
-        self.cMuPtMax  = cuts['cMuPtMax']
-        self.cMuEtaMax = cuts['cMuEtaMax']
-        self.cMuDxy    = cuts['cMuDxy']
-        self.cMuDz     = cuts['cMuDz']
-        # special function for muons
-        if 'tk' in cuts['cMuIso']:
-            self.cIsoMuType = 'tracker'
-            self.cIsoMuLevel = cuts['cMuIso'][2:]
-        else:
-            self.cIsoMuType = 'PF_dB'
-            self.cIsoMuLevel = cuts['cMuIso']
-
-        # muon id 
-        self.cMuID = cuts['cMuID']
-        # dimuon pair cuts
-        self.cDiMuInvMass = cuts['cDiMuInvMass']
-        self.cDiMuPt = cuts['cDiMuPt']
-        # electron cuts
-        self.cEPt  = cuts['cEPt']
-        self.cEEta = cuts['cEEta']
-        # jet cuts
-        self.cBJetAlg = cuts['cBJetAlg']
-        self.cBJetPt  = cuts['cBJetPt']
-        self.cBJetEta = cuts['cBJetEta']
-        self.cDeltaR  = cuts['cDeltaR']
-        # MET cuts
-        self.cMET = cuts['cMET']
-
-
-
         ##########################################################
         #                                                        #
         # Initialize event counters                              #
         #                                                        #
         ##########################################################
         self.cutflow = CutFlow()
-        self.cutflow.add('nEv_Skim', 'Skim number of events')
+        self.cutflow.add('nEv_Skim', 'Skim number of events (>=2 muon candidates)')
         # event selection
         self.cutflow.add('nEv_Trigger', 'Trigger')
         self.cutflow.add('nEv_PV', 'PV cuts')
         # muon selection
         self.cutflow.add('nEv_GAndTr',   'Global+Tracker muon')
-        self.cutflow.add('nEv_Pt',       'Muon pT > {0}'.format(self.cMuPt))
-        self.cutflow.add('nEv_Eta',      'Muon |eta| < {0}'.format(self.cMuEta))
-        self.cutflow.add('nEv_PtEtaMax', 'At least 1 trigger-matched mu with pT > {0} and |eta| < {1}'.format(self.cMuPtMax, self.cMuEtaMax))
-        self.cutflow.add('nEv_Iso',      'Muon has {0} {1} isolation'.format(self.cIsoMuType, self.cIsoMuLevel))
-        self.cutflow.add('nEv_ID',       'Muon has {0} muon ID'.format(self.cMuID))
-        self.cutflow.add('nEv_PVMu',     'Muon Dxy < {0} and Dx < {1}'.format(self.cMuDxy, self.cMuDz))
-        # muon pair slection
-        self.cutflow.add('nEv_2Mu',         'Require 2 "good" muons')
+        self.cutflow.add('nEv_Pt',       'Muon pT > {0}'.format(cuts['cMuPt']))
+        self.cutflow.add('nEv_Eta',      'Muon |eta| < {0}'.format(cuts['cMuEta']))
+        self.cutflow.add('nEv_PtEtaMax', 'At least 1 trigger-matched mu with pT > {0} and |eta| < {1}'.format(cuts['cMuPtMax'], cuts['cMuEtaMax']))
+        self.cutflow.add('nEv_Iso',      'Muon has {0} isolation'.format(cuts['cMuIso']))
+        self.cutflow.add('nEv_ID',       'Muon has {0} muon ID'.format(cuts['cMuID']))
+        self.cutflow.add('nEv_PVMu',     'Muon Dxy < {0} and Dx < {1}'.format(cuts['cMuDxy'], cuts['cMuDz']))
+
+        # preselection
+        self.cutflow.add('nEv_2Mu',     'Prepreselection: Require 2 "good" muons')
+        self.cutflow.add('nEv_4Lep',    'Preselection: Require 4 or fewer total isolated leptons')
+        self.cutflow.add('nEv_3or4Lep', 'V(lep)h selection: Require 1 or 2 extra isolated leptons')
+        self.cutflow.add('nEv_NoBJets', 'V(lep)h selection: Require 0 bjets and 1 or 2 extra leptons')
+
+        # muon pair selection
         self.cutflow.add('nEv_ChargeDiMu',  'Dimu pair has opposite-sign mus')
         self.cutflow.add('nEv_SamePVDiMu',  'Dimu pair has same pv mus')
-        self.cutflow.add('nEv_InvMassDiMu', 'Dimu pair has invariant mass > {0}'.format(self.cDiMuInvMass))
-        self.cutflow.add('nEv_PtDiMu',      'Dimu pair has pT > {0}'.format(self.cDiMuPt))
+        self.cutflow.add('nEv_InvMassDiMu', 'Dimu pair has invariant mass > {0}'.format(cuts['cDiMuInvMass']))
+        self.cutflow.add('nEv_PtDiMu',      'Dimu pair has pT > {0}'.format(cuts['cDiMuPt']))
         self.cutflow.add('nEv_1DiMu',       'Require at least 1 "good" dimuon pair')
+
 
 
 
@@ -249,7 +220,7 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hDiMuPhi'].GetXaxis().SetTitle('#varphi_{#mu^{+}#mu^{-}} [rad]')
         self.histograms['hDiMuPhi'].GetYaxis().SetTitle('Candidates/0.2[rad]')
 
-        self.histograms['hDiMuDeltaPt'] = TH1F('hDiMuDeltaPt', 'hDiMuDeltaPt', 320, -800., 800.)
+        self.histograms['hDiMuDeltaPt'] = TH1F('hDiMuDeltaPt', 'hDiMuDeltaPt', 400, 0., 800.)
         self.histograms['hDiMuDeltaPt'].GetXaxis().SetTitle('#Delta p_{T #mu^{+} - #mu^{-}}[GeV/c]')
         self.histograms['hDiMuDeltaPt'].GetYaxis().SetTitle('Candidates/5.0[GeV]')
         self.histograms['hDiMuDeltaEta'] = TH1F('hDiMuDeltaEta', 'hDiMuDeltaEta',  132, -6.6, 6.6)
@@ -276,7 +247,7 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hDiEPhi'].GetXaxis().SetTitle('#varphi_{e^{+}e^{-}} [rad]')
         self.histograms['hDiEPhi'].GetYaxis().SetTitle('Candidates/0.2[rad]')
 
-        self.histograms['hDiEDeltaPt'] = TH1F('hDiEDeltaPt', 'hDiEDeltaPt', 320, -800., 800.)
+        self.histograms['hDiEDeltaPt'] = TH1F('hDiEDeltaPt', 'hDiEDeltaPt', 400, 0., 800.)
         self.histograms['hDiEDeltaPt'].GetXaxis().SetTitle('#Delta p_{T e^{+} - e^{-}}[GeV/c]')
         self.histograms['hDiEDeltaPt'].GetYaxis().SetTitle('Candidates/5.0[GeV]')
         self.histograms['hDiEDeltaEta'] = TH1F('hDiEDeltaEta', 'hDiEDeltaEta',  132, -6.6, 6.6)
@@ -303,7 +274,7 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hDiJetPhi'].GetXaxis().SetTitle('#varphi_{j^{+}j^{-}} [rad]')
         self.histograms['hDiJetPhi'].GetYaxis().SetTitle('Candidates/0.2[rad]')
 
-        self.histograms['hDiJetDeltaPt'] = TH1F('hDiJetDeltaPt', 'hDiJetDeltaPt', 320, -800., 800.)
+        self.histograms['hDiJetDeltaPt'] = TH1F('hDiJetDeltaPt', 'hDiJetDeltaPt', 400, 0., 800.)
         self.histograms['hDiJetDeltaPt'].GetXaxis().SetTitle('#Delta p_{T j^{+} - j^{-}}[GeV/c]')
         self.histograms['hDiJetDeltaPt'].GetYaxis().SetTitle('Candidates/5.0[GeV]')
         self.histograms['hDiJetDeltaEta'] = TH1F('hDiJetDeltaEta', 'hDiJetDeltaEta',  132, -6.6, 6.6)
@@ -370,19 +341,6 @@ class Ana2Mu(AnalysisBase):
         self.ftreeCat0.Branch('tInvMass', self.tInvMass, 'tInvMass/F')
         self.ftreeCat0.Branch('tEventWt', self.tEventWt, 'tEventWt/F')
 
-#        self.fnumCat2 = 0
-#        self.ftreeCat2 = TTree('Category2', 'Category2')
-#        self.category_trees += [self.ftreeCat2]
-#        self.ftreeCat2.Branch('tEventNr', self.tEventNr, 'tEventNr/l')
-#        self.ftreeCat2.Branch('tLumiNr', self.tLumiNr, 'tLumiNr/l')
-#        self.ftreeCat2.Branch('tRunNr', self.tRunNr, 'tRunNr/l')
-#        self.ftreeCat2.Branch('tInvMass', self.tInvMass, 'tInvMass/F')
-#        self.ftreeCat2.Branch('tEventWt', self.tEventWt, 'tEventWt/F')
-
-
-
-
-
 
 
 
@@ -420,8 +378,8 @@ class Ana2Mu(AnalysisBase):
         isVtxNdfOK = False
         isVtxZOK = False
         for pv in self.vertices:
-            if not isVtxNdfOK: isVtxNdfOK = pv.Ndof() > self.cVtxNdf
-            if not isVtxZOK:   isVtxZOK = pv.Z() < self.cVtxZ
+            if not isVtxNdfOK: isVtxNdfOK = pv.Ndof() > cuts['cVtxNdf']
+            if not isVtxZOK:   isVtxZOK = pv.Z() < cuts['cVtxZ']
             # check if it's passed
             if not (isVtxNdfOK and isVtxZOK): continue
             # save it if it did
@@ -455,31 +413,29 @@ class Ana2Mu(AnalysisBase):
             # muon cuts
             if not (muon.IsGlobal() and muon.IsTracker()): continue
             isGAndTr = True
-            if not muon.Pt() > self.cMuPt: continue
+            if not muon.Pt() > cuts['cMuPt']: continue
             isPtCutOK = True
-            if not muon.AbsEta() < self.cMuEta: continue
+            if not muon.AbsEta() < cuts['cMuEta']: continue
             isEtaCutOK = True
 
             # make sure at least one HLT-matched muon passes extra cuts
-            if muon.MatchesHLTs(self.hltriggers) and muon.Pt() > self.cMuPtMax and muon.AbsEta() < self.cMuEtaMax: nMuPtEtaMax += 1
+            if muon.MatchesHLTs(self.hltriggers) and muon.Pt() > cuts['cMuPtMax'] and muon.AbsEta() < cuts['cMuEtaMax']: nMuPtEtaMax += 1
 
             # check isolation
-            if not (muon.CheckIso(self.cIsoMuType, self.cIsoMuLevel)): continue
+            if not (muon.CheckIso('PF_dB', cuts['cMuIso'])): continue
             isIsoOK = True
 
             # check muon ID
-            if self.cMuID=='tight':
-                isIDOK = muon.IsTightMuon()
-            elif self.cMuID=='medium': 
-                isIDOK = muon.IsMediumMuon()
-            elif self.cMuID=='loose':
-                isIDOK = muon.IsLooseMuon()
-            elif self.cMuID=='none':
-                isIDOK = True
-            if not (isIDOK): continue
+            cMuID = cuts['cMuID']
+            isThisIDOK = False
+            if cMuID=='tight':    isThisIDOK = muon.IsTightMuon()
+            elif cMuID=='medium': isThisIDOK = muon.IsMediumMuon()
+            elif cMuID=='loose':  isThisIDOK = muon.IsLooseMuon()
+            if not (isThisIDOK): continue
+            isIDOK = True
 
             # check muon PV (not really needed)
-            if not (muon.Dxy() < self.cMuDxy and muon.Dz() < self.cMuDz): continue
+            if not (muon.Dxy() < cuts['cMuDxy'] and muon.Dz() < cuts['cMuDz']): continue
             isTrackCutOK = True
 
             # if we get to this point, push muon into goodMuons
@@ -512,28 +468,24 @@ class Ana2Mu(AnalysisBase):
         goodElectrons = []
         for electron in self.electrons:
             # electron cuts
-            if not electron.Pt() > self.cEPt: continue
-            if not electron.AbsEta() < self.cEEta: continue
+            if not electron.Pt() > cuts['cEPt']: continue
+            if not electron.AbsEta() < cuts['cEEta']: continue
 
             # check electron id
             # options: cutbased: IsVetoElectron, IsLooseElectron, IsMediumElectron, IsTightElectron
             #          mva: WP90_v1, WP80_v1
-            if not electron.IsMediumElectron(): continue
+            electronIDOK = False
+            cEID = cuts['cEID']
+            if cEID=='cbloose':    electronIDOK = electron.IsLooseElectron()
+            elif cEID=='cbmedium': electronIDOK = electron.IsMediumElectron()
+            elif cEID=='cbtight':  electronIDOK = electron.IsTightElectron()
+            elif cEID=='mva80': electronIDOK = electron.WP80_v1()
+            elif cEID=='mva90': electronIDOK = electron.WP90_v1()
 
-            # check isolation
-            # options: rel PF r3 combined with dB correction (IsoPFR3dBCombRel), 
-            #          rel PF r3 combined with rho correction (IsoPFR3RhoCombRel),
-            #          and lots more in Dataform.py
-            # WARNING: check with egamma POG for run 2 working points
+            if not electronIDOK: continue
 
             # if we get to this point, push electron into goodElectrons
             goodElectrons += [electron]
-
-
-        # uncomment the line below to require at least 2 good electrons
-        #if len(goodElectrons) < 2: return
-
-
 
 
 
@@ -547,22 +499,24 @@ class Ana2Mu(AnalysisBase):
         # loop over jets
         for jet in self.jets:
             # jet cuts
-            if not jet.Pt() > self.cBJetPt: continue
-            if not jet.AbsEta() < self.cBJetEta: continue
+            if not jet.Pt() > cuts['cJetPt']: continue
+            if not jet.AbsEta() < cuts['cJetEta']: continue
+            if not jet.IsLooseJet(): continue
 
             # jet cleaning
             # clean jets against our selected muons, electrons, and taus:
             jetIsClean = True
             for mu in goodMuons:
-                if DeltaR(mu, jet) < self.cDeltaR: jetIsClean = False
+                if DeltaR(mu, jet) < cuts['cDeltaR']: jetIsClean = False
             for e in goodElectrons:
-                if DeltaR(e, jet) < self.cDeltaR: jetIsClean = False
+                if DeltaR(e, jet) < cuts['cDeltaR']: jetIsClean = False
 
             # save it            
             goodJets += [jet]
 
             # btag
-            if jet.Btag('passCSVv2M'):
+            bjetAlg = cuts['cBJetAlg']
+            if ((jet.Btag('pass'+bjetAlg)) and (jet.Pt() > cuts['cBJetEta']) and (jet.Pt() > cuts['cBJetPt'])):
                 goodBJets += [jet]
 
 
@@ -574,6 +528,24 @@ class Ana2Mu(AnalysisBase):
         # also available: self.met.E() (TVector3), self.met.RawE(), self.met.RawEt(), self.met.RawPhi()
         evtmet = self.met.Et()
         evtmetphi = self.met.Phi()
+
+
+
+        ##########################################################
+        # Channel selection                                      #
+        ##########################################################
+        # Preselection: 4 or fewer isolation leptons
+        if (len(goodMuons) + len(goodElectrons) > 4): return
+        self.cutflow.increment('nEv_4Lep')
+        # V(lep)h selection: 0 bjets, 1 or 2 extra leptons
+        if (len(goodMuons) + len(goodElectrons) < 3): return
+        self.cutflow.increment('nEv_3or4Lep')
+        if (len(goodBJets) > 0): return
+        self.cutflow.increment('nEv_NoBJets')
+        
+
+
+
 
 
 
@@ -605,9 +577,9 @@ class Ana2Mu(AnalysisBase):
             # create composite four-vector
             diMuonP4 = pair[0].P4() + pair[1].P4()
             # require min pT and min InvMass
-            if not (diMuonP4.M() > self.cDiMuInvMass): continue
+            if not (diMuonP4.M() > cuts['cDiMuInvMass']): continue
             isInvMassMuCutOK = True
-            if not (diMuonP4.Pt() > self.cDiMuPt): continue
+            if not (diMuonP4.Pt() > cuts['cDiMuPt']): continue
             isPtDiMuCutOK = True
 
             # if we reach this part, we have a pair! set thispair to the pair, ordered by pT
@@ -650,18 +622,8 @@ class Ana2Mu(AnalysisBase):
         #############################
         # DIJET PAIRS ###############
         #############################
-        # loop over all possible pairs of jets
         diJetPairs = []
-        # iterate over every pair of jets
-        for pair in itertools.combinations(goodJets, 2):
-
-            # jet pair cuts
-            if not (pair[0].Charge() * pair[1].Charge() < 0): continue
-
-            thispair = pair if pair[0].Pt() > pair[1].Pt() else (pair[1], pair[0])
-            diJetPairs += [thispair]
-
-
+        if len(goodJets) > 1: diJetPairs += [(goodJets[0], goodJets[1])]
 
 
 
@@ -689,9 +651,9 @@ class Ana2Mu(AnalysisBase):
             if self.includeTriggerScaleFactors:
                 eventweight *= self.hltweights.getScale(goodMuons)
             if self.includeLeptonScaleFactors:
-                eventweight *= self.muonweights.getIdScale(goodMuons, self.cMuID)
+                eventweight *= self.muonweights.getIdScale(goodMuons, cuts['cMuID'])
                 # NB: the below only works for PF w/dB isolation
-                eventweight *= self.muonweights.getIsoScale(goodMuons, self.cMuID, self.cIsoMuLevel)
+                eventweight *= self.muonweights.getIsoScale(goodMuons, cuts['cMuID'], cuts['cMuIso'])
         self.histograms['hWeight'].Fill(eventweight)
 
 
@@ -762,7 +724,7 @@ class Ana2Mu(AnalysisBase):
                 self.histograms_ctrl['hDiMuDeltaPhi_ctrl'].Fill(mupair[0].Phi() - mupair[1].Phi(), eventweight)
 
         # pick which inv mass to put in limit tree
-        mytInvMass = ( diMuonPairs[0][0].P4() + diMuonPairs[0][1].P4() ).M()
+        mytInvMass = ( diMuonPairs[0][0].P4() + diMuonPairs[0][1].P4() ).M() if diMuonPairs else 0.
 
         #############################
         # Electrons #################
