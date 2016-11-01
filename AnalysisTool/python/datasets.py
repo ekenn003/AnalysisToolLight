@@ -1,8 +1,11 @@
 # Datasets ##############################
 datasets76X = {
     # data
-    'SingleMuon2015C' : { 'njobs' : 1 },
-    'SingleMuon2015D' : { 'njobs' : 20 },
+    'SingleMuon_Run2015C' : { 'njobs' : 1 },
+    'SingleMuon_Run2015D' : { 'njobs' : 20 },
+    # signal
+    'GluGlu_HToMuMu' : { 'njobs' : 1 },
+    'VBF_HToMuMu'    : { 'njobs' : 1 },
     # background
     'DYJetsToLL'  : { 'njobs' : 12 },
     'TTJets'      : { 'njobs' : 4 },
@@ -17,8 +20,8 @@ datasets76X = {
 
 datasets80X = {
     # data
-    'SingleMuon2016B' : { 'njobs' : 20 },
-    'SingleMuon2016C' : { 'njobs' : 1 },
+    'SingleMuon_Run2016B' : { 'njobs' : 20 },
+    'SingleMuon_Run2016C' : { 'njobs' : 1 },
     # signal
     'GluGlu_HToMuMu' : { 'njobs' : 1 },
     'VBF_HToMuMu'    : { 'njobs' : 1 },
