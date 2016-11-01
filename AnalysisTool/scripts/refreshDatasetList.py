@@ -18,10 +18,10 @@ ds = [
 
 ms = [
     'DYJetsToLL',
-    'GluGlu_HToMuMu_M125',
+    'GluGlu_HToMuMu',
     'TTJets',
     'TTZToLLNuNu',
-    'VBF_HToMuMu_M125',
+    'VBF_HToMuMu',
     'WWTo2L2Nu',
     'WZTo2L2Q',
     'WZTo3LNu',
