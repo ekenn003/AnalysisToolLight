@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-# AnalysisTool/scripts/collectTriggerScaleFactors.py
+# AnalysisTool/scripts/collectTriggerScaleFactors76X.py
 import os, sys, math
 import ROOT
 
 def main():
     '''
-    This creates a 2D histograms of efficiencies for the RunC+D IsoMu20_OR_IsoTkMu20 path,
+    This creates a 2D histograms of efficiencies for the 2015 RunC+D IsoMu20_OR_IsoTkMu20 path,
     weighted by the integrated lumi for each period. To find the scale factor for this path,
     for i muons:
         sf(IsoMu20_OR_IsoTkMu20) = [1-eff(data, mu(i))*eff(data, mu(i+1))*...] / [1-eff(MC, mu(i))*eff(MC, mu(i+1))*...]

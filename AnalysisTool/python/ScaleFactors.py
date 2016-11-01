@@ -160,34 +160,50 @@ class HLTScaleFactors(ScaleFactor):
             logging.info('    Will not include trigger scale factors.')
             logging.info('    *******')
             logging.info('       *   ')
+            return
         else:
             # this is the file created by AnalysisTool/scripts/collectTriggerScaleFactors.py
             self.hltfile = ROOT.TFile(filename)
             # the histograms in the file are named effMC and effDA, with x axis: Pt, y axis: AbsEta
-            self.effhistDA_ = self.hltfile.Get('effDA')
+        self.effhistDA_ = self.hltfile.Get('effDA')
+        if self.cmsswversion == '76X':
             self.effhistMC_ = self.hltfile.Get('effMC')
-            self.maxpt = self.effhistDA_.GetXaxis().GetXmax() - 1.
-            self.maxeta = self.effhistDA_.GetYaxis().GetXmax()
+        self.maxpt = self.effhistDA_.GetXaxis().GetXmax() - 1.
+        self.maxeta = self.effhistDA_.GetYaxis().GetXmax()
 
 
     # methods
     def getScale(self, muons):
         if self.error: return 1.
 
-        xda = 1.
-        xmc = 1.
-        for mu in muons:
-            # make sure the muon is in range
-            pt_ = min(self.maxpt, mu.Pt())
-            eta_ = min(self.maxeta, mu.AbsEta())
-            # find efficiencies for this muon
-            effda = self.effhistDA_.GetBinContent( self.effhistDA_.GetXaxis().FindBin(pt_) , self.effhistDA_.GetYaxis().FindBin(eta_))
-            effmc = self.effhistMC_.GetBinContent( self.effhistMC_.GetXaxis().FindBin(pt_) , self.effhistMC_.GetYaxis().FindBin(eta_))
-            # update total efficiency
-            xda *= (1. - effda)
-            xmc *= (1. - effmc)
-        # calculate scale factor and return it
-        return (1.-xda)/(1.-xmc) if (xmc!= 1.) else 1.
+        if self.cmsswversion == '76X':
+            xda = 1.
+            xmc = 1.
+            for mu in muons:
+                # make sure the muon is in range
+                pt_ = min(self.maxpt, mu.Pt())
+                eta_ = min(self.maxeta, mu.AbsEta())
+                # find efficiencies for this muon
+                effda = self.effhistDA_.GetBinContent( self.effhistDA_.GetXaxis().FindBin(pt_) , self.effhistDA_.GetYaxis().FindBin(eta_))
+                effmc = self.effhistMC_.GetBinContent( self.effhistMC_.GetXaxis().FindBin(pt_) , self.effhistMC_.GetYaxis().FindBin(eta_))
+                # update total efficiency
+                xda *= (1. - effda)
+                xmc *= (1. - effmc)
+            # calculate scale factor and return it
+            return (1.-xda)/(1.-xmc) if (xmc!= 1.) else 1.
+
+        else: # if 80X
+            xda = 1.
+            for mu in muons:
+                # make sure the muon is in range
+                pt_ = min(self.maxpt, mu.Pt())
+                eta_ = min(self.maxeta, mu.AbsEta())
+                # find efficiencies for this muon
+                effda = self.effhistDA_.GetBinContent( self.effhistDA_.GetXaxis().FindBin(pt_) , self.effhistDA_.GetYaxis().FindBin(eta_))
+                # update total efficiency
+                xda *= (1. - effda)
+            # calculate scale factor and return it
+            return (1.-xda)
 
 
     ## _______________________________________________________
