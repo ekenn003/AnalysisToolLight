@@ -7,6 +7,16 @@ xsecs = {
     'DoubleMuon'                                                       : 1.,
     'SingleMuon'                                                       : 1.,
 
+    # signal
+    '                                        '                         :       .                  
+    'GluGlu_HToMuMu_M125_13TeV_powheg_pythia8'                         :      3.721 * 0.0002176 * pb, # ggf H * H-> 2mu
+    'VBF_HToMuMu_M125_13TeV_powheg_pythia8'                            :  * pb,
+    'WPlusH_HToMuMu_M125_13TeV_powheg_pythia8'                         :  * pb,
+    'WMinusH_HToMuMu_M125_13TeV_powheg_pythia8'                        :  * pb,
+    'ZH_HToMuMu_M125_13TeV_powheg_pythia8'                             :  * pb, 
+
+
+
     # Drell-yan (choose one)
     'DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8'          :   6025.2      * pb,
     'DYJetsToLL_M-50_TuneCUETP8M1_13TeV-madgraphMLM-pythia8'           :   4895.       * pb * 1.216, # 1.216 LO -> NNLO
@@ -46,12 +56,13 @@ xsecs = {
 
     # ZZ
     # extra factors:
-    #     1.1 brings pp->ZZ from NLO to NNLO (http://arxiv.org/abs/1405.2219)
-    #     1.7 brings gg->ZZ from LO to NLO (http://arxiv.org/abs/1509.06734)
+    #     1.16 brings pp->ZZ from NLO to NNLO (http://arxiv.org/abs/1405.2219)
+    #     1.67 brings gg->ZZ from LO to NLO (http://arxiv.org/abs/1509.06734)
     #         (since it is gg it is already kind of NLO though so it is more like "nlo" to "nnlo")
     'ZZTo2L2Q_13TeV_amcatnloFXFX_madspin_pythia8'                      :      3.28     * pb,
     'ZZTo2L2Nu_13TeV_powheg_pythia8'                                   :      0.564    * pb,
     'ZZTo4L_13TeV_powheg_pythia8'                                      :      1.256    * pb * 1.16,
+    'ZZTo4L_13TeV-amcatnloFXFX-pythia8'                                :      1.211    * pb * 1.16,
     # ggZZ (76X)
     'GluGluToZZTo2e2mu_BackgroundOnly_13TeV_MCFM'                      :      0.003194 * pb * 1.67,
     'GluGluToZZTo2e2tau_BackgroundOnly_13TeV_MCFM'                     :      0.003194 * pb * 1.67,
