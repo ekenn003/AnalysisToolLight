@@ -10,7 +10,6 @@ from collections import OrderedDict
 from AnalysisToolLight.AnalysisTool.tools.tools import DeltaR, Z_MASS, EventIsOnList
 from AnalysisToolLight.AnalysisTool.AnalysisBase import AnalysisBase, CutFlow
 from AnalysisToolLight.AnalysisTool.AnalysisBase import main as analysisBaseMain
-#from AnalysisToolLight.AnalysisTool.cuts import vh_cuts as cuts
 from cuts import vh_cuts as cuts
 
 ## ___________________________________________________________
@@ -42,7 +41,7 @@ class Ana2Mu(AnalysisBase):
         #                                                        #
         ##########################################################
         self.doPileupReweighting = True
-        self.includeTriggerScaleFactors = True
+        #self.includeTriggerScaleFactors = True
         self.includeLeptonScaleFactors = True
 
         ## use rochester corrections (default is false)
@@ -54,8 +53,8 @@ class Ana2Mu(AnalysisBase):
         #                                                        #
         ##########################################################
         self.hltriggers = (
-            'IsoMu20',
-            'IsoTkMu20',
+            'IsoMu24',
+            'IsoTkMu24',
         )
         self.pathForTriggerScaleFactors = 'IsoMu20_OR_IsoTkMu20'
 
@@ -323,6 +322,38 @@ class Ana2Mu(AnalysisBase):
 
         ##########################################################
         #                                                        #
+        # Book category histograms                               #
+        #                                                        #
+        ##########################################################
+
+        self.categories = [
+            'Category1_V_mu_h',
+            'Category2_V_e_h',
+            'Category3_Z_tau_h',
+            'Category4_Z_mu_h',
+            'Category5_Z_e_h',
+        ]
+        self.fnumCat1 = 0
+        self.fnumCat2 = 0
+        self.fnumCat3 = 0
+        self.fnumCat4 = 0
+        self.fnumCat5 = 0
+        self.fnumBucket = 0
+
+        category_hists = ['hVtxN', 'hMET', 'hDiMuPt', 'hDiMuInvMass', 'hNumMu', 'hNumE', 'hMuPt', 'hMuEt', 'hEPt']
+
+        self.histograms_categories = {}
+        for name in self.histograms.keys():
+            if name not in category_hists: continue
+            for cat in self.categories:
+                self.histograms_categories[name+'_'+cat] = self.histograms[name].Clone(self.histograms[name].GetName()+'_'+cat)
+        # add it to the extra histogram map
+        self.extraHistogramMap['categories'] = self.histograms_categories
+
+
+
+        ##########################################################
+        #                                                        #
         # Set up trees for limit calculations                    #
         #                                                        #
         ##########################################################
@@ -332,16 +363,22 @@ class Ana2Mu(AnalysisBase):
         self.tInvMass = array('f', [0.])
         self.tEventWt = array('f', [0.])
 
-        self.fnumCat0 = 0
-        self.ftreeCat0 = TTree('Category0', 'Category0')
-        self.category_trees += [self.ftreeCat0]
-        self.ftreeCat0.Branch('tEventNr', self.tEventNr, 'tEventNr/l')
-        self.ftreeCat0.Branch('tLumiNr', self.tLumiNr, 'tLumiNr/l')
-        self.ftreeCat0.Branch('tRunNr', self.tRunNr, 'tRunNr/l')
-        self.ftreeCat0.Branch('tInvMass', self.tInvMass, 'tInvMass/F')
-        self.ftreeCat0.Branch('tEventWt', self.tEventWt, 'tEventWt/F')
+        self.category_trees = []
+#        self.ftreeCat0 = TTree('Category0', 'Category0')
+#        self.category_trees += [self.ftreeCat0]
+#        self.ftreeCat0.Branch('tEventNr', self.tEventNr, 'tEventNr/l')
+#        self.ftreeCat0.Branch('tLumiNr', self.tLumiNr, 'tLumiNr/l')
+#        self.ftreeCat0.Branch('tRunNr', self.tRunNr, 'tRunNr/l')
+#        self.ftreeCat0.Branch('tInvMass', self.tInvMass, 'tInvMass/F')
+#        self.ftreeCat0.Branch('tEventWt', self.tEventWt, 'tEventWt/F')
 
-
+        for i, cat in enumerate(self.categories):
+            self.category_trees += [TTree(cat, cat)]
+            self.category_trees[i].Branch('tEventNr', self.tEventNr, 'tEventNr/l')
+            self.category_trees[i].Branch('tLumiNr', self.tLumiNr, 'tLumiNr/l')
+            self.category_trees[i].Branch('tRunNr', self.tRunNr, 'tRunNr/l')
+            self.category_trees[i].Branch('tInvMass', self.tInvMass, 'tInvMass/F')
+            self.category_trees[i].Branch('tEventWt', self.tEventWt, 'tEventWt/F')
 
 
     ## _______________________________________________________
@@ -650,6 +687,7 @@ class Ana2Mu(AnalysisBase):
         if not self.isdata:
             if self.includeTriggerScaleFactors:
                 eventweight *= self.hltweights.getScale(goodMuons)
+            else: eventweight *= 0.93
             if self.includeLeptonScaleFactors:
                 eventweight *= self.muonweights.getIdScale(goodMuons, cuts['cMuID'])
                 # NB: the below only works for PF w/dB isolation
@@ -792,6 +830,54 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hMETPhi'].Fill(self.met.Phi(), eventweight)
 
 
+
+
+
+
+
+
+
+        ##########################################################
+        #                                                        #
+        # Determine category                                     #
+        #                                                        #
+        ##########################################################
+        num_muons = len(goodMuons)
+        num_electrons = len(goodElectrons)
+
+        if self.met.Et() >= 40.:
+            # V_mu_h
+            if num_muons==3 and num_electrons==0:
+                this_cat = 1
+                self.fnumCat1 += 1
+            # V_e_h
+            elif num_muons==2 and num_electrons==1:
+                this_cat = 2
+                self.fnumCat2 += 1
+            # Z_tau_h
+            elif num_muons==3 and num_electrons==1:
+                this_cat = 3
+                self.fnumCat3 += 1
+            # leftover
+            else:
+                this_cat = 0
+                self.fnumBucket += 1
+        else:
+            # Z_mu_h
+            if num_muons==4 and num_electrons==0:
+                this_cat = 4
+                self.fnumCat4 += 1
+            # Z_e_h
+            elif num_muons==2 and num_electrons==2:
+                this_cat = 5
+                self.fnumCat5 += 1
+            # leftover
+            else:
+                this_cat = 0
+                self.fnumBucket += 1
+
+        #if this_cat: logging.info('THISCATEGORY = ' + str(this_cat))
+
         ##########################################################
         #                                                        #
         # Fill limit trees                                       #
@@ -802,7 +888,9 @@ class Ana2Mu(AnalysisBase):
         self.tRunNr[0]   = self.event.Run()
         self.tInvMass[0] = mytInvMass
         self.tEventWt[0] = eventweight
-        self.ftreeCat0.Fill()
+        if this_cat: self.category_trees[this_cat-1].Fill()
+    #    self.ftreeCat0.Fill()
+    #    self.fnumCat0 += 1
 
         ## debug
         #if (self.event.Number() % 10):
@@ -812,12 +900,20 @@ class Ana2Mu(AnalysisBase):
         #    self.ftreeCat2.Fill()
         #    self.fnumCat2 += 1
 
+        for cat in self.categories:
+            if 'Category{0}'.format(this_cat) not in cat: continue
+            self.histograms_categories['hDiMuInvMass_'+self.categories[this_cat-1]].Fill(mytInvMass, eventweight)
 
 
     ## _______________________________________________________
     def endOfJobAction(self):
         logging.info('nSyncEvents = ' + str(self.nSyncEvents))
-        logging.info('Category0 events = {0}'.format(self.fnumCat0))
+        logging.info('Category1 (V_mu_h) events  = {0}'.format(self.fnumCat1))
+        logging.info('Category2 (V_e_h) events   = {0}'.format(self.fnumCat2))
+        logging.info('Category3 (Z_tau_h) events = {0}'.format(self.fnumCat3))
+        logging.info('Category4 (Z_mu_h) events  = {0}'.format(self.fnumCat4))
+        logging.info('Category5 (Z_e_h) events   = {0}'.format(self.fnumCat5))
+        logging.info('Bucket events    = {0}'.format(self.fnumBucket))
 
 
 
@@ -831,6 +927,6 @@ def main(argv=None):
 
 ## ___________________________________________________________
 # checks if this was run from the command line
-if __name__ == "__main__":
+if __name__ == '__main__':
     status = main()
     sys.exit(status)
