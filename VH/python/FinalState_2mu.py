@@ -42,7 +42,7 @@ class Ana2Mu(AnalysisBase):
         ##########################################################
         self.doPileupReweighting = True
         #self.includeTriggerScaleFactors = True
-        self.includeLeptonScaleFactors = True
+        #self.includeLeptonScaleFactors = True
 
         ## use rochester corrections (default is false)
         self.useRochesterCorrections = True
@@ -79,19 +79,18 @@ class Ana2Mu(AnalysisBase):
         self.cutflow.add('nEv_ID',       'Muon has {0} muon ID'.format(cuts['cMuID']))
         self.cutflow.add('nEv_PVMu',     'Muon Dxy < {0} and Dx < {1}'.format(cuts['cMuDxy'], cuts['cMuDz']))
 
-        # preselection
-        self.cutflow.add('nEv_2Mu',     'Prepreselection: Require 2 "good" muons')
-        self.cutflow.add('nEv_4Lep',    'Preselection: Require 4 or fewer total isolated leptons')
-        self.cutflow.add('nEv_3or4Lep', 'V(lep)h selection: Require 1 or 2 extra isolated leptons')
-        self.cutflow.add('nEv_NoBJets', 'V(lep)h selection: Require 0 bjets and 1 or 2 extra leptons')
-
         # muon pair selection
+        self.cutflow.add('nEv_2Mu',         'Prepreselection: Require 2 "good" muons')
         self.cutflow.add('nEv_ChargeDiMu',  'Dimu pair has opposite-sign mus')
         self.cutflow.add('nEv_SamePVDiMu',  'Dimu pair has same pv mus')
         self.cutflow.add('nEv_InvMassDiMu', 'Dimu pair has invariant mass > {0}'.format(cuts['cDiMuInvMass']))
         self.cutflow.add('nEv_PtDiMu',      'Dimu pair has pT > {0}'.format(cuts['cDiMuPt']))
         self.cutflow.add('nEv_1DiMu',       'Require at least 1 "good" dimuon pair')
 
+        # preselection
+        self.cutflow.add('nEv_4Lep',    'Preselection: Require 4 or fewer total isolated leptons')
+        self.cutflow.add('nEv_NoBJets', 'V(lep)h selection: Require 0 bjets')
+        self.cutflow.add('nEv_3or4Lep', 'V(lep)h selection: Require 1 or 2 extra isolated leptons')
 
 
 
@@ -303,7 +302,81 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hMetMtWithMu'].GetXaxis().SetTitle('M_{T}(#mu, MET)[GeV/c^{2}]')
         self.histograms['hMetMtWithMu'].GetYaxis().SetTitle('Candidates/2.0[GeV/c^{2}]')
 
+        self.histograms['hVtxN_step1'] = TH1F('hVtxN_step1', 'hVtxN_step1', 100, 0., 100.)
+        self.histograms['hVtxN_step1'].GetXaxis().SetTitle('N_{PV}')
+        self.histograms['hVtxN_step1'].GetYaxis().SetTitle('Candidates')
+        self.histograms['hNumMu_step1'] = TH1F('hNumMu_step1', 'hNumMu_step1', 20, 0., 20.)
+        self.histograms['hNumMu_step1'].GetXaxis().SetTitle('N_{#mu}')
+        self.histograms['hNumMu_step1'].GetYaxis().SetTitle('Candidates')
+        self.histograms['hMuPt_step1'] = TH1F('hMuPt_step1', 'hMuPt_step1', 500, 0., 1000.)
+        self.histograms['hMuPt_step1'].GetXaxis().SetTitle('p_{T #mu}[GeV/c]')
+        self.histograms['hMuPt_step1'].GetYaxis().SetTitle('Candidates/2.0[GeV/c]')
+        self.histograms['hNumE_step1'] = TH1F('hNumE_step1', 'hNumE_step1', 20, 0., 20.)
+        self.histograms['hNumE_step1'].GetXaxis().SetTitle('N_{e}')
+        self.histograms['hNumE_step1'].GetYaxis().SetTitle('Candidates')
+        self.histograms['hEPt_step1'] = TH1F('hEPt_step1', 'hEPt_step1', 500, 0., 1000.)
+        self.histograms['hEPt_step1'].GetXaxis().SetTitle('p_{T e}[GeV/c]')
+        self.histograms['hEPt_step1'].GetYaxis().SetTitle('Candidates/2.0[GeV/c]')
+        self.histograms['hDiMuInvMass_step1'] = TH1F('hDiMuInvMass_step1', 'hDiMuInvMass_step1', 2000, 0, 1000)
+        self.histograms['hDiMuInvMass_step1'].GetXaxis().SetTitle('M_{#mu^{+}#mu^{-}} [GeV/c^{2}]')
+        self.histograms['hDiMuInvMass_step1'].GetYaxis().SetTitle('Candidates/0.5[GeV/c^{2}]')
 
+        self.histograms['hVtxN_step2'] = TH1F('hVtxN_step2', 'hVtxN_step2', 100, 0., 100.)
+        self.histograms['hVtxN_step2'].GetXaxis().SetTitle('N_{PV}')
+        self.histograms['hVtxN_step2'].GetYaxis().SetTitle('Candidates')
+        self.histograms['hNumMu_step2'] = TH1F('hNumMu_step2', 'hNumMu_step2', 20, 0., 20.)
+        self.histograms['hNumMu_step2'].GetXaxis().SetTitle('N_{#mu}')
+        self.histograms['hNumMu_step2'].GetYaxis().SetTitle('Candidates')
+        self.histograms['hMuPt_step2'] = TH1F('hMuPt_step2', 'hMuPt_step2', 500, 0., 1000.)
+        self.histograms['hMuPt_step2'].GetXaxis().SetTitle('p_{T #mu}[GeV/c]')
+        self.histograms['hMuPt_step2'].GetYaxis().SetTitle('Candidates/2.0[GeV/c]')
+        self.histograms['hNumE_step2'] = TH1F('hNumE_step2', 'hNumE_step2', 20, 0., 20.)
+        self.histograms['hNumE_step2'].GetXaxis().SetTitle('N_{e}')
+        self.histograms['hNumE_step2'].GetYaxis().SetTitle('Candidates')
+        self.histograms['hEPt_step2'] = TH1F('hEPt_step2', 'hEPt_step2', 500, 0., 1000.)
+        self.histograms['hEPt_step2'].GetXaxis().SetTitle('p_{T e}[GeV/c]')
+        self.histograms['hEPt_step2'].GetYaxis().SetTitle('Candidates/2.0[GeV/c]')
+        self.histograms['hDiMuInvMass_step2'] = TH1F('hDiMuInvMass_step2', 'hDiMuInvMass_step2', 2000, 0, 1000)
+        self.histograms['hDiMuInvMass_step2'].GetXaxis().SetTitle('M_{#mu^{+}#mu^{-}} [GeV/c^{2}]')
+        self.histograms['hDiMuInvMass_step2'].GetYaxis().SetTitle('Candidates/0.5[GeV/c^{2}]')
+
+        self.histograms['hVtxN_step3'] = TH1F('hVtxN_step3', 'hVtxN_step3', 100, 0., 100.)
+        self.histograms['hVtxN_step3'].GetXaxis().SetTitle('N_{PV}')
+        self.histograms['hVtxN_step3'].GetYaxis().SetTitle('Candidates')
+        self.histograms['hNumMu_step3'] = TH1F('hNumMu_step3', 'hNumMu_step3', 20, 0., 20.)
+        self.histograms['hNumMu_step3'].GetXaxis().SetTitle('N_{#mu}')
+        self.histograms['hNumMu_step3'].GetYaxis().SetTitle('Candidates')
+        self.histograms['hMuPt_step3'] = TH1F('hMuPt_step3', 'hMuPt_step3', 500, 0., 1000.)
+        self.histograms['hMuPt_step3'].GetXaxis().SetTitle('p_{T #mu}[GeV/c]')
+        self.histograms['hMuPt_step3'].GetYaxis().SetTitle('Candidates/2.0[GeV/c]')
+        self.histograms['hNumE_step3'] = TH1F('hNumE_step3', 'hNumE_step3', 20, 0., 20.)
+        self.histograms['hNumE_step3'].GetXaxis().SetTitle('N_{e}')
+        self.histograms['hNumE_step3'].GetYaxis().SetTitle('Candidates')
+        self.histograms['hEPt_step3'] = TH1F('hEPt_step3', 'hEPt_step3', 500, 0., 1000.)
+        self.histograms['hEPt_step3'].GetXaxis().SetTitle('p_{T e}[GeV/c]')
+        self.histograms['hEPt_step3'].GetYaxis().SetTitle('Candidates/2.0[GeV/c]')
+        self.histograms['hDiMuInvMass_step3'] = TH1F('hDiMuInvMass_step3', 'hDiMuInvMass_step3', 2000, 0, 1000)
+        self.histograms['hDiMuInvMass_step3'].GetXaxis().SetTitle('M_{#mu^{+}#mu^{-}} [GeV/c^{2}]')
+        self.histograms['hDiMuInvMass_step3'].GetYaxis().SetTitle('Candidates/0.5[GeV/c^{2}]')
+
+        self.histograms['hVtxN_step4'] = TH1F('hVtxN_step4', 'hVtxN_step4', 100, 0., 100.)
+        self.histograms['hVtxN_step4'].GetXaxis().SetTitle('N_{PV}')
+        self.histograms['hVtxN_step4'].GetYaxis().SetTitle('Candidates')
+        self.histograms['hNumMu_step4'] = TH1F('hNumMu_step4', 'hNumMu_step4', 20, 0., 20.)
+        self.histograms['hNumMu_step4'].GetXaxis().SetTitle('N_{#mu}')
+        self.histograms['hNumMu_step4'].GetYaxis().SetTitle('Candidates')
+        self.histograms['hMuPt_step4'] = TH1F('hMuPt_step4', 'hMuPt_step4', 500, 0., 1000.)
+        self.histograms['hMuPt_step4'].GetXaxis().SetTitle('p_{T #mu}[GeV/c]')
+        self.histograms['hMuPt_step4'].GetYaxis().SetTitle('Candidates/2.0[GeV/c]')
+        self.histograms['hNumE_step4'] = TH1F('hNumE_step4', 'hNumE_step4', 20, 0., 20.)
+        self.histograms['hNumE_step4'].GetXaxis().SetTitle('N_{e}')
+        self.histograms['hNumE_step4'].GetYaxis().SetTitle('Candidates')
+        self.histograms['hEPt_step4'] = TH1F('hEPt_step4', 'hEPt_step4', 500, 0., 1000.)
+        self.histograms['hEPt_step4'].GetXaxis().SetTitle('p_{T e}[GeV/c]')
+        self.histograms['hEPt_step4'].GetYaxis().SetTitle('Candidates/2.0[GeV/c]')
+        self.histograms['hDiMuInvMass_step4'] = TH1F('hDiMuInvMass_step4', 'hDiMuInvMass_step4', 2000, 0, 1000)
+        self.histograms['hDiMuInvMass_step4'].GetXaxis().SetTitle('M_{#mu^{+}#mu^{-}} [GeV/c^{2}]')
+        self.histograms['hDiMuInvMass_step4'].GetYaxis().SetTitle('Candidates/0.5[GeV/c^{2}]')
 
         ##########################################################
         #                                                        #
@@ -571,14 +644,15 @@ class Ana2Mu(AnalysisBase):
         ##########################################################
         # Channel selection                                      #
         ##########################################################
-        # Preselection: 4 or fewer isolation leptons
-        if (len(goodMuons) + len(goodElectrons) > 4): return
-        self.cutflow.increment('nEv_4Lep')
-        # V(lep)h selection: 0 bjets, 1 or 2 extra leptons
-        if (len(goodMuons) + len(goodElectrons) < 3): return
-        self.cutflow.increment('nEv_3or4Lep')
-        if (len(goodBJets) > 0): return
-        self.cutflow.increment('nEv_NoBJets')
+
+#        # Preselection: 4 or fewer isolation leptons
+#        if (len(goodMuons) + len(goodElectrons) > 4): return
+#        self.cutflow.increment('nEv_4Lep')
+#        # V(lep)h selection: 0 bjets, 1 or 2 extra leptons
+#        if (len(goodMuons) + len(goodElectrons) < 3): return
+#        self.cutflow.increment('nEv_3or4Lep')
+#        if (len(goodBJets) > 0): return
+#        self.cutflow.increment('nEv_NoBJets')
         
 
 
@@ -695,6 +769,57 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hWeight'].Fill(eventweight)
 
 
+
+        # step1
+        self.histograms['hVtxN_step1'].Fill(len(goodVertices), eventweight)
+        self.histograms['hNumMu_step1'].Fill(len(goodMuons), eventweight)
+        for mu in goodMuons:
+            self.histograms['hMuPt_step1'].Fill(mu.Pt(), eventweight)
+        self.histograms['hNumE_step1'].Fill(len(goodElectrons), eventweight)
+        for e in goodElectrons:
+            self.histograms['hEPt_step1'].Fill(e.Pt(), eventweight)
+        self.histograms['hDiMuInvMass_step1'].Fill((diMuonPairs[0][0].P4() + diMuonPairs[0][1].P4() ).M() if diMuonPairs else 0., eventweight)
+
+
+
+        num_leptons = len(goodMuons) + len(goodElectrons)
+
+        if (num_leptons > 4): return
+        self.cutflow.increment('nEv_4Lep')
+        # step2
+        self.histograms['hVtxN_step2'].Fill(len(goodVertices), eventweight)
+        self.histograms['hNumMu_step2'].Fill(len(goodMuons), eventweight)
+        for mu in goodMuons:
+            self.histograms['hMuPt_step2'].Fill(mu.Pt(), eventweight)
+        self.histograms['hNumE_step2'].Fill(len(goodElectrons), eventweight)
+        for e in goodElectrons:
+            self.histograms['hEPt_step2'].Fill(e.Pt(), eventweight)
+        self.histograms['hDiMuInvMass_step2'].Fill((diMuonPairs[0][0].P4() + diMuonPairs[0][1].P4() ).M() if diMuonPairs else 0., eventweight)
+
+        if (len(goodBJets) > 0): return
+        self.cutflow.increment('nEv_NoBJets')
+        # step3
+        self.histograms['hVtxN_step3'].Fill(len(goodVertices), eventweight)
+        self.histograms['hNumMu_step3'].Fill(len(goodMuons), eventweight)
+        for mu in goodMuons:
+            self.histograms['hMuPt_step3'].Fill(mu.Pt(), eventweight)
+        self.histograms['hNumE_step3'].Fill(len(goodElectrons), eventweight)
+        for e in goodElectrons:
+            self.histograms['hEPt_step3'].Fill(e.Pt(), eventweight)
+        self.histograms['hDiMuInvMass_step3'].Fill((diMuonPairs[0][0].P4() + diMuonPairs[0][1].P4() ).M() if diMuonPairs else 0., eventweight)
+
+        # V(lep)h selection: 0 bjets, 1 or 2 extra leptons
+        if (num_leptons < 3): return
+        self.cutflow.increment('nEv_3or4Lep')
+        # step4
+        self.histograms['hVtxN_step4'].Fill(len(goodVertices), eventweight)
+        self.histograms['hNumMu_step4'].Fill(len(goodMuons), eventweight)
+        for mu in goodMuons:
+            self.histograms['hMuPt_step4'].Fill(mu.Pt(), eventweight)
+        self.histograms['hNumE_step4'].Fill(len(goodElectrons), eventweight)
+        for e in goodElectrons:
+            self.histograms['hEPt_step4'].Fill(e.Pt(), eventweight)
+        self.histograms['hDiMuInvMass_step4'].Fill((diMuonPairs[0][0].P4() + diMuonPairs[0][1].P4() ).M() if diMuonPairs else 0., eventweight)
 
 
         ##########################################################

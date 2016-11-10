@@ -34,20 +34,21 @@ vh_cuts = {
     'cMuPt'  : 10., # GeV
     'cMuEta' : 2.4,
     'cMuIso' : 'tight',
-    'cMuID'  : 'medium',
+    #'cMuID'  : 'medium',
+    'cMuID'  : 'tight',
     'cMuDxy' : 0.02, # cm
     'cMuDz'  : 0.14, # cm
 
     # trigger-matched mu cuts
-    'cMuPtMax'  : 24., # GeV
+    'cMuPtMax'  : 30., # GeV
     'cMuEtaMax' : 2.4,
-    'cMuIsoMax' : 'tight',
-    'cMuIDMax'  : 'medium',
+    #'cMuIsoMax' : 'tight',
+    #'cMuIDMax'  : 'medium',
 
     # electron cuts
     'cEPt'  : 10., # GeV
     'cEEta' : 2.4,
-    'cEID'  : 'cbmedium',
+    'cEID'  : 'cbtight',
 
     # h candidate cuts
     'cDiMuInvMass' : 60., # GeV
