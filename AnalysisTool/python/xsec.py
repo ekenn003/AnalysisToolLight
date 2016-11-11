@@ -7,13 +7,14 @@ xsecs = {
     'DoubleMuon'                                                       : 1.,
     'SingleMuon'                                                       : 1.,
 
+    # the values for signal below (except WPlus/WMinus) are based on the Yellow Report, not GenXSecAnalyzer
+    # https://twiki.cern.ch/twiki/bin/view/LHCPhysics/CERNYellowReportPageAt13TeV
     # signal
-    '                                        '                         :       .                  
-    'GluGlu_HToMuMu_M125_13TeV_powheg_pythia8'                         :      3.721 * 0.0002176 * pb, # ggf H * H-> 2mu
-    'VBF_HToMuMu_M125_13TeV_powheg_pythia8'                            :  * pb,
-    'WPlusH_HToMuMu_M125_13TeV_powheg_pythia8'                         :  * pb,
-    'WMinusH_HToMuMu_M125_13TeV_powheg_pythia8'                        :  * pb,
-    'ZH_HToMuMu_M125_13TeV_powheg_pythia8'                             :  * pb, 
+    'GluGlu_HToMuMu_M125_13TeV_powheg_pythia8'                         :     48.58   * 0.0002176 * pb, # ggf H * H-> 2mu
+    'VBF_HToMuMu_M125_13TeV_powheg_pythia8'                            :      3.782  * 0.0002176 * pb,
+    'WPlusH_HToMuMu_M125_13TeV_powheg_pythia8'                         :      0.851  * 0.0002176 * pb,
+    'WMinusH_HToMuMu_M125_13TeV_powheg_pythia8'                        :      0.5331 * 0.0002176 * pb,
+    'ZH_HToMuMu_M125_13TeV_powheg_pythia8'                             :      0.8839 * 0.0002176 * pb, 
 
 
 
@@ -53,6 +54,7 @@ xsecs = {
     # WZ
     'WZTo2L2Q_13TeV_amcatnloFXFX_madspin_pythia8'                      :      5.60     * pb,
     'WZTo3LNu_TuneCUETP8M1_13TeV-powheg-pythia8'                       :      4.42965  * pb,
+    'WZTo3LNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8'                 :      4.712    * pb,
 
     # ZZ
     # extra factors:
@@ -61,22 +63,22 @@ xsecs = {
     #         (since it is gg it is already kind of NLO though so it is more like "nlo" to "nnlo")
     'ZZTo2L2Q_13TeV_amcatnloFXFX_madspin_pythia8'                      :      3.28     * pb,
     'ZZTo2L2Nu_13TeV_powheg_pythia8'                                   :      0.564    * pb,
-    'ZZTo4L_13TeV_powheg_pythia8'                                      :      1.256    * pb * 1.16,
-    'ZZTo4L_13TeV-amcatnloFXFX-pythia8'                                :      1.211    * pb * 1.16,
+    'ZZTo4L_13TeV_powheg_pythia8'                                      :      1.256    * 1.16 * pb,
+    'ZZTo4L_13TeV-amcatnloFXFX-pythia8'                                :      1.211    * 1.16 * pb,
     # ggZZ (76X)
-    'GluGluToZZTo2e2mu_BackgroundOnly_13TeV_MCFM'                      :      0.003194 * pb * 1.67,
-    'GluGluToZZTo2e2tau_BackgroundOnly_13TeV_MCFM'                     :      0.003194 * pb * 1.67,
-    'GluGluToZZTo2mu2tau_BackgroundOnly_13TeV_MCFM'                    :      0.003194 * pb * 1.67,
-    'GluGluToZZTo4e_BackgroundOnly_13TeV_MCFM'                         :      0.001586 * pb * 1.67,
-    'GluGluToZZTo4mu_BackgroundOnly_13TeV_MCFM'                        :      0.001586 * pb * 1.67,
-    'GluGluToZZTo4tau_BackgroundOnly_13TeV_MCFM'                       :      0.001586 * pb * 1.67,
+    'GluGluToZZTo2e2mu_BackgroundOnly_13TeV_MCFM'                      :      0.003194 * 1.67 * pb,
+    'GluGluToZZTo2e2tau_BackgroundOnly_13TeV_MCFM'                     :      0.003194 * 1.67 * pb,
+    'GluGluToZZTo2mu2tau_BackgroundOnly_13TeV_MCFM'                    :      0.003194 * 1.67 * pb,
+    'GluGluToZZTo4e_BackgroundOnly_13TeV_MCFM'                         :      0.001586 * 1.67 * pb,
+    'GluGluToZZTo4mu_BackgroundOnly_13TeV_MCFM'                        :      0.001586 * 1.67 * pb,
+    'GluGluToZZTo4tau_BackgroundOnly_13TeV_MCFM'                       :      0.001586 * 1.67 * pb,
     # ggZZ (80X)
-    'GluGluToContinToZZTo2e2mu_13TeV_MCFM701_pythia8'                  :      0.003194 * pb * 1.67,
-    'GluGluToContinToZZTo2e2tau_13TeV_MCFM701_pythia8'                 :      0.003194 * pb * 1.67,
-    'GluGluToContinToZZTo2mu2tau_13TeV_MCFM701_pythia8'                :      0.003194 * pb * 1.67,
-    'GluGluToContinToZZTo4e_13TeV_MCFM701_pythia8'                     :      0.001586 * pb * 1.67,
-    'GluGluToContinToZZTo4mu_13TeV_MCFM701_pythia8'                    :      0.001586 * pb * 1.67,
-    'GluGluToContinToZZTo4tau_13TeV_MCFM701_pythia8'                   :      0.001586 * pb * 1.67,
+    'GluGluToContinToZZTo2e2mu_13TeV_MCFM701_pythia8'                  :      0.003194 * 1.67 * pb,
+    'GluGluToContinToZZTo2e2tau_13TeV_MCFM701_pythia8'                 :      0.003194 * 1.67 * pb,
+    'GluGluToContinToZZTo2mu2tau_13TeV_MCFM701_pythia8'                :      0.003194 * 1.67 * pb,
+    'GluGluToContinToZZTo4e_13TeV_MCFM701_pythia8'                     :      0.001586 * 1.67 * pb,
+    'GluGluToContinToZZTo4mu_13TeV_MCFM701_pythia8'                    :      0.001586 * 1.67 * pb,
+    'GluGluToContinToZZTo4tau_13TeV_MCFM701_pythia8'                   :      0.001586 * 1.67 * pb,
 
     # triboson
     'WWW_TuneCUETP8M1_13TeV-amcatnlo-pythia8'                          :      0.1651   * pb,
