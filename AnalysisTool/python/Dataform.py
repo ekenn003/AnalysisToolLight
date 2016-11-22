@@ -63,20 +63,18 @@ class Event(object):
     ## _______________________________________________________
     # event.PassesHLTs returns True if any of the triggers fired
     def PassesHLTs(self, paths):
-        # NB: MC has no trigger info in 80X!!!!
-        result = False
+        # NB: MC has no trigger info in most 80X!
         for pathname in paths:
             try:
-                #result = self._get('event_hlt_passes_'+pathname)
                 result = self._get('passes_'+pathname)
+                if result: return True
             except AttributeError:
-                pass
-                #print 'PassesHLTs: Event HLT path "' + pathname + '" not available.'
+                print 'PassesHLTs: Event HLT path "' + pathname + '" not available.'
                 #print 'Available paths are:'
                 #for x in self.tree.GetListOfBranches():
                 #    if 'event_hlt_passes_' in x.GetName(): print '    ' + x.GetName()[17:]
                 #print '\n'
-        return result
+        return False
 
     ## _______________________________________________________
     def AnyIsPrescaled(self, paths):
@@ -463,21 +461,28 @@ class Muon(CommonCand):
             ) / self._get('pt')
         )
         return isoval
+    def IsoPFR4dBCombRel(self): 
+        isoval = (
+            (self._get('pfisolationr4_sumchargedhadronpt')
+            + max(0., self._get('pfisolationr4_sumneutralhadronet') + self._get('pfisolationr4_sumphotonet')
+                  - 0.5 * self._get('pfisolationr4_sumpupt')
+                  )
+            ) / self._get('pt')
+        )
+        return isoval
     # check isolation function
     def CheckIso(self, isotype, isolevel):
         ''' Returns whether the muon passes selected hard-coded isolation values taken
         from https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2#Muon_Isolation
         '''
         # kind of validate input
-        if not (isotype=='PF_dB' or isotype=='tracker'):
-            raise ValueError('Muon.CheckIso: "{0}" not an available choice for isotype. Available choices are "PF_dB" and "tracker".'.format(isotype))
+        if not (isotype=='PF_dB'):
+            raise ValueError('Muon.CheckIso: "{0}" not an available choice for isotype. Available choices are "PF_dB".'.format(isotype))
         if not (isolevel=='tight' or isolevel=='loose'):
             raise ValueError('Muon.CheckIso: "{0}" not an available choice for isolevel. Available choices are "tight" and "loose".'.format(isolevel))
         # return result of isolation check
         if isotype=='PF_dB':
-            return (self.IsoPFR3dBCombRel() < 0.15) if isolevel=='tight' else (self.IsoPFR3dBCombRel() < 0.25)
-        if isotype=='tracker':
-            return (self.IsoR3Track() < 0.05) if isolevel=='tight' else (self.IsoR3Track() < 0.10)
+            return (self.IsoPFR4dBCombRel() < 0.15) if isolevel=='tight' else (self.IsoPFR4dBCombRel() < 0.25)
 
     # muon.MatchesHLTs returns True if any of the triggers fired
     def MatchesHLTs(self, paths):
