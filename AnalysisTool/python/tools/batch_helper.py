@@ -1,98 +1,143 @@
 #!/usr/bin/env python
 import os, sys
 import math
+from AnalysisToolLight.AnalysisTool.datasets import datasets76X, datasets80X
 
-BASEDIR='{0}/src/AnalysisToolLight'.format(os.environ['CMSSW_BASE'])
+scram = os.environ['CMSSW_BASE']
+basedir = scram + '/src/AnalysisToolLight'
+datadir = basedir + '/AnalysisTool/data'
+
+
 
 ## ___________________________________________________________
-def find_analysis_code(analysisname, basedir):
+def find_analysis_code(analysisname):
     '''Select analysis code'''
     if analysisname=='PU':
-        return '{0}/AnalysisTool/pileupstudy/FinalState_2mu.py'.format(basedir)
+        tail = 'AnalysisTool/pileupstudy/FinalState_2mu.py'
     elif analysisname=='2Mu':
-        return '{0}/2Mu/python/FinalState_2mu.py'.format(basedir)
+        tail = '2Mu/python/FinalState_2mu.py'
     elif analysisname=='VH4Mu':
-        return '{0}/VH/python/FinalState_4mu.py'.format(basedir)
+        tail = 'VH/python/FinalState_4mu.py'
     elif analysisname=='VH2Mu':
-        return '{0}/VH/python/FinalState_2mu.py'.format(basedir)
+        tail = 'VH/python/FinalState_2mu.py'
     elif analysisname=='ZH2J2Mu':
-        return '{0}/ZH/python/FinalState_2j2mu.py'.format(basedir)
+        tail = 'ZH/python/FinalState_2j2mu.py'
     else:
         raise ValueError('Analysis choice "{0}" not recognised.'.format(analysisname))
+    return '{0}/{1}'.format(basedir, tail)
 
 
-## ___________________________________________________________
-def create_submission_script(dset, njob, njobs, **kwargs):
-    ANALYSIS   = kwargs['ANALYSIS']
-    BASEDIR    = kwargs['BASEDIR']
-    RESULTSDIR = kwargs['RESULTSDIR']
-    RESULTSDIR = kwargs['RESULTSDIR']
-    tmpdir     = kwargs['tmpdir']
-    datasets   = kwargs['datasets']
-    ANALYSISCODE = find_analysis_code(ANALYSIS, BASEDIR)
 
-    DATADIR = '{0}/AnalysisTool/data'.format(BASEDIR)
-    
-    scriptname = 'job_{0}_{1}_{2}of{3}.sh'.format(dset, ANALYSIS, n(njob+1), n(njobs))
+def fill_datasets_map(v, ana, dsets, resultsdir):
 
-    with open(scriptname, 'w') as fout:
-        fout.write('#!/bin/sh\n')
-        fout.write('\n')
-        fout.write('BASEDIR="{0}"\n'.format(BASEDIR))
-        fout.write('RESULTSDIR="{0}"\n'.format(RESULTSDIR))
-        fout.write('DATASET="{0}"\n'.format(dset))
-        fout.write('ANALYSIS="{0}"\n'.format(ANALYSIS))
-        fout.write('ANALYSISCODE="{0}"\n'.format(ANALYSISCODE))
-        # find input files and define output files
-        datadir, inputfilename = os.path.split(datasets[dset]['inputlist'])
-        inputfilename = 'job_{0}_{1}of{2}.txt'.format(inputfilename[:-4], n(njob+1), n(njobs))
-        INPUTFILE  = '{0}/{1}/{2}'.format(BASEDIR, tmpdir, inputfilename)
-        OUTPUTFILE = '{0}_{1}of{2}.root'.format(datasets[dset]['output'][:-5], n(njob+1), n(njobs))
-        LOGFILE    = '{0}_{1}of{2}.log'.format(datasets[dset]['logfile'][:-4], n(njob+1), n(njobs))
+    dsetmap = datasets76X if v=='76X' else datasets80X
 
-        fout.write('INPUTFILE="{0}"\n'.format(INPUTFILE))
-        fout.write('OUTPUTFILE="{0}"\n'.format(OUTPUTFILE))
-        fout.write('LOGFILE="{0}"\n'.format(LOGFILE))
-        fout.write('\n')
-        fout.write('cd $BASEDIR\n')
-        fout.write('eval `scramv1 runtime -sh`\n')
-        fout.write('export XRD_NETWORKSTACK=IPv4\n')
-        fout.write('\n')
-        fout.write('# go to working directory\n')
-        fout.write('cd $RESULTSDIR\n')
-        fout.write('cmsenv\n')
-        fout.write('# copy grid auth\n')
-        fout.write('find /tmp/x5* -user ekennedy -exec cp -f {} . \;\n')
-        fout.write('\n')
-        fout.write('# submit job\n')
-        fout.write('python $ANALYSISCODE -i $INPUTFILE -o $OUTPUTFILE > $LOGFILE 2>&1\n')
-        fout.write('\n')
+    # make sure they will be submitted
+    for d in dsets:
+        if d not in dsetmap:
+            raise ValueError('"{0}" won\'t be submitted'.format(d))
 
-    os.system('chmod +x {0}'.format(scriptname))
+
+    # set up infos
+    for dname, d in dsetmap.iteritems():
+        d['inputlist'] = '{0}/{1}/inputfiles_{2}.txt'.format(datadir, v, dname)
+        d['output']    = '{0}/ana_{1}_{2}.root'.format(resultsdir, ana, dname)
+        d['logfile']   = '{0}/log_{1}_{2}.log'.format(resultsdir, ana, dname)
+
+        # get number of lines per job
+        njobs = d['njobs']
+        # get total number of inputs
+        with open(d['inputlist'], 'r') as f:
+            for totallines, line in enumerate(f):
+                pass
+        totallines += 1
+        # if we asked for more jobs than input files, just do one job per file
+        if njobs >= totallines: njobs = totallines
+        nlinesperjob = int(math.ceil(float(totallines)/njobs))
+        d['nlinesperjob'] = nlinesperjob
+
+    return dsetmap
+
+
 
 ## ___________________________________________________________
-def split_input_file(inputfile, njobs, linesperfile):
-    datadir, inputfilename = os.path.split(inputfile)
-
-    basename = 'job_{0}'.format(inputfilename[:-4])
+def split_input_file(d, tmpdir):
+    inputfile = d['inputlist']
+    njobs = d['njobs']
+    nlinesperjob = d['nlinesperjob']
+    input_head = '{tmpdir}/job_{0}'.format(os.path.split(inputfile)[1][:-4], tmpdir=tmpdir)
 
     with open(inputfile, 'r') as fin:
         n = 1
         # open the first output file
-        fout = open('{0}_{1}of{2}.txt'.format(basename, n(n), n(njobs)), 'w')
+        fout = open('{0}_01of{1}.txt'.format(input_head, n2d(njobs)), 'w')
         # loop over all lines in the input file, and number them
         for i, line in enumerate(fin):
-            # every time the current line number can be divided by linesperfile
+            # every time the current line number can be divided by nlinesperjob,
             # close the output file and open a new one
-            if i>0 and i%linesperfile==0:
+            if i>0 and i%nlinesperjob==0:
                 n += 1
                 fout.close()
-                fout = open('{0}_{1}of{2}.txt'.format(basename, n(n), n(njobs)), 'w')
+                fout = open('{0}_{1}of{2}.txt'.format(input_head, n2d(n), n2d(njobs)), 'w')
             # write line to fout
             fout.write(line)
         fout.close()
 
-## ___________________________________________________________
-def n(n):
-    return str(n).zfill(2)
 
+
+## ___________________________________________________________
+def create_submission_scripts(d, dname, **kwargs):
+    analysis     = kwargs['analysis']
+    analysiscode = kwargs['analysiscode']
+    resultsdir = kwargs['resultsdir']
+    tmpdir     = kwargs['tmpdir']
+
+    njobs = d['njobs']
+    # these heads contain the full path prefix
+    input_head  = tmpdir + '/job_' + os.path.split(d['inputlist'])[1][:-4]
+    output_head = resultsdir + '/' + os.path.split(d['output'])[1][:-5]
+    log_head    = resultsdir + '/' + os.path.split(d['logfile'])[1][:-4]
+
+    for n in range(njobs):
+        # define this sub script name
+        this_scriptname = '{tmpdir}/job_{0}_{1}_{2}of{3}.sh'.format(analysis, dname, n2d(n+1), n2d(njobs), tmpdir=tmpdir)
+        # find input files
+        this_inputfile  = '{0}_{1}of{2}.txt'.format(input_head, n2d(n+1), n2d(njobs))
+        # define output files
+        this_outputfile = '{0}_{1}of{2}.root'.format(output_head, n2d(n+1), n2d(njobs))
+        this_logfile    = '{0}_{1}of{2}.log'.format(d['logfile'][:-4], n2d(n+1), n2d(njobs))
+
+        # write it
+        with open(this_scriptname, 'w') as fout:
+            fout.write('#!/bin/sh\n')
+            fout.write('\n')
+            fout.write('BASEDIR="{0}"\n'.format(basedir))
+            fout.write('TMPDIR="{0}"\n'.format(tmpdir))
+            fout.write('DATASET="{0}"\n'.format(dname))
+            fout.write('ANALYSIS="{0}"\n'.format(analysis))
+            fout.write('ANALYSISCODE="{0}"\n'.format(analysiscode))
+            fout.write('INPUTFILE="{0}"\n'.format(this_inputfile))
+            fout.write('OUTPUTFILE="{0}"\n'.format(this_outputfile))
+            fout.write('LOGFILE="{0}"\n'.format(this_logfile))
+            fout.write('\n')
+            fout.write('cd $BASEDIR\n')
+            fout.write('eval `scramv1 runtime -sh`\n')
+            fout.write('export XRD_NETWORKSTACK=IPv4\n')
+            fout.write('\n')
+            fout.write('# go to working directory\n')
+            fout.write('cd $TMPDIR\n')
+            fout.write('cmsenv\n')
+            fout.write('# copy grid auth\n')
+            fout.write('find /tmp/x5* -user ekennedy -exec cp -f {} . \;\n')
+            fout.write('\n')
+            fout.write('# submit job\n')
+            fout.write('python $ANALYSISCODE -i $INPUTFILE -o $OUTPUTFILE > $LOGFILE 2>&1\n')
+            fout.write('\n')
+
+        os.system('chmod +x {0}'.format(this_scriptname))
+
+
+
+## ___________________________________________________________
+def n2d(n):
+    return str(n).zfill(2)
