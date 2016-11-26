@@ -52,11 +52,8 @@ class Ana2Mu(AnalysisBase):
         # Define event HLT requirement                           #
         #                                                        #
         ##########################################################
-        self.hltriggers = (
-            'IsoMu24',
-            'IsoTkMu24',
-        )
-        self.pathForTriggerScaleFactors = 'IsoMu20_OR_IsoTkMu20'
+        self.hltriggers = cuts['HLT']
+        self.pathForTriggerScaleFactors = cuts['HLTstring'] #'IsoMu20_OR_IsoTkMu20'
 
 
 
@@ -69,7 +66,7 @@ class Ana2Mu(AnalysisBase):
         self.cutflow.add('nEv_Skim', 'Skim number of events (>=2 muon candidates)')
         # event selection
         self.cutflow.add('nEv_Trigger', 'Trigger')
-        self.cutflow.add('nEv_PV', 'PV cuts')
+#        self.cutflow.add('nEv_PV', 'PV cuts')
         # muon selection
         self.cutflow.add('nEv_GAndTr',   'Global+Tracker muon')
         self.cutflow.add('nEv_Pt',       'Muon pT > {0}'.format(cuts['cMuPt']))
@@ -77,7 +74,7 @@ class Ana2Mu(AnalysisBase):
         self.cutflow.add('nEv_PtEtaMax', 'At least 1 trigger-matched mu with pT > {0} and |eta| < {1}'.format(cuts['cMuPtMax'], cuts['cMuEtaMax']))
         self.cutflow.add('nEv_Iso',      'Muon has {0} isolation'.format(cuts['cMuIso']))
         self.cutflow.add('nEv_ID',       'Muon has {0} muon ID'.format(cuts['cMuID']))
-        self.cutflow.add('nEv_PVMu',     'Muon Dxy < {0} and Dx < {1}'.format(cuts['cMuDxy'], cuts['cMuDz']))
+        #self.cutflow.add('nEv_PVMu',     'Muon Dxy < {0} and Dx < {1}'.format(cuts['cMuDxy'], cuts['cMuDz']))
 
         # muon pair selection
         self.cutflow.add('nEv_2Mu',         'Prepreselection: Require 2 "good" muons')
@@ -208,6 +205,10 @@ class Ana2Mu(AnalysisBase):
         #############################
         # Dimuon ####################
         #############################
+        self.histograms['hNumDiMu'] = TH1F('hNumDiMu', 'hNumDiMu', 6, 0, 6)
+        self.histograms['hNumDiMu'].GetXaxis().SetTitle('N_{#mu^{+}#mu^{-}}')
+        self.histograms['hNumDiMu'].GetYaxis().SetTitle('Candidates')
+
         self.histograms['hDiMuPt'] = TH1F('hDiMuPt', 'hDiMuPt', 500, 0., 1000.)
         self.histograms['hDiMuPt'].GetXaxis().SetTitle('p_{T #mu^{+}#mu^{-}}[GeV/c]')
         self.histograms['hDiMuPt'].GetYaxis().SetTitle('Candidates/2.0[GeV]')
@@ -472,12 +473,13 @@ class Ana2Mu(AnalysisBase):
         #############################
         # Trigger ###################
         #############################
-        passesHLT = False
-        if (self.cmsswversion=='80X' and self.ismc):
-            passesHLT = True # 80X MC has no HLT 
-        else:
-            passesHLT = self.event.PassesHLTs(self.hltriggers)
-        if not passesHLT: return
+        # 80X MC has no HLT 
+        #exemptHLT = True if (self.cmsswversion=='80X' and self.ismc) else False
+        exemptHLT = False
+        passesHLT = self.event.PassesHLTs(self.hltriggers)
+
+        # if it fails the HLT and isn't exempt, return
+        if not passesHLT and not exemptHLT: return
         self.cutflow.increment('nEv_Trigger')
 
         #############################
@@ -491,13 +493,13 @@ class Ana2Mu(AnalysisBase):
             if not isVtxNdfOK: isVtxNdfOK = pv.Ndof() > cuts['cVtxNdf']
             if not isVtxZOK:   isVtxZOK = pv.Z() < cuts['cVtxZ']
             # check if it's passed
-            if not (isVtxNdfOK and isVtxZOK): continue
+            #if not (isVtxNdfOK and isVtxZOK): continue
             # save it if it did
             goodVertices += [pv]
 
         # require at least one good vertex
-        if not goodVertices: return
-        if (isVtxNdfOK and isVtxZOK): self.cutflow.increment('nEv_PV')
+        #if not goodVertices: return
+        #if (isVtxNdfOK and isVtxZOK): self.cutflow.increment('nEv_PV')
 
 
 
@@ -518,18 +520,18 @@ class Ana2Mu(AnalysisBase):
         nMuPtEtaMax = 0
         isIsoOK = False
         isIDOK = False
-        isTrackCutOK = False
         for muon in self.muons:
             # muon cuts
             if not (muon.IsGlobal() and muon.IsTracker()): continue
             isGAndTr = True
-            if not muon.Pt() > cuts['cMuPt']: continue
+            if muon.Pt() < cuts['cMuPt']: continue
             isPtCutOK = True
-            if not muon.AbsEta() < cuts['cMuEta']: continue
+            if muon.AbsEta() > cuts['cMuEta']: continue
             isEtaCutOK = True
 
             # make sure at least one HLT-matched muon passes extra cuts
-            if muon.MatchesHLTs(self.hltriggers) and muon.Pt() > cuts['cMuPtMax'] and muon.AbsEta() < cuts['cMuEtaMax']: nMuPtEtaMax += 1
+            #if muon.MatchesHLTs(self.hltriggers) and muon.Pt() > cuts['cMuPtMax'] and muon.AbsEta() < cuts['cMuEtaMax']: nMuPtEtaMax += 1
+            if muon.Pt() > cuts['cMuPtMax'] and muon.AbsEta() < cuts['cMuEtaMax']: nMuPtEtaMax += 1
 
             # check isolation
             if not (muon.CheckIso('PF_dB', cuts['cMuIso'])): continue
@@ -539,14 +541,11 @@ class Ana2Mu(AnalysisBase):
             cMuID = cuts['cMuID']
             isThisIDOK = False
             if cMuID=='tight':    isThisIDOK = muon.IsTightMuon()
+            if cMuID=='tight':    isThisIDOK = muon.IsTightMuon()
             elif cMuID=='medium': isThisIDOK = muon.IsMediumMuon()
             elif cMuID=='loose':  isThisIDOK = muon.IsLooseMuon()
             if not (isThisIDOK): continue
             isIDOK = True
-
-            # check muon PV (not really needed)
-            if not (muon.Dxy() < cuts['cMuDxy'] and muon.Dz() < cuts['cMuDz']): continue
-            isTrackCutOK = True
 
             # if we get to this point, push muon into goodMuons
             goodMuons += [muon]
@@ -556,13 +555,12 @@ class Ana2Mu(AnalysisBase):
         if isPtCutOK: self.cutflow.increment('nEv_Pt')
         if isEtaCutOK: self.cutflow.increment('nEv_Eta')
 
-        # make sure at least one HLT-matched muon passed extra cuts
+        # make sure at least one muon passed extra cuts
         if nMuPtEtaMax < 1: return
         else: self.cutflow.increment('nEv_PtEtaMax')
 
         if isIsoOK: self.cutflow.increment('nEv_Iso')
         if isIDOK: self.cutflow.increment('nEv_ID')
-        if isTrackCutOK: self.cutflow.increment('nEv_PVMu')
 
         # require at least 2 good muons in this event
         if len(goodMuons) < 2: return
@@ -761,13 +759,14 @@ class Ana2Mu(AnalysisBase):
         if not self.isdata:
             if self.includeTriggerScaleFactors:
                 eventweight *= self.hltweights.getScale(goodMuons)
-            else: eventweight *= 0.93
+            #else: eventweight *= 0.93
             if self.includeLeptonScaleFactors:
                 eventweight *= self.muonweights.getIdScale(goodMuons, cuts['cMuID'])
                 # NB: the below only works for PF w/dB isolation
                 eventweight *= self.muonweights.getIsoScale(goodMuons, cuts['cMuID'], cuts['cMuIso'])
         self.histograms['hWeight'].Fill(eventweight)
 
+        self.histograms['hNumDiMu'].Fill(len(diMuonPairs), eventweight)
 
 
         # step1
