@@ -6,10 +6,12 @@ import os, sys, time
 from ROOT import TTree, TFile, TChain, TH1F
 #import ROOT
 from array import array
-from prettytable import PrettyTable
 from Dataform import *
 from ScaleFactors import *
 from xsec import xsecs
+from histograms import *
+from Preselection import *
+from prettytable import PrettyTable
 
 ## ___________________________________________________________
 class AnalysisBase(object):
@@ -117,8 +119,9 @@ class AnalysisBase(object):
 
 
         # initialize map of histograms as empty
-        self.histograms = {}
+        self.histograms = histograms
         self.extraHistogramMap = {}
+
         # initialise list of category trees
         self.category_trees = []
         # initialise some other options that will be overridden in the derived class
@@ -127,8 +130,6 @@ class AnalysisBase(object):
         self.includeTriggerScaleFactors = False
         self.includeLeptonScaleFactors = False
         self.useRochesterCorrections = False
-        # initialise cutflow object to None... why
-        self.cutflow = None
 
         # summary tree
         self.summary_tree = TTree('Summary', 'Summary')
@@ -137,7 +138,7 @@ class AnalysisBase(object):
         # TBranch: 'l' = unsigned long, 'L' = signed long, 'F' = float
         self.nevents_a    = array('L', [self.nevents])
         self.summary_tree.Branch('tNumEvts', self.nevents_a, 'tNumEvts/l')
-        self.sumweights_a = array('f', [self.sumweights])
+        self.sumweights_a = array('f', [self.sumweights if self.sumweights != 0. else self.nevents])
         self.summary_tree.Branch('tSumWts', self.sumweights_a, 'tSumWts/F')
         self.nom_xsec_a   = array('f', [self.nom_xsec])
         self.summary_tree.Branch('tCrossSec', self.nom_xsec_a, 'tCrossSec/F')
@@ -148,6 +149,12 @@ class AnalysisBase(object):
         # initialize output file`
         self.outfile = TFile(self.output,'RECREATE')
 
+        ##########################################################
+        #                                                        #
+        # Initialize event counters                              #
+        #                                                        #
+        ##########################################################
+        self.cutflow = initialize_cutflow(self)
 
 
     ## _______________________________________________________
@@ -155,8 +162,10 @@ class AnalysisBase(object):
         '''
         The primary analysis loop.
         Iterate over each input file and row in trees.
-        Calls the perEventAction method (which is overridden in the derived class).
+        Calls the per_event_action method (which is overridden in the derived class).
         '''
+
+        
 
         ##########################################################
         #                                                        #
@@ -206,14 +215,29 @@ class AnalysisBase(object):
                 if self.eventsprocessed==2:
                     starttime = time.time()
                 elif self.eventsprocessed==updateevery:
-                    logging.info('  Processing event {0}/{1} ({2:0.0f}%) [est. time remaining]'.format(self.eventsprocessed, self.nevents_to_process, (100.*self.eventsprocessed)/self.nevents_to_process))
+                    logging.info(
+                        '  Processing event {0}/{1} ({2:0.0f}%) [est. time remaining]'.format(
+                            self.eventsprocessed,
+                            self.nevents_to_process,
+                            (100.*self.eventsprocessed)/self.nevents_to_process
+                        )
+                    )
                 if self.eventsprocessed > updateevery and self.eventsprocessed % updateevery == 0:
                     currenttime = time.time()
                     timeelapsed = currenttime - starttime
                     timeleft = (float(self.nevents_to_process) - float(self.eventsprocessed)) * (float(timeelapsed) / float(self.eventsprocessed))
                     minutesleft, secondsleft = divmod(int(timeleft), 60)
                     hoursleft, minutesleft = divmod(minutesleft, 60)
-                    logging.info('  Processing event {0}/{1} ({2:0.0f}%) [{3}:{4:02d}:{5:02d}]'.format(self.eventsprocessed, self.nevents_to_process, (100.*self.eventsprocessed)/self.nevents_to_process, hoursleft, minutesleft, secondsleft))
+                    logging.info(
+                        '  Processing event {0}/{1} ({2:0.0f}%) [{3}:{4:02d}:{5:02d}]'.format(
+                            self.eventsprocessed,
+                            self.nevents_to_process,
+                            (100.*self.eventsprocessed)/self.nevents_to_process,
+                            hoursleft,
+                            minutesleft,
+                            secondsleft
+                        )
+                    )
 
 
                 # load required collections
@@ -227,9 +251,26 @@ class AnalysisBase(object):
                 self.jets      = [Jet(row, i) for i in range(row.ak4pfchsjet_count)] if hasattr(row,'ak4pfchsjet_count') else []
                 self.met       = PFMETTYPE1(row, 0) if hasattr(row,'pfmettype1_count') else [] # MET is a vector of size 1
 
+                # set up containers for good objects
+                self.good_vertices  = []
+                self.good_muons     = []
+                self.good_electrons = []
+                self.good_jets      = []
+                self.good_bjets     = []
+
+                self.dimuon_pairs     = []
+                self.dielectron_pairs = []
+                self.dijet_pairs      = []
+
                 # do the event analysis!
-                # call the perEventAction method (which is overridden in the derived class)
-                self.perEventAction()
+                # call the per_event_action method (which is overridden in the derived class)
+                self.cutflow.increment('nEv_Skim')
+                passes_event_selection = check_event_selection(self)
+                if not passes_event_selection: continue
+                passes_preselection = check_preselection(self)
+                if not passes_preselection: continue
+
+                self.per_event_action()
 
                 # debug
                 if (self.max_events is not -1) and (self.eventsprocessed >= self.max_events): break
@@ -240,11 +281,11 @@ class AnalysisBase(object):
         #     directories, and write/close output file)          #
         #                                                        #
         ##########################################################
-        self.endJob()
+        self.end_job()
 
 
     ## _______________________________________________________
-    def perEventAction(self):
+    def per_event_action(self):
         '''
         Dummy function for action taken every event. Must be overriden.
         Each physics object is available via:
@@ -256,28 +297,28 @@ class AnalysisBase(object):
 
 
     ## _______________________________________________________
-    def fillEfficiencies(self):
+    def fill_efficiencies(self):
         '''
         At the end of the job, fill efficiencies histogram.
         '''
         # initialise cutflow histogram
-        self.histograms['hEfficiencies'] = TH1F('hEfficiencies', 'hEfficiencies', self.cutflow.numBins(), 0, self.cutflow.numBins())
+        self.histograms['hEfficiencies'] = TH1F('hEfficiencies', 'hEfficiencies', self.cutflow.num_bins(), 0, self.cutflow.num_bins())
         self.histograms['hEfficiencies'].GetXaxis().SetTitle('')
         self.histograms['hEfficiencies'].GetYaxis().SetTitle('Events')
         # fill histogram
-        for i, name in enumerate(self.cutflow.getNames()):
+        for i, name in enumerate(self.cutflow.get_names()):
             # 0 is the underflow bin in root: first bin to fill is bin 1
             self.histograms['hEfficiencies'].SetBinContent(i+1, self.cutflow.count(name))
             self.histograms['hEfficiencies'].GetXaxis().SetBinLabel(i+1, name)
 
         # print cutflow table
-        efftable = PrettyTable(['Selection', 'Events', 'Eff.(Skim) [%]', 'Rel.Eff. [%]'])
+        efftable = PrettyTable(['Selection', 'Events', 'Eff.(Orig) [%]', 'Rel.Eff. [%]'])
         efftable.align = 'r'
         efftable.align['Selection'] = 'l'
-        skimnevents = self.cutflow.count(self.cutflow.getNames()[0])
+        skimnevents = self.cutflow.count(self.cutflow.get_names()[0])
 
-        for i, name in enumerate(self.cutflow.getNames()):
-            efftable.add_row([self.cutflow.getPretty(name), format(self.cutflow.count(name), '0.0f'), self.cutflow.getSkimEff(i), self.cutflow.getRelEff(i)])
+        for i, name in enumerate(self.cutflow.get_names()):
+            efftable.add_row([self.cutflow.get_pretty(name), format(self.cutflow.count(name), '0.0f'), self.cutflow.get_eff(i), self.cutflow.get_rel_eff(i)])
 
         logging.info('')
         logging.info('Cutflow summary:\n\n' + efftable.get_string() + '\n')
@@ -285,7 +326,7 @@ class AnalysisBase(object):
 
 
     ## _______________________________________________________
-    def endOfJobAction(self):
+    def end_of_job_action(self):
         '''
         Dummy function for action taken at the end of the job. Can be overriden,
         but does not have to be.
@@ -324,7 +365,7 @@ class AnalysisBase(object):
             # self.extraHistogramMap[dirname] is a map in the same form as self.histograms
             for hist in self.extraHistogramMap[dirname]:
                 # only write histograms that aren't empty
-                if self.extraHistogramMap[dirname][hist].GetEntries():
+                if self.extraHistogramMap[dirname][hist].GetEntries() or dirname=='categories':
                     self.extraHistogramMap[dirname][hist].Write()
             tdir.cd('../')
 
@@ -335,27 +376,60 @@ class AnalysisBase(object):
         self.outfile.Close()
 
     ## _______________________________________________________
-    def endJob(self):
+    def end_job(self):
         '''
         Finishes job:
-            fillEfficiencies
-            endOfJobAction
+            fill_efficiencies
+            end_of_job_action
             write
         '''
-        if self.cutflow is not None: self.fillEfficiencies()
-        self.endOfJobAction()
+        self.fill_efficiencies()
+        self.end_of_job_action()
         self.write()
         logging.info('')
         logging.info('Job complete.')
-        logging.info('    NEVENTS processed: {0}/{1} ({2}%)'.format(self.eventsprocessed, self.nevents_to_process, (100*self.eventsprocessed)/self.nevents_to_process))
+        logging.info(
+            '    NEVENTS processed: {0}/{1} ({2}%)'.format(
+                self.eventsprocessed,
+                self.nevents_to_process,
+                (100*self.eventsprocessed)/self.nevents_to_process
+            )
+        )
         logging.info('Sample information:')
+        logging.info('    DATASET  : {0}'.format(self.dataset_source))
+        if self.ismc:
+            logging.info('    NOM XSEC : {0} pb'.format(self.nom_xsec if self.nom_xsec != -1. else '--'))
         logging.info('    NEVENTS (skim) : {0}'.format(self.nevents_to_process))
         logging.info('    NEVENTS (orig) : {0}'.format(self.nevents))
         logging.info('    SUMWEIGHTS     : {0}'.format(self.sumweights))
-        logging.info('    DATASET    : {0}'.format(self.dataset_source))
-        if self.ismc:
-            logging.info('    CROSS SEC. : {0} pb'.format(self.nom_xsec if self.nom_xsec != -1. else '-'))
 
+
+    ## _______________________________________________________
+    def calculate_event_weight(self):
+        ##########################################################
+        # Include pileup reweighting                             #
+        ##########################################################
+        eventweight = 1.
+
+        if not self.isdata:
+            eventweight = self.event.GenWeight()
+            if self.doPileupReweighting:
+                eventweight *= self.puweights.getWeight(self.event.NumTruePileUpInteractions())
+
+
+        ##########################################################
+        # Update event weight (MC only)                          #
+        ##########################################################
+        if not self.isdata:
+            if self.includeTriggerScaleFactors:
+                eventweight *= self.hltweights.getScale(self.good_muons)
+            #else: eventweight *= 0.93
+            if self.includeLeptonScaleFactors:
+                eventweight *= self.muonweights.getIdScale(self.good_muons, self.cuts['cMuID'])
+                # NB: the below only works for PF w/dB isolation
+                eventweight *= self.muonweights.getIsoScale(self.good_muons, self.cuts['cMuID'], self.cuts['cMuIso'])
+
+        return eventweight
 
 
 

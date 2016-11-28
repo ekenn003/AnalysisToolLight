@@ -164,7 +164,8 @@ class HLTScaleFactors(ScaleFactor):
         else:
             # this is the file created by AnalysisTool/scripts/collectTriggerScaleFactors.py
             self.hltfile = ROOT.TFile(filename)
-            # the histograms in the file are named effMC and effDA, with x axis: Pt, y axis: AbsEta
+
+        # the histograms in the file are named effMC and effDA, with x axis: Pt, y axis: AbsEta
         self.effhistDA_ = self.hltfile.Get('effDA')
         if self.cmsswversion == '76X':
             self.effhistMC_ = self.hltfile.Get('effMC')
@@ -187,6 +188,7 @@ class HLTScaleFactors(ScaleFactor):
                 effda = self.effhistDA_.GetBinContent( self.effhistDA_.GetXaxis().FindBin(pt_) , self.effhistDA_.GetYaxis().FindBin(eta_))
                 effmc = self.effhistMC_.GetBinContent( self.effhistMC_.GetXaxis().FindBin(pt_) , self.effhistMC_.GetYaxis().FindBin(eta_))
                 # update total efficiency
+
                 xda *= (1. - effda)
                 xmc *= (1. - effmc)
             # calculate scale factor and return it
@@ -224,16 +226,15 @@ class MuonScaleFactors(ScaleFactor):
         self.error = False
 
         self.muonideffs = {
-            'looseID' : {},
-            'softID' : {},
-            'mediumID' : {},
+        #    'looseID' : {},
+        #    'mediumID' : {},
             'tightID' : {},
         }
         self.muonisoeffs = {
-            'looseIso_looseID' : {},
-            'looseIso_mediumID' : {},
+        #    'looseIso_looseID' : {},
+        #    'looseIso_mediumID' : {},
             'looseIso_tightID' : {},
-            'tightIso_mediumID' : {},
+        #    'tightIso_mediumID' : {},
             'tightIso_tightID' : {},
         }
 
@@ -257,9 +258,9 @@ class MuonScaleFactors(ScaleFactor):
             for cut in self.muonisoeffs:
                 self.muonisoeffs[cut]['RATIO'] = ROOT.TH2F(self.mufile.Get(cut))
 
-            self.maxpt  = self.muonideffs['looseID']['RATIO'].GetXaxis().GetXmax() - 1.
-            self.minpt  = self.muonideffs['looseID']['RATIO'].GetXaxis().GetXmin()
-            self.maxeta = self.muonideffs['looseID']['RATIO'].GetYaxis().GetXmax()
+            self.maxpt  = self.muonideffs['tightID']['RATIO'].GetXaxis().GetXmax() - 1.
+            self.minpt  = self.muonideffs['tightID']['RATIO'].GetXaxis().GetXmin()
+            self.maxeta = self.muonideffs['tightID']['RATIO'].GetYaxis().GetXmax()
 
 
     # methods
@@ -271,7 +272,8 @@ class MuonScaleFactors(ScaleFactor):
         '''
         if self.error: return 1.
 
-        if idcut in ['soft', 'loose', 'medium', 'tight']:
+        #if idcut in ['loose', 'medium', 'tight']:
+        if idcut in ['tight']:
             cut = '{0}ID'.format(idcut)
         else:
             raise ValueError('Muon getIdScale: id "{0}" not recognised.'.format(idcut))
@@ -302,12 +304,14 @@ class MuonScaleFactors(ScaleFactor):
 
         # input validation
         if isocut=='loose':
-            if idcut in ['loose', 'medium', 'tight']:
+            #if idcut in ['loose', 'medium', 'tight']:
+            if idcut in ['tight']:
                 cut = '{0}Iso_{1}ID'.format(isocut, idcut)
             else:
                 raise ValueError('Muon getIsoScale: ID "{0}" not recognised, or you are trying to use an invalid ID+Iso pairing ({0}+{1}.'.format(idcut, isocut))
         elif isocut=='tight':
-            if idcut in ['medium', 'tight']:
+            #if idcut in ['medium', 'tight']:
+            if idcut in ['tight']:
                 cut = '{0}Iso_{1}ID'.format(isocut, idcut)
             else:
                 raise ValueError('Muon getIsoScale: ID "{0}" not recognised, or you are trying to use an invalid ID+Iso pairing ({0}+{1}.'.format(idcut, isocut))
