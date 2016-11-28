@@ -28,12 +28,18 @@ def find_analysis_code(analysisname):
 
 
 
-def fill_datasets_map(v, ana, dsets, resultsdir):
+## ___________________________________________________________
+def fill_datasets_map(v, ana, dsetlist, resultsdir):
 
-    dsetmap = datasets76X if v=='76X' else datasets80X
+    dsetmap_ = datasets76X if v=='76X' else datasets80X
+    dsetmap = {}
+    # "remove" ones we don't want to submit
+    for key in dsetmap_:
+        if key not in dsetlist: continue
+        dsetmap[key] = dsetmap_[key]
 
     # make sure they will be submitted
-    for d in dsets:
+    for d in dsetlist:
         if d not in dsetmap:
             raise ValueError('"{0}" won\'t be submitted'.format(d))
 
@@ -136,6 +142,19 @@ def create_submission_scripts(d, dname, **kwargs):
 
         os.system('chmod +x {0}'.format(this_scriptname))
 
+
+def submit_dataset_jobs(d, dname, tmpdir, args):
+    print 'submit jobs for ' + dname
+    njobs = d['njobs']
+    ana = args.analysis
+    v = args.version
+    mail = args.mail
+    for n in xrange(0, njobs):
+        scriptname = '{4}/job_{0}_{1}_{2}of{3}.sh'.format(ana, dname, n2d(n+1), n2d(njobs), tmpdir)
+        jobname = '{3}-{0}_{2}{1}'.format(dname, '' if njobs==1 else '_{0}'.format(n+1), v[:-1], ana)
+        submitcommand = '{2}bsub -q 8nh -J {0} < {1}'.format(jobname, scriptname, '' if mail else 'LSB_JOB_REPORT_MAIL=N ')
+        #print submitcommand
+        os.system(submitcommand)
 
 
 ## ___________________________________________________________

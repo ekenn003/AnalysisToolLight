@@ -5,9 +5,8 @@ import time
 import math
 import subprocess
 from AnalysisToolLight.AnalysisTool.tools.batch_helper import *
-#from AnalysisToolLight.AnalysisTool.tools.batch_helper import
-#from AnalysisToolLight.AnalysisTool.datasets import datasets76X, datasets80X
 
+## ___________________________________________________________
 def wrapper(args):
     # define analysis
     this_analysis = args.analysis
@@ -17,9 +16,6 @@ def wrapper(args):
     # determine datasets
     dataset_list, dataset_map = get_datasets_to_use(args, resultsdir)
 
-    #####################
-    # write tmp scripts #
-    #####################
     # clear old contents
     if os.path.exists(tmpdir): 
         print 'Deleting contents of ' + tmpdir
@@ -28,16 +24,11 @@ def wrapper(args):
         print 'Creating working directory ' + tmpdir
         os.system('mkdir {0}/'.format(tmpdir))
 
-    # go to tmp dir
-#    os.chdir(tmpdir)
-
-########## still have to chdir for this now
     # split inputfile into temp input files
     for dname, d in dataset_map.iteritems():
         split_input_file(d, tmpdir)
 
-
-    # build options map
+    # build options map for sub scripts
     options = {
         'analysis'     : args.analysis,
         'analysiscode' : find_analysis_code(args.analysis),
@@ -45,30 +36,22 @@ def wrapper(args):
         'tmpdir'     : tmpdir,
     }
 
-
+    # create sub scripts in tmp dir
     for dname, d in dataset_map.iteritems():
         create_submission_scripts(d, dname, **options)
 
 
-#    # submit jobs
-#    print '\nSubmitting jobs...'
-#    for dset in datasets:
-#        if not (dset in dsetstouse): continue
-#        njobs = datasets[dset]['njobs']
-#        for n in xrange(0, njobs):
-#            scriptname = '{4}/job_{0}_{1}_{2}of{3}.sh'.format(dset, ANALYSIS, n+1, njobs, tmpdir)
-#            jobname = '{3}-{0}_{2}{1}'.format(dset, '' if njobs==1 else '_{0}'.format(n+1), version[:-1], ANALYSIS)
-#            submitcommand = '{2}bsub -q 8nh -J {0} < {1}'.format(jobname, scriptname, '' if args.mail else 'LSB_JOB_REPORT_MAIL=N ')
-#
-#
-#            print submitcommand
-#
-##            os.system(submitcommand)
-#
-#            print
-#            time.sleep(1)
-#
-#    os.chdir('../')
+    # submit jobs
+    # go to tmp dir
+    os.chdir(tmpdir)
+
+
+
+    print '\nSubmitting jobs...'
+    for dname, d in dataset_map.iteritems():
+        submit_dataset_jobs(d, dname, tmpdir, args)
+
+    os.chdir('../')
 
 
 ## ___________________________________________________________
@@ -99,24 +82,25 @@ def get_datasets_to_use(args, resultsdir):
         )
     elif v=='80X':
         dsets = (
-        ##### data
-            'SingleMuon_Run2016Bv3',
-            'SingleMuon_Run2016C',
-            'SingleMuon_Run2016D',
-            'SingleMuon_Run2016E',
-            'SingleMuon_Run2016F',
-            'SingleMuon_Run2016G',
-            'SingleMuon_Run2016Hv2',
-            'SingleMuon_Run2016Hv3',
-        ##### signal
+#        ##### data
+#            'SingleMuon_Run2016Bv3',
+#            'SingleMuon_Run2016C',
+#            'SingleMuon_Run2016D',
+#            'SingleMuon_Run2016E',
+#            'SingleMuon_Run2016F',
+#            'SingleMuon_Run2016G',
+#            'SingleMuon_Run2016Hv2',
+#            'SingleMuon_Run2016Hv3',
+#        ##### signal
 #            'GluGlu_HToMuMu',
 #            'WMinusH_HToMuMu',
 #            'WPlusH_HToMuMu',
 #            'VBF_HToMuMu',
 #            'ZH_HToMuMu',
-        ##### background
-            'DYJetsToLL',
-            'TTJets',
+#        ##### background
+#            'DYJetsToLL',
+#            'TTJets',
+            'WJetsToLNu',
 #            'WWTo2L2Nu',
 #            'WZTo2L2Q',
 #            'WZTo3LNu',
