@@ -396,6 +396,7 @@ class Muon(CommonCand):
     # muon ID
     def IsTightMuon(self):  return self._get('is_tight_muon')
     def IsMediumMuon(self): return self._get('is_medium_muon')
+    def IsMedium2016Muon(self): return self._get('is_medium2016_muon')
     def IsLooseMuon(self):  return self._get('is_loose_muon')
     # track info
     def IsPFMuon(self):       return self._get('is_pf_muon')
