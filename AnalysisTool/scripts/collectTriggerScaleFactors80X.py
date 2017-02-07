@@ -8,7 +8,7 @@ def main():
     This creates a 2D histograms of efficiencies for the 2016 RunB+C+D IsoMu22_OR_IsoTkMu22 path,
     weighted by the integrated lumi for each period. To find the scale factor for this path,
     for i muons:
-        sf(IsoMu20_OR_IsoTkMu20) = [1-eff(data, mu(i))*eff(data, mu(i+1))*...] / [1-eff(MC, mu(i))*eff(MC, mu(i+1))*...]
+        sf(IsoMu20_OR_IsoTkMu20) = [1-eff(data, mu(i))*eff(data, mu(i+1))*...]
     where eff(data, mu(i)) is the bin content of the DAhist at the appropriate bins based on
     the pt and eta of mu(i):
         eff(data, mu) = DAhist.GetBinContent( DAhist.FindBin(mu.pt, mu.AbsEta) )
@@ -67,17 +67,17 @@ def main():
             # get errors
             daerr0 = dahist0.GetBinError(bx, by)
             daerr1 = dahist1.GetBinError(bx, by)
-            dabinerror = math.sqrt( pow(daerr0*weight0, 2) + pow(daeff1*weight1, 2) )
+            dabinerror = math.sqrt( pow(daerr0*weight0, 2) + pow(daerr1*weight1, 2) )
             ## get average value of eff for mc for this bin
             #mceff0 = mchist0.GetBinContent(bx, by)
             #mceff1 = mchist1.GetBinContent(bx, by)
             #mceff2 = mchist2.GetBinContent(bx, by)
-            #mcbincontent = mceff0*weight0 + mceff1*weight1 + mceff2*weight2
+            #mcbincontent = mceff0*weight0 + mcerr1*weight1 + mcerr2*weight2
             ## get errors
             #mcerr0 = mchist0.GetBinError(bx, by)
             #mcerr1 = mchist1.GetBinError(bx, by)
             #mcerr2 = mchist2.GetBinError(bx, by)
-            #mcbinerror = math.sqrt( pow(mcerr0*weight0, 2) + pow(mceff1*weight1, 2) + pow(mceff2*weight2, 2) )
+            #mcbinerror = math.sqrt( pow(mcerr0*weight0, 2) + pow(mcerr1*weight1, 2) + pow(mcerr2*weight2, 2) )
             # fill result hists
             DAhist.SetBinContent(bx, by, dabincontent)
             DAhist.SetBinError(bx, by, dabinerror)
