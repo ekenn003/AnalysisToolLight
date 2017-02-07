@@ -108,18 +108,14 @@ def main(argv=None):
     lumi_GH    = lumi_G + lumi_Hv2 + lumi_Hv3
     nbinsx = muonisoeffs['tightIso_mediumID']['RATIO_GH'].GetNbinsX()
     nbinsy = muonisoeffs['tightIso_mediumID']['RATIO_GH'].GetNbinsY()
-    print 'nbins x =', nbinsx
-    print 'nbins y =', nbinsy
-
-
 
     # create template hists
     for cut in muonideffs:
         muonideffs[cut]['RATIO'] = muonideffs[cut]['RATIO_GH'].Clone(cut)
-        muonideffs[cut]['RATIO'] = muonideffs[cut]['RATIO_GH'].SetName(cut)
+        muonideffs[cut]['RATIO'].SetName(cut)
     for cut in muonisoeffs:
         muonisoeffs[cut]['RATIO'] = muonisoeffs[cut]['RATIO_GH'].Clone(cut)
-        muonisoeffs[cut]['RATIO'] = muonisoeffs[cut]['RATIO_GH'].SetName(cut)
+        muonisoeffs[cut]['RATIO'].SetName(cut)
 
     # weight efficiencies by lumi period
     for cut in muonideffs:
@@ -128,37 +124,41 @@ def main(argv=None):
                 # get average value of eff for this bin
                 eff0 = muonideffs[cut]['RATIO_BCDEF'].GetBinContent(bx, by)
                 eff1 = muonideffs[cut]['RATIO_GH'].GetBinContent(bx, by)
-                eff = lumi_BCDEF*eff0 + lumi_GH*eff1
+                eff = (lumi_BCDEF/(lumi_BCDEF+lumi_GH))*eff0 + (lumi_GH/(lumi_BCDEF+lumi_GH))*eff1
                 # get errors
                 err0 = muonideffs[cut]['RATIO_BCDEF'].GetBinError(bx, by)
                 err1 = muonideffs[cut]['RATIO_GH'].GetBinError(bx, by)
-                err = math.sqrt( pow(err0*lumi_BCDEF, 2) + pow(err1*lumi_GH, 2) )
+                err = math.sqrt( pow(err0*(lumi_BCDEF/(lumi_BCDEF+lumi_GH)), 2) + pow(err1*(lumi_GH/(lumi_BCDEF+lumi_GH)), 2) )
 
                 muonideffs[cut]['RATIO'].SetBinContent(bx, by, eff)
                 muonideffs[cut]['RATIO'].SetBinError(bx, by, err)
 
 
+    for cut in muonisoeffs:
+        for bx in range(0, nbinsx):
+            for by in range(0, nbinsy):
+                # get average value of eff for this bin
+                eff0 = muonisoeffs[cut]['RATIO_BCDEF'].GetBinContent(bx, by)
+                eff1 = muonisoeffs[cut]['RATIO_GH'].GetBinContent(bx, by)
+                eff = (lumi_BCDEF/(lumi_BCDEF+lumi_GH))*eff0 + (lumi_GH/(lumi_BCDEF+lumi_GH))*eff1
+                # get errors
+                err0 = muonisoeffs[cut]['RATIO_BCDEF'].GetBinError(bx, by)
+                err1 = muonisoeffs[cut]['RATIO_GH'].GetBinError(bx, by)
+                err = math.sqrt( pow(err0*(lumi_BCDEF/(lumi_BCDEF+lumi_GH)), 2) + pow(err1*(lumi_GH/(lumi_BCDEF+lumi_GH)), 2) )
 
-###
-###
-###
-###
-###
-###
-###
-###
-###    # write hists
-###    outfile.cd()
-###    for cut in muonideffs:
-###        muonideffs[cut]['RATIO'].Sumw2()
-###        muonideffs[cut]['RATIO'].Write()
-###    for cut in muonisoeffs:
-###        muonisoeffs[cut]['RATIO'].Sumw2()
-###        muonisoeffs[cut]['RATIO'].Write()
-###
+                muonisoeffs[cut]['RATIO'].SetBinContent(bx, by, eff)
+                muonisoeffs[cut]['RATIO'].SetBinError(bx, by, err)
+
+
+    # write hists
+    outfile.cd()
+    for cut in muonideffs:
+        muonideffs[cut]['RATIO'].Write()
+    for cut in muonisoeffs:
+        muonisoeffs[cut]['RATIO'].Write()
+
     print '\nCreated file {0}'.format(output_filename)
 
-    #outfile.Write()
     outfile.Close()
     pog_id_file0.Close()
     pog_iso_file0.Close()
