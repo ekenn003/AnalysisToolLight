@@ -33,8 +33,16 @@ def main():
     lumi_Hv2 = 8.285
     lumi_Hv3 = 0.217
 
-    lumi_GH = lumi_G + lumi_Hv2 + lumi_Hv3
-    lumi_FGH = lumi_F + lumi_GH
+    # Period1
+
+    # Period2
+
+    # Period3
+    lumi_3 = lumi_F
+    # Period4
+    lumi_4 = lumi_G + lumi_Hv2 + lumi_Hv3
+    # totals
+    lumi_tot = lumi_3 + lumi_4
 
 
     pog_file3 = ROOT.TFile('{0}/{1}'.format(sf_dir, pog_filename3))
@@ -62,11 +70,11 @@ def main():
     path24 = 'IsoMu24_OR_IsoTkMu24'
     dahist3 = ROOT.TH2F(pog_file3.Get(singlemuoneffs[path24]['DATA']))
     mchist3 = ROOT.TH2F(pog_file3.Get(singlemuoneffs[path24]['MC']))
-    weight3 = lumi_F / lumi_FGH
+    weight3 = lumi_3 / lumi_tot
 
     dahist4 = ROOT.TH2F(pog_file4.Get(singlemuoneffs[path24]['DATA']))
     mchist4 = ROOT.TH2F(pog_file4.Get(singlemuoneffs[path24]['MC']))
-    weight4 = lumi_GH / lumi_FGH
+    weight4 = lumi_4 / lumi_tot
 
 
     # create result hists
@@ -114,6 +122,7 @@ if __name__ == "__main__":
     sys.exit(status)
 
 
+# the info below is now obsolete
 # How this file was created
 #
 # run 273158-274093:
