@@ -5,92 +5,108 @@ import ROOT
 
 def main():
     '''
-    This creates a 2D histograms of efficiencies for the 2016 RunB+C+D IsoMu22_OR_IsoTkMu22 path,
+    This creates a 2D histograms of efficiencies for the 2016 RunF+GH IsoMu24_OR_IsoTkMu24 path,
     weighted by the integrated lumi for each period. To find the scale factor for this path,
     for i muons:
-        sf(IsoMu20_OR_IsoTkMu20) = [1-eff(data, mu(i))*eff(data, mu(i+1))*...]
+        sf(IsoMu24_OR_IsoTkMu24) = [1-eff(data, mu(i))*eff(data, mu(i+1))*...]
     where eff(data, mu(i)) is the bin content of the DAhist at the appropriate bins based on
     the pt and eta of mu(i):
         eff(data, mu) = DAhist.GetBinContent( DAhist.FindBin(mu.pt, mu.AbsEta) )
 
     See https://twiki.cern.ch/twiki/bin/view/CMS/MuonReferenceEffsRun2
+        https://twiki.cern.ch/twiki/bin/viewauth/CMS/MuonWorkInProgressAndPagResults
     '''
 
     cmsswversion = '80X'
-    pog_filename = 'SingleMuonTrigger_Z_RunBCD_prompt80X_7p65.root'
+    pog_filename3 = 'EfficienciesAndSF_Period3.root'
+    pog_filename4 = 'EfficienciesAndSF_Period4.root'
 
     sf_dir = '{0}/src/AnalysisToolLight/AnalysisTool/data/scalefactors'.format(os.environ['CMSSW_BASE'])
     output_filename = '{0}/singlemuontrigger_{1}.root'.format(sf_dir, cmsswversion)
 
+    lumi_Bv2 = 5.855
+    lumi_C   = 2.646
+    lumi_D   = 4.353
+    lumi_E   = 4.050
+    lumi_F   = 3.157
+    lumi_G   = 7.261
+    lumi_Hv2 = 8.285
+    lumi_Hv3 = 0.217
 
-    pog_file = ROOT.TFile('{0}/{1}'.format(sf_dir, pog_filename))
+    lumi_GH = lumi_G + lumi_Hv2 + lumi_Hv3
+    lumi_FGH = lumi_F + lumi_GH
+
+
+    pog_file3 = ROOT.TFile('{0}/{1}'.format(sf_dir, pog_filename3))
+    pog_file4 = ROOT.TFile('{0}/{1}'.format(sf_dir, pog_filename4))
     outfile = ROOT.TFile(output_filename,'recreate')
 
     # find lumi with eg:
     # brilcalc lumi --normtag <my normtag> -i <my json> --hltpath "HLT_IsoMu20_v*"
     # see comments at end of this file
     singlemuoneffs = {
-        'IsoMu22_OR_IsoTkMu22_PtEtaBins_Run273158_to_274093' : {
-            'lumi' : 621.512, # inv pb
-        },
-        'IsoMu22_OR_IsoTkMu22_PtEtaBins_Run274094_to_276097' : {
-            'lumi' : 7033.818, # inv pb
+        'IsoMu24_OR_IsoTkMu24' : {
+            'hdir' : 'IsoMu24_OR_IsoTkMu24'
         },
     }
 
     totlumi = 0.
 
     for path in singlemuoneffs:
-        hdir = '{0}'.format(path)
+        hdir = '{0}_PtEtaBins'.format(path)
         singlemuoneffs[path]['DATA'] = '{0}/efficienciesDATA/pt_abseta_DATA'.format(hdir)
-        totlumi += singlemuoneffs[path]['lumi']
+        singlemuoneffs[path]['MC']   = '{0}/efficienciesMC/pt_abseta_MC'.format(hdir)
 
     # get hist for each path
-    dahist0 = ROOT.TH2F(pog_file.Get(singlemuoneffs['IsoMu22_OR_IsoTkMu22_PtEtaBins_Run273158_to_274093']['DATA']))
-    weight0 = singlemuoneffs['IsoMu22_OR_IsoTkMu22_PtEtaBins_Run273158_to_274093']['lumi'] / totlumi
+    #for path in singlemuoneffs:
+    path24 = 'IsoMu24_OR_IsoTkMu24'
+    dahist3 = ROOT.TH2F(pog_file3.Get(singlemuoneffs[path24]['DATA']))
+    mchist3 = ROOT.TH2F(pog_file3.Get(singlemuoneffs[path24]['MC']))
+    weight3 = lumi_F / lumi_FGH
 
-    dahist1 = ROOT.TH2F(pog_file.Get(singlemuoneffs['IsoMu22_OR_IsoTkMu22_PtEtaBins_Run274094_to_276097']['DATA']))
-    weight1 = singlemuoneffs['IsoMu22_OR_IsoTkMu22_PtEtaBins_Run274094_to_276097']['lumi'] / totlumi
+    dahist4 = ROOT.TH2F(pog_file4.Get(singlemuoneffs[path24]['DATA']))
+    mchist4 = ROOT.TH2F(pog_file4.Get(singlemuoneffs[path24]['MC']))
+    weight4 = lumi_GH / lumi_FGH
+
 
     # create result hists
-    #MChist = mchist0.Clone('effMC')
-    DAhist = dahist0.Clone('effDA')
-    nbinsx = dahist0.GetNbinsX()
-    nbinsy = dahist0.GetNbinsY()
+    MChist = mchist3.Clone('effMC')
+    DAhist = dahist3.Clone('effDA')
+    nbinsx = dahist3.GetNbinsX()
+    nbinsy = dahist3.GetNbinsY()
 
     for bx in range(0, nbinsx):
         for by in range(0, nbinsy):
             # get average value of eff for data for this bin
-            daeff0 = dahist0.GetBinContent(bx, by)
-            daeff1 = dahist1.GetBinContent(bx, by)
-            dabincontent = daeff0*weight0 + daeff1*weight1
+            daeff3 = dahist3.GetBinContent(bx, by)
+            daeff4 = dahist4.GetBinContent(bx, by)
+            dabincontent = daeff3*weight3 + daeff4*weight4
             # get errors
-            daerr0 = dahist0.GetBinError(bx, by)
-            daerr1 = dahist1.GetBinError(bx, by)
-            dabinerror = math.sqrt( pow(daerr0*weight0, 2) + pow(daerr1*weight1, 2) )
-            ## get average value of eff for mc for this bin
-            #mceff0 = mchist0.GetBinContent(bx, by)
-            #mceff1 = mchist1.GetBinContent(bx, by)
-            #mceff2 = mchist2.GetBinContent(bx, by)
-            #mcbincontent = mceff0*weight0 + mcerr1*weight1 + mcerr2*weight2
-            ## get errors
-            #mcerr0 = mchist0.GetBinError(bx, by)
-            #mcerr1 = mchist1.GetBinError(bx, by)
-            #mcerr2 = mchist2.GetBinError(bx, by)
-            #mcbinerror = math.sqrt( pow(mcerr0*weight0, 2) + pow(mcerr1*weight1, 2) + pow(mcerr2*weight2, 2) )
+            daerr3 = dahist3.GetBinError(bx, by)
+            daerr4 = dahist4.GetBinError(bx, by)
+            dabinerror = math.sqrt( pow(daerr3*weight3, 2) + pow(daerr4*weight4, 2) )
+            # get average value of eff for mc for this bin
+            mceff3 = mchist3.GetBinContent(bx, by)
+            mceff4 = mchist4.GetBinContent(bx, by)
+            mcbincontent = mceff3*weight3 + mceff4*weight4
+            # get errors
+            mcerr3 = mchist3.GetBinError(bx, by)
+            mcerr4 = mchist4.GetBinError(bx, by)
+            mcbinerror = math.sqrt( pow(mcerr3*weight3, 2) + pow(mcerr4*weight4, 2) )
             # fill result hists
             DAhist.SetBinContent(bx, by, dabincontent)
             DAhist.SetBinError(bx, by, dabinerror)
-            #MChist.SetBinContent(bx, by, mcbincontent)
-            #MChist.SetBinError(bx, by, mcbinerror)
+            MChist.SetBinContent(bx, by, mcbincontent)
+            MChist.SetBinError(bx, by, mcbinerror)
 
     # save result
     outfile.cd()
-    #MChist.Write()
+    MChist.Write()
     DAhist.Write()
     outfile.Close()
     print '\nCreated file {0}'.format(output_filename)
-    pog_file.Close()
+    pog_file3.Close()
+    pog_file4.Close()
 
 
 if __name__ == "__main__":
