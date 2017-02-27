@@ -263,7 +263,7 @@ class Ana2Mu(AnalysisBase):
                 self.fnumCat3 += 1
                 this_cat = 3
         else:
-            if (dimuonpt >= 50.):
+            if (dimuonpt >= 25.):
                 self.fnumCat4 += 1
                 this_cat = 4
             else:
