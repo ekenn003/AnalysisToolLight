@@ -4,7 +4,7 @@ import argparse
 import sys, logging
 from ROOT import TTree, TH1F
 from array import array
-from AnalysisToolLight.AnalysisTool.tools.tools import DeltaR, Z_MASS, EventIsOnList
+from AnalysisToolLight.AnalysisTool.tools.tools import delta_r, Z_MASS, event_is_on_list
 from AnalysisToolLight.AnalysisTool.CutFlow import CutFlow
 from AnalysisToolLight.AnalysisTool.AnalysisBase import AnalysisBase
 from AnalysisToolLight.AnalysisTool.AnalysisBase import main as analysisBaseMain
@@ -131,7 +131,8 @@ class Ana2Mu(AnalysisBase):
         for name in self.histograms.keys():
             if name not in category_hists: continue
             for cat in self.categories:
-                self.histograms_categories[name+'_'+cat] = self.histograms[name].Clone(self.histograms[name].GetName()+'_'+cat)
+                self.histograms_categories[name+'_'+cat] = self.histograms[name].Clone(
+                    (self.histograms[name].GetName()+'_'+cat))
         # add it to the extra histogram map
         self.extraHistogramMap['categories'] = self.histograms_categories
 
@@ -168,13 +169,36 @@ class Ana2Mu(AnalysisBase):
         preselection found in python/Preselection.
         '''
 
+        thisrun = self.event.run()
+        thislumi = self.event.lumi_block()
+        thisevent = self.event.number()
+        printevtinfo = False
+
+
+        vbfevtlist = [
+            20194,
+         #   112520,
+        ]
+
+
+        # sync
+        #if thisevent not in vbfevtlist: return
+        #printevtinfo = True
+        printevtinfo = False
+
+
+        if thisevent in vbfevtlist: printevtinfo = True
+
+
+
         ##########################################################
         #                                                        #
         # More channel-specific selections                       #
         #                                                        #
         ##########################################################
 
-
+        # 80X sync evt selection: exactly 2 muons, 0 electrons
+        if (len(self.good_electrons) != 0 or len(self.good_muons) != 2): return
 
         ##########################################################
         #                                                        #
@@ -200,7 +224,7 @@ class Ana2Mu(AnalysisBase):
         pairindex1, pairindex2 = self.dimuon_pairs[0]
         muon1 = self.good_muons[pairindex1]
         muon2 = self.good_muons[pairindex2]
-        dimuonobj = muon1.P4() + muon2.P4()
+        dimuonobj = muon1.p4() + muon2.p4()
 
         # pick which inv mass to put in limit tree
 
@@ -229,67 +253,168 @@ class Ana2Mu(AnalysisBase):
         #                                                        #
         ##########################################################
 
-        # 80X sync: 0 electrons, 0 bjets, at least 2 regular jets, leading/subleading jet 40/30 GeV
-        if (len(self.good_electrons) != 0
-            or len(self.good_muons) != 2
-            or len(self.good_bjets) != 0
-            or len(self.good_jets) < 2
-            or self.good_jets[0].Pt() < 40.
-            or self.good_jets[1].Pt() < 30.
-            or self.met.Et() > 40.):
-            passes_sync_preselection = False
-        else: passes_sync_preselection = True
+        # 80X sync preselection: 0 bjets, at least 2 regular jets, leading/subleading jet 40/30 GeV
+
+        this_cat = 999
 
 
-        #if (mytInvMass < self.syncLow or mytInvMass > self.syncHigh): return
 
-        if len(self.good_jets) > 1:
-            dijetcand = self.good_jets[0].P4() + self.good_jets[1].P4()
-            dijetmass = dijetcand.M()
-            dijetdeta = abs(self.good_jets[0].Eta() - self.good_jets[1].Eta())
-        else:
-            dijetmass = -1.
-            dijetdeta = -1.
-        dimuonpt = dimuonobj.Pt()
+        ###################################
+        # Preselection                    #
+        ###################################
+        jet_count_is_ok = False
+        jet_pts_are_ok = False
+
+        if ((len(self.good_bjets) == 0) and (len(self.good_jets) >= 2)):
+            jet_count_is_ok = True
+
+        for i, p in enumerate(self.dijet_pairs):
+            # should already be ordered by pT
+            if ((self.good_jets[p[0]].pt() > 40.) and (self.good_jets[p[1]].pt() > 30.)):
+                jet_pts_are_ok = True
+
+        passes_sync_preselection = True if (jet_count_is_ok and jet_pts_are_ok) else False
+
+
+        ###################################
+        # VBFTight                        #
+        ###################################
+#        vbftight_dijet_mass_ok = False
+#        vbftight_dijet_deta_ok = False
+        have_vbftight_pair = False
+
+        for i, p in enumerate(self.dijet_pairs):    
+            vbftight_dijet_mass_ok = False
+            vbftight_dijet_deta_ok = False
+
+            if not (self.good_jets[p[0]].pt() > 40. and self.good_jets[p[1]].pt() > 30.): continue
+            thisdijet = self.good_jets[p[0]].p4() + self.good_jets[p[1]].p4()
+
+            if thisdijet.M() > 650.: vbftight_dijet_mass_ok = True
+            if abs(self.good_jets[p[0]].eta() - self.good_jets[p[1]].eta()) > 3.5: vbftight_dijet_deta_ok = True
+
+            if vbftight_dijet_mass_ok and vbftight_dijet_deta_ok:
+                have_vbftight_pair = True
+
+        passes_sync_vbftight = have_vbftight_pair
+
+        ###################################
+        # GGFTight                        #
+        ###################################
+        ggftight_dijet_mass_ok = False
+        ggftight_dimuon_pt_ok = False
+
+        for i, p in enumerate(self.dijet_pairs):    
+            ggftight_dijet_mass_ok = False
+            ggftight_dimuon_pt_ok = False
+            if not (self.good_jets[p[0]].pt() > 40. and self.good_jets[p[1]].pt() > 30.): continue
+            thisdijet = self.good_jets[p[0]].p4() + self.good_jets[p[1]].p4()
+            if thisdijet.M() > 250.: ggftight_dijet_mass_ok = True
+            if dimuonobj.Pt() > 50.: ggftight_dimuon_pt_ok = True
+
+        passes_sync_ggftight = True if (ggftight_dijet_mass_ok and ggftight_dimuon_pt_ok) else False
+
+
+
+
+
+
+
+
+
 
         if passes_sync_preselection:
-            if (dijetmass > 650. and dijetdeta > 3.5):
+            if passes_sync_vbftight:
                 self.fnumCat1 += 1
                 this_cat = 1
-            elif (dijetmass > 250. and dimuonpt > 50.):
+            elif passes_sync_ggftight:
                 self.fnumCat2 += 1
                 this_cat = 2
             else:
                 self.fnumCat3 += 1
                 this_cat = 3
         else:
-            if (dimuonpt >= 25.):
+            if dimuonobj.Pt() >= 25.:
                 self.fnumCat4 += 1
                 this_cat = 4
             else:
                 self.fnumCat5 += 1
                 this_cat = 5
 
-        if not this_cat: logging.info('THISCATEGORY = ' + str(this_cat))
+#        if this_cat == 1: printevtinfo = True
 
-        ##########################################################
-        #                                                        #
-        # Fill limit trees                                       #
-        #                                                        #
-        ##########################################################
-        self.tEventNr[0] = self.event.Number()
-        self.tLumiNr[0]  = self.event.LumiBlock()
-        self.tRunNr[0]   = self.event.Run()
-        self.tInvMass[0] = mytInvMass
-        self.tEventWt[0] = eventweight
+        if printevtinfo:
+            print '\n=================================================='
+            print 'Event info for {0}:{1}:{2}'.format(thisrun, thislumi, thisevent)
+            print '=================================================='
+            print 'CAT{3} - {0}:{1}:{2}\n'.format(thisrun, thislumi, thisevent, this_cat)
+            # print muon info
+            print 'good muons: {0}'.format(len(self.good_muons) if self.good_muons else 0)
+            for i, m in enumerate(self.good_muons):
+                print '  Muon({2}):\n    pT = {0:0.4f}\n    eta = {1:0.4f}'.format(m.pt(), m.eta(), i)
+            print
+            print 'good dimuon cands: {0}'.format(len(self.dimuon_pairs) if self.dimuon_pairs else 0)
+            for i, p in enumerate(self.dimuon_pairs):
+                print '  Pair({0}):'.format(i)
+                print '    Muon(0):\n      pT = {0:0.4f}\n      eta = {1:0.4f}'.format(self.good_muons[p[0]].pt(), self.good_muons[p[0]].eta())
+                print '    Muon(1):\n      pT = {0:0.4f}\n      eta = {1:0.4f}'.format(self.good_muons[p[1]].pt(), self.good_muons[p[1]].eta())
+                thisdimuon = self.good_muons[p[0]].p4() + self.good_muons[p[1]].p4()
+                print '    dimuon mass = {0:0.4f}'.format(thisdimuon.M())
+                print '    dimuon eta = {0:0.4f}\n'.format(thisdimuon.Eta())
+            print
+
+            # print jet info
+            print 'good b jets: {0}'.format(len(self.good_bjets) if self.good_bjets else 0)
+            for i, j in enumerate(self.good_bjets):
+                print '    Jet({2}):\n      pT = {0:0.4f}\n      eta = {1:0.4f}'.format(j.pt(), j.eta(), i)
+
+            print 'good jets: {0}'.format(len(self.good_jets) if self.good_jets else 0)
+            for i, j in enumerate(self.good_jets):
+                print '    Jet({2}):\n      pT = {0:0.4f}\n      eta = {1:0.4f}'.format(j.pt(), j.eta(), i)
+            print
+
+
+            print 'dijet cands: {0}'.format(len(self.dijet_pairs) if self.dijet_pairs else 0)
+            for i, p in enumerate(self.dijet_pairs):
+                print '    Pair({0}):'.format(i)
+                print '      Jet(0):\n        pT = {0:0.4f}\n        eta = {1:0.4f}'.format(self.good_jets[p[0]].pt(), self.good_jets[p[0]].eta())
+                print '      Jet(1):\n        pT = {0:0.4f}\n        eta = {1:0.4f}'.format(self.good_jets[p[1]].pt(), self.good_jets[p[1]].eta())
+                thisdijet = self.good_jets[p[0]].p4() + self.good_jets[p[1]].p4()
+                print '      dijet mass = {0:0.4f}'.format(thisdijet.M())
+                print '      dijet dEta = {0:0.4f}\n'.format(abs(self.good_jets[p[0]].eta() - self.good_jets[p[1]].eta()))
+
+
+
+
+            #print '    dijet mass = {0:0.4f}'.format(dijetmass)
+            #print '    dijet dEta = {0:0.4f}'.format(dijetdeta)
+            print
+
+            # print met info
+            print 'MET: {0:0.4f}\n'.format(self.met.et())
+
+
+
+        
+
+        #############################################################
+        ####                                                        #
+        #### Fill limit trees                                       #
+        ####                                                        #
+        #############################################################
+        ###self.tEventNr[0] = self.event.Number()
+        ###self.tLumiNr[0]  = self.event.LumiBlock()
+        ###self.tRunNr[0]   = self.event.Run()
+        ###self.tInvMass[0] = mytInvMass
+        ###self.tEventWt[0] = eventweight
 
         self.fnumCat0 += 1
 
-        if this_cat: self.category_trees[this_cat-1].Fill()
+        ###if this_cat: self.category_trees[this_cat-1].Fill()
 
-        for cat in self.categories:
-            if 'Category{0}'.format(this_cat) not in cat: continue
-            self.histograms_categories['hDiMuInvMass_'+self.categories[this_cat-1]].Fill(mytInvMass, eventweight)
+        ###for cat in self.categories:
+        ###    if 'Category{0}'.format(this_cat) not in cat: continue
+        ###    self.histograms_categories['hDiMuInvMass_'+self.categories[this_cat-1]].Fill(mytInvMass, eventweight)
 
 
     ## _______________________________________________________
