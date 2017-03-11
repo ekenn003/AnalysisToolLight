@@ -59,7 +59,9 @@ def fill_datasets_map(v, ana, dsetlist, resultsdir):
         totallines += 1
         # if we asked for more jobs than input files, just do one job per file
         if njobs >= totallines: njobs = totallines
+
         nlinesperjob = int(math.ceil(float(totallines)/njobs))
+        if totallines%nlinesperjob==0 and njobs>1: d['njobs'] -= 1
         d['nlinesperjob'] = nlinesperjob
 
     return dsetmap
@@ -143,7 +145,10 @@ def create_submission_scripts(d, dname, **kwargs):
         os.system('chmod +x {0}'.format(this_scriptname))
 
 
+
+## ___________________________________________________________
 def submit_dataset_jobs(d, dname, tmpdir, args):
+    print
     print 'submit jobs for ' + dname
     njobs = d['njobs']
     ana = args.analysis
@@ -153,7 +158,7 @@ def submit_dataset_jobs(d, dname, tmpdir, args):
         scriptname = '{4}/job_{0}_{1}_{2}of{3}.sh'.format(ana, dname, n2d(n+1), n2d(njobs), tmpdir)
         jobname = '{3}-{0}_{2}{1}'.format(dname, '' if njobs==1 else '_{0}'.format(n+1), v[:-1], ana)
         submitcommand = '{2}bsub -q 8nh -J {0} < {1}'.format(jobname, scriptname, '' if mail else 'LSB_JOB_REPORT_MAIL=N ')
-        #print submitcommand
+        print '\n', submitcommand
         os.system(submitcommand)
 
 

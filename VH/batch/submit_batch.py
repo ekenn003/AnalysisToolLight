@@ -19,7 +19,7 @@ def wrapper(args):
     # clear old contents
     if os.path.exists(tmpdir): 
         print 'Deleting contents of ' + tmpdir
-        os.system('rm {0}/*.*'.format(tmpdir))
+        os.system('rm -r {0}/*'.format(tmpdir))
     else:
         print 'Creating working directory ' + tmpdir
         os.system('mkdir {0}/'.format(tmpdir))
@@ -61,29 +61,10 @@ def get_datasets_to_use(args, resultsdir):
     # get template datasets
     #dsetmap = datasets76X if v=='76X' else datasets80X
     # get sets to use
-    if v=='76X':
+    if v=='80X':
         dsets = (
         ##### data
-            'SingleMuon_Run2015C',
-            'SingleMuon_Run2015D',
-        ##### signal
-            'GluGlu_HToMuMu',
-            'VBF_HToMuMu',
-        ##### background
-            'DYJetsToLL',
-            'TTJets',
-            'TTZToLLNuNu',
-            'WWTo2L2Nu',
-            'WZTo2L2Q',
-            'WZTo3LNu',
-            'ZZTo2L2Nu',
-            'ZZTo2L2Q',
-            'ZZTo4L',
-        )
-    elif v=='80X':
-        dsets = (
-#        ##### data
-#            'SingleMuon_Run2016Bv3',
+#            'SingleMuon_Run2016Bv2',
 #            'SingleMuon_Run2016C',
 #            'SingleMuon_Run2016D',
 #            'SingleMuon_Run2016E',
@@ -91,18 +72,17 @@ def get_datasets_to_use(args, resultsdir):
 #            'SingleMuon_Run2016G',
 #            'SingleMuon_Run2016Hv2',
 #            'SingleMuon_Run2016Hv3',
-#        ##### signal
+        ##### signal
 #            'GluGlu_HToMuMu',
 #            'WMinusH_HToMuMu',
 #            'WPlusH_HToMuMu',
 #            'VBF_HToMuMu',
 #            'ZH_HToMuMu',
-#        ##### background
-#            'DYJetsToLL',
-#            'TTJets',
-            'WJetsToLNu',
+        ##### background
+            'DYJetsToLL',
+            'TTJets',
 #            'WWTo2L2Nu',
-#            'WZTo2L2Q',
+#          #  'WZTo2L2Q',
 #            'WZTo3LNu',
 #            'ZZTo2L2Nu',
 #            'ZZTo2L2Q',

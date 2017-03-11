@@ -17,8 +17,11 @@ vh_cuts = {
         'IsoMu24',
         'IsoTkMu24', 
     ),
-    # path for scale factors
-    'HLTstring' : 'IsoMu20_OR_IsoTkMu20',
+    # scale factors
+    'HLTstring' : 'IsoMu24_OR_IsoTkMu24',
+    #'SF_scheme' : 'BCDEF',
+    'SF_scheme' : 'GH',
+    'PU_scheme' : 'B', # this does nothing yet
 
     # event selection
     'cVtxNdf' : 4,
@@ -48,12 +51,12 @@ vh_cuts = {
     'cMuDz'  : 0.14, # cm
 
     # trigger-matched mu cuts
-    'cMuPtMax'  : 30., # GeV
+    'cMuPtMax'  : 26., # GeV
     'cMuEtaMax' : 2.4,
 
     # electron cuts
     'cEPt'  : 10., # GeV
-    'cEEta' : 2.4,
+    'cEEta' : 2.5,
     'cEID'  : 'cbtight',
 
     # h candidate cuts

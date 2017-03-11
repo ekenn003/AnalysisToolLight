@@ -11,6 +11,7 @@ from AnalysisToolLight.AnalysisTool.CutFlow import CutFlow
 from AnalysisToolLight.AnalysisTool.AnalysisBase import AnalysisBase
 from AnalysisToolLight.AnalysisTool.AnalysisBase import main as analysisBaseMain
 from AnalysisToolLight.AnalysisTool.Preselection import check_vh_preselection
+from AnalysisToolLight.AnalysisTool.histograms import fill_base_histograms
 from cuts import vh_cuts as cuts
 
 ## ___________________________________________________________
@@ -43,12 +44,12 @@ class Ana2Mu(AnalysisBase):
         # Some run options                                       #
         #                                                        #
         ##########################################################
-        self.doPileupReweighting = True
-        #self.includeTriggerScaleFactors = True
-        #self.includeLeptonScaleFactors = True
+        self.do_pileup_reweighting = True
+        self.include_trigger_scale_factors = True
+        self.include_lepton_scale_factors = True
 
-        ## use rochester corrections (default is false)
-        self.useRochesterCorrections = True
+        # use rochester corrections (default is false)
+        self.use_rochester_corrections = True
 
         ##########################################################
         #                                                        #
@@ -56,7 +57,7 @@ class Ana2Mu(AnalysisBase):
         #                                                        #
         ##########################################################
         self.hltriggers = cuts['HLT']
-        self.pathForTriggerScaleFactors = cuts['HLTstring'] #'IsoMu20_OR_IsoTkMu20'
+        self.path_for_trigger_scale_factors = cuts['HLTstring']
 
 
 
@@ -77,6 +78,11 @@ class Ana2Mu(AnalysisBase):
         self.histograms['hNumDiMu'] = TH1F('hNumDiMu', 'hNumDiMu', 20, 0., 20.)
         self.histograms['hNumDiMu'].GetXaxis().SetTitle('N_{#mu^{+}#mu^{-}}')
         self.histograms['hNumDiMu'].GetYaxis().SetTitle('Candidates')
+
+        self.histograms['hMetMtWithMu'] = TH1F('hMetMtWithMu', 'hMetMtWithMu', 500, 0., 1000.)
+        self.histograms['hMetMtWithMu'].GetXaxis().SetTitle('M_{T}(#mu, MET)[GeV/c^{2}]')
+        self.histograms['hMetMtWithMu'].GetYaxis().SetTitle('Candidates/2.0[GeV/c^{2}]')
+
 
         ##########################################################
         #                                                        #
@@ -162,210 +168,72 @@ class Ana2Mu(AnalysisBase):
         This method only executes if the event passes event selection and
         preselection found in python/Preselection.
         '''
+        ##########################################################
+        #                                                        #
+        # Check VH preselection                                  #
+        #                                                        #
+        ##########################################################
+#        passes_vh = check_vh_preselection(self)
+#        if not passes_vh: return
 
-        eventweight = self.calculate_event_weight()
 
+        ##########################################################
+        #                                                        #
+        # More channel-specific selections                       #
+        #                                                        #
+        ##########################################################
+
+
+
+
+
+        ##########################################################
+        #                                                        #
+        # Calculate event weight                                 #
+        #                                                        #
+        ##########################################################
+        eventweight_ = self.calculate_event_weight()
+        #print 'eventweight_.base_event_weight =', eventweight_.base_event_weight
+        #print 'eventweight_.pileup_factor =',     eventweight_.pileup_factor
+        #print 'eventweight_.trigger_factor =',    eventweight_.trigger_factor
+        #print 'eventweight_.lepton_factor =',     eventweight_.lepton_factor
+
+        eventweight = eventweight_.full
+
+        ##########################################################
+        #                                                        #
+        # Determine dimuon pairs                                 #
+        #                                                        #
+        ##########################################################
         self.histograms['hNumDiMu'].Fill(len(self.dimuon_pairs), eventweight)
 
 
-#        # step1
-#        self.histograms['hVtxN_step1'].Fill(len(goodVertices), eventweight)
-#        self.histograms['hNumMu_step1'].Fill(len(goodMuons), eventweight)
-#        for mu in goodMuons:
-#            self.histograms['hMuPt_step1'].Fill(mu.Pt(), eventweight)
-#        self.histograms['hNumE_step1'].Fill(len(goodElectrons), eventweight)
-#        for e in goodElectrons:
-#            self.histograms['hEPt_step1'].Fill(e.Pt(), eventweight)
-#        self.histograms['hDiMuInvMass_step1'].Fill((diMuonPairs[0][0].P4() + diMuonPairs[0][1].P4() ).M() if diMuonPairs else 0., eventweight)
-#
-#
-#
-#        num_leptons = len(goodMuons) + len(goodElectrons)
-#
-#        if (num_leptons > 4): return
-#        self.cutflow.increment('nEv_4Lep')
-#        # step2
-#        self.histograms['hVtxN_step2'].Fill(len(goodVertices), eventweight)
-#        self.histograms['hNumMu_step2'].Fill(len(goodMuons), eventweight)
-#        for mu in goodMuons:
-#            self.histograms['hMuPt_step2'].Fill(mu.Pt(), eventweight)
-#        self.histograms['hNumE_step2'].Fill(len(goodElectrons), eventweight)
-#        for e in goodElectrons:
-#            self.histograms['hEPt_step2'].Fill(e.Pt(), eventweight)
-#        self.histograms['hDiMuInvMass_step2'].Fill((diMuonPairs[0][0].P4() + diMuonPairs[0][1].P4() ).M() if diMuonPairs else 0., eventweight)
-#
-#        if (len(goodBJets) > 0): return
-#        self.cutflow.increment('nEv_NoBJets')
-#        # step3
-#        self.histograms['hVtxN_step3'].Fill(len(goodVertices), eventweight)
-#        self.histograms['hNumMu_step3'].Fill(len(goodMuons), eventweight)
-#        for mu in goodMuons:
-#            self.histograms['hMuPt_step3'].Fill(mu.Pt(), eventweight)
-#        self.histograms['hNumE_step3'].Fill(len(goodElectrons), eventweight)
-#        for e in goodElectrons:
-#            self.histograms['hEPt_step3'].Fill(e.Pt(), eventweight)
-#        self.histograms['hDiMuInvMass_step3'].Fill((diMuonPairs[0][0].P4() + diMuonPairs[0][1].P4() ).M() if diMuonPairs else 0., eventweight)
-#
-#        # V(lep)h selection: 0 bjets, 1 or 2 extra leptons
-#        if (num_leptons < 3): return
-#        self.cutflow.increment('nEv_3or4Lep')
-#        # step4
-#        self.histograms['hVtxN_step4'].Fill(len(goodVertices), eventweight)
-#        self.histograms['hNumMu_step4'].Fill(len(goodMuons), eventweight)
-#        for mu in goodMuons:
-#            self.histograms['hMuPt_step4'].Fill(mu.Pt(), eventweight)
-#        self.histograms['hNumE_step4'].Fill(len(goodElectrons), eventweight)
-#        for e in goodElectrons:
-#            self.histograms['hEPt_step4'].Fill(e.Pt(), eventweight)
-#        self.histograms['hDiMuInvMass_step4'].Fill((diMuonPairs[0][0].P4() + diMuonPairs[0][1].P4() ).M() if diMuonPairs else 0., eventweight)
-#
-#
-#        ##########################################################
-#        #                                                        #
-#        # Fill histograms                                        #
-#        #                                                        #
-#        ##########################################################
-#
-#        # decide on control plots
-#        # control region = events without dimuon in signal region
-#        fillControlPlots = False
-#        for mupair in diMuonPairs:
-#            mupairP4 = mupair[0].P4() + mupair[1].P4()
-#            if (mupairP4.M() < self.sigLow or mupairP4.M() > self.sigHigh): fillControlPlots = True
-#
-#        #############################
-#        # PV after selection ########
-#        #############################
-#        # fill histograms with good pvs
-#        self.histograms['hVtxN'].Fill(len(goodVertices), eventweight)
-#
-#        #############################
-#        # Muons #####################
-#        #############################
-#        self.histograms['hNumMu'].Fill(len(goodMuons), eventweight)
-#        for mu in goodMuons:
-#            self.histograms['hMuPt'].Fill(mu.Pt(), eventweight)
-#            self.histograms['hMuEta'].Fill(mu.Eta(), eventweight)
-#            self.histograms['hMuPhi'].Fill(mu.Phi(), eventweight)
-#            if len(goodMuons)==3:
-#                self.histograms['hMetMtWithMu'].Fill(self.met.MtWith(mu), eventweight)
-#            # fill comtrol plots
-#            if fillControlPlots:
-#                self.histograms_ctrl['hMuPt_ctrl'].Fill(mu.Pt(), eventweight)
-#                self.histograms_ctrl['hMuEta_ctrl'].Fill(mu.Eta(), eventweight)
-#                self.histograms_ctrl['hMuPhi_ctrl'].Fill(mu.Phi(), eventweight)
-#                if len(goodMuons)==3:
-#                    self.histograms_ctrl['hMetMtWithMu_ctrl'].Fill(self.met.MtWith(mu), eventweight)
-#
-#        #############################
-#        # Dimuon ####################
-#        #############################
-#        for mupair in diMuonPairs:
-#            self.histograms['hLeadMuPt'].Fill(mupair[0].Pt(), eventweight)
-#            self.histograms['hSubLeadMuPt'].Fill(mupair[1].Pt(), eventweight)
-#            diMuP4 = mupair[0].P4() + mupair[1].P4()
-#            self.histograms['hDiMuPt'].Fill(diMuP4.Pt(), eventweight)
-#            self.histograms['hDiMuEta'].Fill(diMuP4.Eta(), eventweight)
-#            self.histograms['hDiMuPhi'].Fill(diMuP4.Phi(), eventweight)
-#            self.histograms['hDiMuInvMass'].Fill(diMuP4.M(), eventweight)
-#            self.histograms['hDiMuDeltaPt'].Fill(mupair[0].Pt() - mupair[1].Pt(), eventweight)
-#            self.histograms['hDiMuDeltaEta'].Fill(mupair[0].Eta() - mupair[1].Eta(), eventweight)
-#            self.histograms['hDiMuDeltaPhi'].Fill(mupair[0].Phi() - mupair[1].Phi(), eventweight)
-#
-#            # fill control plots
-#            if fillControlPlots:
-#                self.histograms_ctrl['hLeadMuPt_ctrl'].Fill(mupair[0].Pt(), eventweight)
-#                self.histograms_ctrl['hSubLeadMuPt_ctrl'].Fill(mupair[1].Pt(), eventweight)
-#                self.histograms_ctrl['hDiMuPt_ctrl'].Fill(diMuP4.Pt(), eventweight)
-#                self.histograms_ctrl['hDiMuEta_ctrl'].Fill(diMuP4.Eta(), eventweight)
-#                self.histograms_ctrl['hDiMuPhi_ctrl'].Fill(diMuP4.Phi(), eventweight)
-#                self.histograms_ctrl['hDiMuInvMass_ctrl'].Fill(diMuP4.M(), eventweight)
-#                self.histograms_ctrl['hDiMuDeltaPt_ctrl'].Fill(mupair[0].Pt() - mupair[1].Pt(), eventweight)
-#                self.histograms_ctrl['hDiMuDeltaEta_ctrl'].Fill(mupair[0].Eta() - mupair[1].Eta(), eventweight)
-#                self.histograms_ctrl['hDiMuDeltaPhi_ctrl'].Fill(mupair[0].Phi() - mupair[1].Phi(), eventweight)
-#
-#        # pick which inv mass to put in limit tree
-#        mytInvMass = ( diMuonPairs[0][0].P4() + diMuonPairs[0][1].P4() ).M() if diMuonPairs else 0.
-#
-#        #############################
-#        # Electrons #################
-#        #############################
-#        self.histograms['hNumE'].Fill(len(goodElectrons), eventweight)
-#        for e in goodElectrons:
-#            self.histograms['hEPt'].Fill(e.Pt(), eventweight)
-#            self.histograms['hEEta'].Fill(e.Eta(), eventweight)
-#            self.histograms['hEPhi'].Fill(e.Phi(), eventweight)
-#        # leading electron
-#        if len(goodElectrons) > 0:
-#            self.histograms['hLeadEPt'].Fill(goodElectrons[0].Pt(), eventweight)
-#        # subleading electron
-#        if len(goodElectrons) > 1:
-#            self.histograms['hSubLeadEPt'].Fill(goodElectrons[1].Pt(), eventweight)
-#
-#        #############################
-#        # Dielectron ################
-#        #############################
-#        for epair in diElectronPairs:
-#            diEP4 = epair[0].P4() + epair[1].P4()
-#            self.histograms['hDiEPt'].Fill(diEP4.Pt(), eventweight)
-#            self.histograms['hDiEEta'].Fill(diEP4.Eta(), eventweight)
-#            self.histograms['hDiEPhi'].Fill(diEP4.Phi(), eventweight)
-#            self.histograms['hDiEInvMass'].Fill(diEP4.M(), eventweight)
-#            self.histograms['hDiEDeltaPt'].Fill(epair[0].Pt() - epair[1].Pt(), eventweight)
-#            self.histograms['hDiEDeltaEta'].Fill(epair[0].Eta() - epair[1].Eta(), eventweight)
-#            self.histograms['hDiEDeltaPhi'].Fill(epair[0].Phi() - epair[1].Phi(), eventweight)
-#
-#
-#        #############################
-#        # Jets ######################
-#        #############################
-#        self.histograms['hNumJets'].Fill(len(goodJets), eventweight)
-#        self.histograms['hNumBJets'].Fill(len(goodBJets), eventweight)
-#        for jet in goodJets:
-#            self.histograms['hJetPt'].Fill(jet.Pt(), eventweight)
-#            self.histograms['hJetEta'].Fill(jet.Eta(), eventweight)
-#            self.histograms['hJetPhi'].Fill(jet.Phi(), eventweight)
-#        # leading jet
-#        if len(goodJets) > 0:
-#            self.histograms['hLeadJetPt'].Fill(goodJets[0].Pt(), eventweight)
-#        # subleading jet
-#        if len(goodJets) > 1:
-#            self.histograms['hSubLeadJetPt'].Fill(goodJets[1].Pt(), eventweight)
-#
-#        #############################
-#        # Dijet #####################
-#        #############################
-#        for jetpair in diJetPairs:
-#            diJetP4 = jetpair[0].P4() + jetpair[1].P4()
-#            self.histograms['hDiJetPt'].Fill(diJetP4.Pt(), eventweight)
-#            self.histograms['hDiJetEta'].Fill(diJetP4.Eta(), eventweight)
-#            self.histograms['hDiJetPhi'].Fill(diJetP4.Phi(), eventweight)
-#            self.histograms['hDiJetInvMass'].Fill(diJetP4.M(), eventweight)
-#            self.histograms['hDiJetDeltaPt'].Fill(jetpair[0].Pt() - jetpair[1].Pt(), eventweight)
-#            self.histograms['hDiJetDeltaEta'].Fill(jetpair[0].Eta() - jetpair[1].Eta(), eventweight)
-#            self.histograms['hDiJetDeltaPhi'].Fill(jetpair[0].Phi() - jetpair[1].Phi(), eventweight)
-#
-#
-#        #############################
-#        # MET #######################
-#        #############################
-#        self.histograms['hMET'].Fill(self.met.Et(), eventweight)
-#        self.histograms['hMETPhi'].Fill(self.met.Phi(), eventweight)
-#
-#
-#
-#
-#
-#
         pairindex1, pairindex2 = self.dimuon_pairs[0]
         muon1 = self.good_muons[pairindex1]
         muon2 = self.good_muons[pairindex2]
         dimuonobj = muon1.P4() + muon2.P4()
 
+        # pick which inv mass to put in limit tree
+
         mytInvMass = dimuonobj.M()
 
-        passes_vh = check_vh_preselection(self)
-        if not passes_vh: return
+        # decide whether to fill control plots
+        fill_control_plots = mytInvMass > self.sigHigh or mytInvMass < self.sigLow
+
+        ##########################################################
+        #                                                        #
+        # Fill them histograms                                   #
+        #                                                        #
+        ##########################################################
+
+        # fill base histograms
+        fill_base_histograms(self, eventweight, fill_control_plots)
+
+        # fill extra histograms
+        #if len(self.good_muons)==3:
+        #    self.histograms['hMetMtWithMu'].Fill(self.met.MtWith(mu), eventweight)
+
+
         ##########################################################
         #                                                        #
         # Determine category                                     #
@@ -421,13 +289,6 @@ class Ana2Mu(AnalysisBase):
     #    self.ftreeCat0.Fill()
     #    self.fnumCat0 += 1
 
-        ## debug
-        #if (self.event.Number() % 10):
-        #    self.ftreeCat0.Fill()
-        #    self.fnumCat0 += 1
-        #else:
-        #    self.ftreeCat2.Fill()
-        #    self.fnumCat2 += 1
 
         for cat in self.categories:
             if 'Category{0}'.format(this_cat) not in cat: continue
@@ -442,7 +303,7 @@ class Ana2Mu(AnalysisBase):
         logging.info('Category3 (Z_tau_h) events = {0}'.format(self.fnumCat3))
         logging.info('Category4 (Z_mu_h) events  = {0}'.format(self.fnumCat4))
         logging.info('Category5 (Z_e_h) events   = {0}'.format(self.fnumCat5))
-        logging.info('Bucket events    = {0}'.format(self.fnumBucket))
+        logging.info('Bucket events = {0}'.format(self.fnumBucket))
 
 
 

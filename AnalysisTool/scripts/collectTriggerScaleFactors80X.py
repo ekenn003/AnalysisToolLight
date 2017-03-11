@@ -18,7 +18,7 @@ def main():
     '''
 
     cmsswversion = '80X'
-    pog_filename3 = 'EfficienciesAndSF_Period3.root'
+    pog_filename3 = 'EfficienciesAndSF_RunBtoF.root'
     pog_filename4 = 'EfficienciesAndSF_Period4.root'
 
     sf_dir = '{0}/src/AnalysisToolLight/AnalysisTool/data/scalefactors'.format(os.environ['CMSSW_BASE'])
@@ -33,12 +33,8 @@ def main():
     lumi_Hv2 = 8.285
     lumi_Hv3 = 0.217
 
-    # Period1
-
-    # Period2
-
     # Period3
-    lumi_3 = lumi_F
+    lumi_3 = lumi_Bv2 + lumi_C + lumi_D + lumi_E + lumi_F
     # Period4
     lumi_4 = lumi_G + lumi_Hv2 + lumi_Hv3
     # totals
@@ -107,10 +103,20 @@ def main():
             MChist.SetBinContent(bx, by, mcbincontent)
             MChist.SetBinError(bx, by, mcbinerror)
 
+    MChist_BCDEF = mchist3.Clone('effMC_BCDEF')
+    MChist_GH    = mchist4.Clone('effMC_GH')
+
+    DAhist_BCDEF = mchist3.Clone('effDA_BCDEF')
+    DAhist_GH    = dahist4.Clone('effDA_GH')
+
     # save result
     outfile.cd()
     MChist.Write()
     DAhist.Write()
+    MChist_BCDEF.Write()
+    MChist_GH.Write()
+    DAhist_BCDEF.Write()
+    DAhist_GH.Write()
     outfile.Close()
     print '\nCreated file {0}'.format(output_filename)
     pog_file3.Close()

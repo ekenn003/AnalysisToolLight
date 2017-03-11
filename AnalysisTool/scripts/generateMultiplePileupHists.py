@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Run me with:
-#     python generatePileupHist.py -version "76X"
+#     python generateMultiplePileupHists.py -version "80X"
 #
 
 import os, sys
@@ -14,7 +14,8 @@ def getMixingProb(version, pudir):
     if version == '76X': 
         mixfile = 'mix_2015_25ns_FallMC_matchData_PoissonOOTPU_cfi.py'
     elif version == '80X':
-        mixfile = 'mix_2016_25ns_SpringMC_PUScenarioV1_PoissonOOTPU_cfi.py'
+        #mixfile = 'mix_2016_25ns_SpringMC_PUScenarioV1_PoissonOOTPU_cfi.py'
+        mixfile = 'mix_2016_25ns_Moriond17MC_PoissonOOTPU_cfi.py'
     else: raise ValueError('Choices for version are 76X and 80X')
 
     mixfile = '{0}/{1}'.format(pudir, mixfile)
@@ -37,6 +38,7 @@ def getMixingProb(version, pudir):
                         #print 'reached bin {0}, breaking'.format(numbins)
                         break
                     thisbin = ''.join(c for c in line.rstrip() if (c.isdigit() or c in ['e', '-', '.']))
+                    print 'bin ' + str(l) + ' = ' + str(thisbin)
                     pileup_dist += [float(thisbin)]
 
     return pileup_dist
@@ -50,9 +52,11 @@ def main(argv=None):
 
     print 'version = ' + cmsswversion
 
+    tail = 'new'
+
     hist_name = 'pileup'
     pileup_dir = '{0}/src/AnalysisToolLight/AnalysisTool/data/pileup'.format(os.environ['CMSSW_BASE'])
-    output_filename = '{0}/pileup_{1}_68-75.root'.format(pileup_dir, cmsswversion)
+    output_filename = '{0}/pileup_{1}_{2}.root'.format(pileup_dir, cmsswversion, tail)
 
     pileup_dist = getMixingProb(cmsswversion, pileup_dir)
     rootfile = ROOT.TFile(output_filename,'recreate')
@@ -66,8 +70,16 @@ def main(argv=None):
     
     # read data
     #for datatype in ['','_up','_down','_69000','_71000']:
-    #for datatype in ['_68000','_69000','_70000','_70500','_71000','_71500','_72000','_72500','_73000','_74000','_75000']:
-    for datatype in ['_68000','_68500','_69000','_69500','_70000','_70500','_71000','_71500','_72000','_72500','_73000','_74000']:
+    xseclist = [
+        '_63500',
+        '_63750',
+        '_64000',
+        '_64250',
+        '_64500',
+        '_64750',
+        '_65000',
+    ]
+    for datatype in xseclist:
         data_filename = '{0}/PileUpData{1}{2}.root'.format(pileup_dir, cmsswversion, datatype)
         datafile = ROOT.TFile(data_filename)
         histdata = datafile.Get(hist_name)

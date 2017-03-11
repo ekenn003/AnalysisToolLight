@@ -4,13 +4,70 @@ import time
 import math
 import subprocess
 from AnalysisToolLight.AnalysisTool.batch.batch_helper import *
-from AnalysisToolLight.AnalysisTool.batch.datasets import *
+from AnalysisToolLight.AnalysisTool.datasets import *
 
+
+#SENDEMAIL = True
+SENDEMAIL = False
 
 # Analysis to run #######################
 ANALYSIS = '2Mu'
+
 #version = '76X'
 version = '80X'
+
+dsetstouse = [
+
+#### 76X ####
+#    # data
+#    'SingleMuon_Run2015C',
+#    'SingleMuon_Run2015D',
+#    # signal
+#    'GluGlu_HToMuMu',
+#    'VBF_HToMuMu',
+#    # background
+#    'DYJetsToLL',
+#    'TTJets',
+#    'TTZToLLNuNu',
+#    'WWTo2L2Nu',
+#    'WZTo2L2Q',
+#    'WZTo3LNu',
+#    'ZZTo2L2Nu',
+#    'ZZTo2L2Q',
+#    'ZZTo4L',
+
+#### 80X ####
+##### data
+#    'SingleMuon_Run2016B',
+    'SingleMuon_Run2016Bv3',
+    'SingleMuon_Run2016C',
+    'SingleMuon_Run2016D',
+    'SingleMuon_Run2016E',
+    'SingleMuon_Run2016F',
+    'SingleMuon_Run2016G',
+    'SingleMuon_Run2016Hv2',
+    'SingleMuon_Run2016Hv3',
+##### signal
+#    #'GluGlu_HToMuMu',
+#    'WMinusH_HToMuMu',
+#    'WPlusH_HToMuMu',
+#    #'VBF_HToMuMu',
+#    'ZH_HToMuMu',
+##### background
+    'DYJetsToLL',
+    'TTJets',
+    #'WWTo2L2Nu',
+#    'WZTo2L2Q',
+#    'WZTo3LNu',
+#    #'ZZTo2L2Nu',
+#    #'ZZTo2L2Q',
+#    'ZZTo4L',
+#    'WWW',
+#    'WWZ',
+#    'WZZ',
+#    'ZZZ',
+
+]
 
 # Options ###############################
 RESULTSDIR='{0}/2Mu/batch/results{1}'.format(BASEDIR, version)
@@ -36,8 +93,15 @@ def main():
     elif '80X' in version: options['datasets'] = datasets80X
     datasets = options['datasets']
 
+    for d in dsetstouse:
+        if d not in datasets:
+            raise ValueError('"{0}" won\'t be submitted'.format(d))
+
+
     # loop over datasets and make input files lists, sub scripts
     for dset in datasets:
+        print 'checking ' + str(dset)
+        if not (dset in dsetstouse): continue
         print '{0}:'.format(dset)
 
         # calculate number of jobs to run
@@ -74,15 +138,14 @@ def main():
     # submit jobs
     print '\nSubmitting jobs...'
     for dset in datasets:
+        if not (dset in dsetstouse): continue
         njobs = datasets[dset]['njobs']
         for n in xrange(0, njobs):
             scriptname = '{4}/job_{0}_{1}_{2}of{3}.sh'.format(dset, ANALYSIS, n+1, njobs, tmpdir)
-            jobname = '2Mu-{0}_{2}{1}'.format(dset, '' if njobs==1 else '_{0}'.format(n+1), version[:-1])
-            submitcommand = 'LSB_JOB_REPORT_MAIL=N bsub -q 8nh -J {0} < {1}'.format(jobname, scriptname)
+            jobname = '{3}-{0}_{2}{1}'.format(dset, '' if njobs==1 else '_{0}'.format(n+1), version[:-1], ANALYSIS)
+            submitcommand = '{2}bsub -q 8nh -J {0} < {1}'.format(jobname, scriptname, '' if SENDEMAIL else 'LSB_JOB_REPORT_MAIL=N ')
             print submitcommand
 
-# debug
-#            if 'SingleMuon' in jobname: os.system(submitcommand)
             os.system(submitcommand)
 
             print

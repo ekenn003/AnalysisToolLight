@@ -1,8 +1,8 @@
 #!/bin/bash
 # chmod me and run me with ./getPileupDists.sh
 
-v="76X"
-#v="80X"
+#v="76X"
+v="80X"
 
 ##############################
 # Common                     #
@@ -33,14 +33,16 @@ if [ $v == "76X" ]; then
 elif [ $v == "80X" ]; then
 
     # Data ###
-    lumimask="/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Cert_271036-275125_13TeV_PromptReco_Collisions16_JSON.txt"
+    lumimask="/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt"
     pileupjson="/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/pileup_latest.txt"
 
     # MC #####
-    # 80X sample with startup pileup
     mixurl="https://raw.githubusercontent.com/cms-sw/cmssw/CMSSW_8_0_X/SimGeneral/MixingModule/python/"
-    mixfile="mix_2016_25ns_SpringMC_PUScenarioV1_PoissonOOTPU_cfi.py"
-    minbias=69200
+    # 80X sample with startup pileup
+    #mixfile="mix_2016_25ns_SpringMC_PUScenarioV1_PoissonOOTPU_cfi.py"
+    # moriond17 MC
+    mixfile="mix_2016_25ns_Moriond17MC_PoissonOOTPU_cfi.py"
+    minbias=64750
 
 ##############################
 # Those are the only choices #

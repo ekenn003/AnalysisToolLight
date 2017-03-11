@@ -23,8 +23,7 @@ datasets76X = {
 
 datasets80X = {
     # data
-    'SingleMuon_Run2016B' : { 'njobs' : 5*f },
-    'SingleMuon_Run2016Bv3' : { 'njobs' : 3*f },
+    'SingleMuon_Run2016Bv2' : { 'njobs' : 3*f },
     'SingleMuon_Run2016C' : { 'njobs' : 5*f },
     'SingleMuon_Run2016D' : { 'njobs' : 5*f },
     'SingleMuon_Run2016E' : { 'njobs' : 5*f },

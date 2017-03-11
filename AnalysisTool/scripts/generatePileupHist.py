@@ -14,7 +14,8 @@ def getMixingProb(version, pudir):
     if version == '76X': 
         mixfile = 'mix_2015_25ns_FallMC_matchData_PoissonOOTPU_cfi.py'
     elif version == '80X':
-        mixfile = 'mix_2016_25ns_SpringMC_PUScenarioV1_PoissonOOTPU_cfi.py'
+        #mixfile = 'mix_2016_25ns_SpringMC_PUScenarioV1_PoissonOOTPU_cfi.py'
+        mixfile = 'mix_2016_25ns_Moriond17MC_PoissonOOTPU_cfi.py'
     else: raise ValueError('Choices for version are 76X and 80X')
 
     mixfile = '{0}/{1}'.format(pudir, mixfile)

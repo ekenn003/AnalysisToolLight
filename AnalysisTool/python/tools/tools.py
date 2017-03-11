@@ -15,8 +15,8 @@ INF = float('Inf') # infinity
 # misc functions
 
 ## ___________________________________________________________
-def DeltaPhi(c0, c1):
-    result = c0.Phi() - c1.Phi()
+def delta_phi(c0, c1):
+    result = c0.phi() - c1.phi()
     while result>ROOT.TMath.Pi():
         result -= 2*ROOT.TMath.Pi()
     while result <= -ROOT.TMath.Pi():
@@ -24,9 +24,9 @@ def DeltaPhi(c0, c1):
     return result
 
 ## ___________________________________________________________
-def DeltaR(c0, c1):
-    deta = c0.Eta() - c1.Eta()
-    dphi = DeltaPhi(c0, c1)
+def delta_r(c0, c1):
+    deta = c0.eta() - c1.eta()
+    dphi = delta_phi(c0, c1)
     return ROOT.TMath.Sqrt(deta**2+dphi**2)
 
 
@@ -35,7 +35,7 @@ def DeltaR(c0, c1):
 # run:lumi:event number
 # eg. 1:239472:60085100
 ## ___________________________________________________________
-def EventIsOnList(run, lumi, event, evtlist):
+def event_is_on_list(run, lumi, event, evtlist):
     with open(evtlist,'r') as f:
         for line in f.readlines():
             info = line.strip().split(':')

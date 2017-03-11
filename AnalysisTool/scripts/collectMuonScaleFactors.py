@@ -87,6 +87,7 @@ def main(argv=None):
         muonisoeffs[cut]['RATIO_BCDEF'] = ROOT.TH2F(pog_iso_file0.Get(muonisoeffs[cut]['hdir']))
         muonisoeffs[cut]['RATIO_BCDEF'].SetName(cut)
         muonisoeffs[cut]['RATIO_GH'] = ROOT.TH2F(pog_iso_file1.Get(muonisoeffs[cut]['hdir']))
+        muonisoeffs[cut]['RATIO_BCDEF'].SetName(cut)
 
     # combine efficiencies for isolations on top of ids
     muonisoeffs['looseIso_looseID']['RATIO_BCDEF'].Multiply(muonideffs['looseID']['RATIO_BCDEF'])
@@ -113,9 +114,13 @@ def main(argv=None):
     for cut in muonideffs:
         muonideffs[cut]['RATIO'] = muonideffs[cut]['RATIO_GH'].Clone(cut)
         muonideffs[cut]['RATIO'].SetName(cut)
+        muonideffs[cut]['RATIO_BCDEF'].SetName(cut+'_BCDEF')
+        muonideffs[cut]['RATIO_GH'].SetName(cut+'_GH')
     for cut in muonisoeffs:
         muonisoeffs[cut]['RATIO'] = muonisoeffs[cut]['RATIO_GH'].Clone(cut)
         muonisoeffs[cut]['RATIO'].SetName(cut)
+        muonisoeffs[cut]['RATIO_BCDEF'].SetName(cut+'_BCDEF')
+        muonisoeffs[cut]['RATIO_GH'].SetName(cut+'_GH')
 
     # weight efficiencies by lumi period
     for cut in muonideffs:
@@ -154,8 +159,12 @@ def main(argv=None):
     outfile.cd()
     for cut in muonideffs:
         muonideffs[cut]['RATIO'].Write()
+        muonideffs[cut]['RATIO_BCDEF'].Write()
+        muonideffs[cut]['RATIO_GH'].Write()
     for cut in muonisoeffs:
         muonisoeffs[cut]['RATIO'].Write()
+        muonisoeffs[cut]['RATIO_BCDEF'].Write()
+        muonisoeffs[cut]['RATIO_GH'].Write()
 
     print '\nCreated file {0}'.format(output_filename)
 
