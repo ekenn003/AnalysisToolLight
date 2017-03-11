@@ -2,7 +2,7 @@ from CutFlow import *
 from Dataform import *
 import math
 import itertools
-from tools.tools import DeltaR, Z_MASS, EventIsOnList
+from tools.tools import delta_r, Z_MASS, event_is_on_list
 
 ## ___________________________________________________________
 def initialize_cutflow(analysis):
@@ -46,10 +46,8 @@ def check_event_selection(analysis):
     #############################
     # Trigger ###################
     #############################
-    # 80X MC has no HLT 
-    #exemptHLT = True if (analysis.cmsswversion=='80X' and analysis.ismc) else False
     exemptHLT = False
-    passesHLT = analysis.event.PassesHLTs(analysis.hltriggers)
+    passesHLT = analysis.event.passes_HLTs(analysis.hltriggers)
 
     # if it fails the HLT and isn't exempt, return
     if not exemptHLT:
@@ -63,10 +61,10 @@ def check_event_selection(analysis):
     isVtxNdfOK = False
     isVtxZOK = False
     for pv in analysis.vertices:
-        if not isVtxNdfOK: isVtxNdfOK = pv.Ndof() > cuts['cVtxNdf']
-        if not isVtxZOK:   isVtxZOK = pv.Z() < cuts['cVtxZ']
+        if not isVtxNdfOK: isVtxNdfOK = pv.n_dof() > cuts['cVtxNdf']
+        if not isVtxZOK:   isVtxZOK = pv.z() < cuts['cVtxZ']
         # check if it's passed
-        #if not (isVtxNdfOK and isVtxZOK): continue
+        if not (isVtxNdfOK and isVtxZOK): continue
         # save it if it did
         analysis.good_vertices += [pv]
 
@@ -93,29 +91,23 @@ def check_event_selection(analysis):
     isIDOK = False
     for muon in analysis.muons:
         # muon cuts
-        if not (muon.IsGlobal() and muon.IsTracker()): continue
+        if not (muon.is_global() and muon.is_tracker()): continue
         isGAndTr = True
-        if muon.Pt() < cuts['cMuPt']: continue
+        if muon.pt() < cuts['cMuPt']: continue
         isPtCutOK = True
-        if muon.AbsEta() > cuts['cMuEta']: continue
+        if muon.abs_eta() > cuts['cMuEta']: continue
         isEtaCutOK = True
 
         # make sure at least one HLT-matched muon passes extra cuts
         #if muon.MatchesHLTs(analysis.hltriggers) and muon.Pt() > cuts['cMuPtMax'] and muon.AbsEta() < cuts['cMuEtaMax']: nMuPtEtaMax += 1
-        if muon.Pt() > cuts['cMuPtMax'] and muon.AbsEta() < cuts['cMuEtaMax']: nMuPtEtaMax += 1
+        if muon.pt() > cuts['cMuPtMax'] and muon.abs_eta() < cuts['cMuEtaMax']: nMuPtEtaMax += 1
 
         # check isolation
-        if not (muon.CheckIso('PF_dB', cuts['cMuIso'])): continue
+        if not (muon.check_iso('PF_dB', cuts['cMuIso'])): continue
         isIsoOK = True
 
         # check muon ID
-        cMuID = cuts['cMuID']
-        isThisIDOK = False
-        if cMuID=='tight':    isThisIDOK = muon.IsTightMuon()
-        if cMuID=='tight':    isThisIDOK = muon.IsTightMuon()
-        elif cMuID=='medium': isThisIDOK = muon.IsMediumMuon()
-        elif cMuID=='loose':  isThisIDOK = muon.IsLooseMuon()
-        if not (isThisIDOK): continue
+        if not (muon.check_id(cuts['cMuID'])): continue
         isIDOK = True
 
         # if we get to this point, push muon into goodMuons
@@ -128,7 +120,7 @@ def check_event_selection(analysis):
 
     # make sure at least one muon passed extra cuts
     if nMuPtEtaMax < 1: return False
-    else: analysis.cutflow.increment('nEv_PtEtaMax')
+    analysis.cutflow.increment('nEv_PtEtaMax')
 
     if isIsoOK: analysis.cutflow.increment('nEv_Iso')
     if isIDOK: analysis.cutflow.increment('nEv_ID')
@@ -146,21 +138,23 @@ def check_event_selection(analysis):
     # loop over electrons and save the good ones
     for electron in analysis.electrons:
         # electron cuts
-        if not electron.Pt() > cuts['cEPt']: continue
-        if not electron.AbsEta() < cuts['cEEta']: continue
+        if not electron.pt() > cuts['cEPt']: continue
+        if not electron.abs_eta() < cuts['cEEta']: continue
 
         # check electron id
         # options: cutbased: IsVetoElectron, IsLooseElectron, IsMediumElectron, IsTightElectron
         #          mva: WP90_v1, WP80_v1
         electronIDOK = False
         cEID = cuts['cEID']
-        if cEID=='cbloose':    electronIDOK = electron.IsLooseElectron()
-        elif cEID=='cbmedium': electronIDOK = electron.IsMediumElectron()
-        elif cEID=='cbtight':  electronIDOK = electron.IsTightElectron()
-        elif cEID=='mva80': electronIDOK = electron.WP80_v1()
-        elif cEID=='mva90': electronIDOK = electron.WP90_v1()
+        if cEID=='cbloose':    electronIDOK = electron.is_loose()
+        elif cEID=='cbmedium': electronIDOK = electron.is_medium()
+        elif cEID=='cbtight':  electronIDOK = electron.is_tight()
 
         if not electronIDOK: continue
+
+        # sync
+        if not (electron.abs_eta() < 1.4442 or (electron.abs_eta() < 2.5 and electron.abs_eta() > 1.566)): continue
+
 
         # if we get to this point, push electron into goodElectrons
         analysis.good_electrons += [electron]
@@ -171,37 +165,37 @@ def check_event_selection(analysis):
     #############################
     # JETS ######################
     #############################
-    # initialise empty list of good jets
     # loop over jets
     for jet in analysis.jets:
         # jet cuts
-        if not jet.Pt() > cuts['cJetPt']: continue
-        if not jet.AbsEta() < cuts['cJetEta']: continue
-        if not jet.IsLooseJet(): continue
+        if jet.pt() < cuts['cJetPt']: continue
+        if jet.abs_eta() > cuts['cJetEta']: continue
+        if not jet.is_loose(): continue
 
         # jet cleaning
-        # clean jets against our selected muons, electrons, and taus:
+        # clean jets against our selected muons, electrons:
         jetIsClean = True
         for mu in analysis.good_muons:
-            if DeltaR(mu, jet) < cuts['cDeltaR']: jetIsClean = False
+            if delta_r(mu, jet) < cuts['cDeltaR']: jetIsClean = False
         for e in analysis.good_electrons:
-            if DeltaR(e, jet) < cuts['cDeltaR']: jetIsClean = False
+            if delta_r(e, jet) < cuts['cDeltaR']: jetIsClean = False
         if not jetIsClean: continue
 
         # save it            
         analysis.good_jets += [jet]
 
         # btag
-        bjetAlg = cuts['cBJetAlg']
-        if ((jet.Btag('pass'+bjetAlg)) and (jet.Pt() > cuts['cBJetEta']) and (jet.Pt() > cuts['cBJetPt'])):
+        if (jet.btag(cuts['cBJetAlg'])
+            and jet.abs_eta() < cuts['cBJetEta']
+            and jet.pt() > cuts['cBJetPt']):
             analysis.good_bjets += [jet]
 
 
     #############################
     # MET #######################
     #############################
-    evtmet = analysis.met.Et()
-    evtmetphi = analysis.met.Phi()
+    evtmet = analysis.met.et()
+    evtmetphi = analysis.met.phi()
 
 
 
@@ -231,23 +225,21 @@ def check_event_selection(analysis):
     for p in itertools.combinations(enumerate(analysis.good_muons), 2):
         (i, muon_i), (j, muon_j) = p
         # require opposite sign
-        if muon_i.Charge() * muon_j.Charge() > 0: continue
+        if muon_i.charge() * muon_j.charge() > 0: continue
         isChargeMuCutOK = True
         # require from same PV
-        if abs(muon_i.Dz() - muon_j.Dz()) > 0.14: continue
+        if abs(muon_i.dz() - muon_j.dz()) > 0.14: continue
         isSamePVMuCutOK = True
         # create composite four-vector
-        diMuonP4 = muon_i.P4() + muon_j.P4()
+        diMuonP4 = muon_i.p4() + muon_j.p4()
         # require min pT and min InvMass
         if diMuonP4.M() < cuts['cDiMuInvMass']: continue
         isInvMassMuCutOK = True
         if diMuonP4.Pt() < cuts['cDiMuPt']: continue
         isPtDiMuCutOK = True
 
-        #thispair = pair if pair[0].Pt() > pair[1].Pt() else (pair[1], pair[0])
-        goodpair = (i, j) if muon_i.Pt() > muon_j.Pt() else (j, i)
+        goodpair = (i, j) if muon_i.pt() > muon_j.pt() else (j, i)
         analysis.dimuon_pairs += [goodpair]
-        #if (diMuonP4.M() >= analysis.syncLow and diMuonP4.M() <= analysis.syncHigh): analysis.nSyncEvents += 1
 
     # leftover efficiency counters
     if isChargeMuCutOK: analysis.cutflow.increment('nEv_ChargeDiMu')
@@ -270,11 +262,11 @@ def check_event_selection(analysis):
         (i, elec_i), (j, elec_j) = p
 
         # electron pair cuts
-        if elec_i.Charge() * elec_j.Charge() > 0: continue
-        if abs(elec_i.Dz() - elec_j.Dz()) > 0.14: continue
+        if elec_i.charge() * elec_j.charge() > 0: continue
+        if abs(elec_i.dz() - elec_j.dz()) > 0.14: continue
 
         #thispair = pair if pair[0].Pt() > pair[1].Pt() else (pair[1], pair[0])
-        goodpair = (i, j) if elec_i.Pt() > elec_j.Pt() else (j, i)
+        goodpair = (i, j) if elec_i.pt() > elec_j.pt() else (j, i)
         analysis.dielectron_pairs += [goodpair]
 
 
@@ -282,7 +274,15 @@ def check_event_selection(analysis):
     #############################
     # DIJET PAIRS ###############
     #############################
-    if len(analysis.good_jets) > 1: analysis.dijet_pairs += [(0, 1)]
+    #if len(analysis.good_jets) > 1: analysis.dijet_pairs += [(0, 1)]
+
+    for p in itertools.combinations(enumerate(analysis.good_jets), 2):
+        (i, jet_i), (j, jet_j) = p
+
+        goodpair = (i, j) if jet_i.pt() > jet_j.pt() else (j, i)
+        analysis.dijet_pairs += [goodpair]
+
+
 
 
 
@@ -313,37 +313,3 @@ def check_vh_preselection(analysis):
     analysis.cutflow.increment('nEv_3or4Lep')
     return True
 
-
-####
-###### ___________________________________________________________
-####def calculate_event_weight(analysis):
-####
-####break
-####
-####    ##########################################################
-####    # Include pileup reweighting                             #
-####    ##########################################################
-####    eventweight = 1.
-####
-####    if not analysis.isdata:
-####        eventweight = analysis.event.GenWeight()
-####        if analysis.doPileupReweighting:
-####            eventweight *= analysis.puweights.getWeight(analysis.event.NumTruePileUpInteractions())
-####
-####
-####    ##########################################################
-####    #                                                        #
-####    # Update event weight (MC only)                          #
-####    #                                                        #
-####    ##########################################################
-####    if not analysis.isdata:
-####        if analysis.includeTriggerScaleFactors:
-####            eventweight *= analysis.hltweights.getScale(goodMuons)
-####        #else: eventweight *= 0.93
-####        if analysis.includeLeptonScaleFactors:
-####            eventweight *= analysis.muonweights.getIdScale(goodMuons, cuts['cMuID'])
-####            # NB: the below only works for PF w/dB isolation
-####            eventweight *= analysis.muonweights.getIsoScale(goodMuons, cuts['cMuID'], cuts['cMuIso'])
-####
-####
-####

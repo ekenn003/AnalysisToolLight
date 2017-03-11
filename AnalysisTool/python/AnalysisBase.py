@@ -12,6 +12,11 @@ from xsec import xsecs
 from histograms import *
 from Preselection import *
 from prettytable import PrettyTable
+from collections import namedtuple
+
+## ___________________________________________________________
+EventWeight = namedtuple('EventWeight', 
+    'full base_event_weight pileup_factor trigger_factor lepton_factor')
 
 ## ___________________________________________________________
 class AnalysisBase(object):
@@ -22,10 +27,11 @@ class AnalysisBase(object):
     def __init__(self, args):
         # set up logging info
         logging.getLogger('Analysis')
-        logging.basicConfig(level=logging.INFO, stream=sys.stderr, format='[%(asctime)s]   %(message)s', datefmt='%Y-%m-%d %H:%M')
+        logging.basicConfig(level=logging.INFO, stream=sys.stderr,
+            format='[%(asctime)s]   %(message)s', datefmt='%Y-%m-%d %H:%M')
         logging.info('Beginning job...')
 
-        # set defaults. These can be overridden with command line arguments (after adding to Base)
+        # set defaults. These can be overridden with command line arguments
         # inputs
         self.filenames = []
         self.treedir  = 'makeroottree'
@@ -34,7 +40,8 @@ class AnalysisBase(object):
         self.treename = 'AC1B'
         input_file_list = args.input_file_list
         self.max_events = args.nevents
-        self.data_dir   = '{0}/src/AnalysisToolLight/AnalysisTool/data'.format(os.environ['CMSSW_BASE'])
+        self.data_dir   = ('{0}/src/AnalysisToolLight/AnalysisTool'
+                           '/data'.format(os.environ['CMSSW_BASE']))
         # outputs
         self.output = args.output_filename
 
@@ -46,9 +53,10 @@ class AnalysisBase(object):
                 if not fname_: continue
 
                 # personal storage options
-                if fname_.startswith('T2_CH_CERN'):   fname_ = 'root://eoscms.cern.ch/{0}'.format(fname_[10:])
-                elif fname_.startswith('T2_US_UCSD'): fname_ = 'root://xrootd.t2.ucsd.edu/{0}'.format(fname_[10:])
-                #elif fname_.startswith('T2_US_UCSD'): fname_ = 'root://cms-xrd-global.cern.ch/{0}'.format(fname_[10:])
+                if fname_.startswith('T2_CH_CERN'):
+                    fname_ = 'root://eoscms.cern.ch/{0}'.format(fname_[10:])
+                elif fname_.startswith('T2_US_UCSD'):
+                    fname_ = 'root://xrootd.t2.ucsd.edu/{0}'.format(fname_[10:])
 
                 self.filenames += [fname_]
 
@@ -66,7 +74,8 @@ class AnalysisBase(object):
         self.ismc = not self.isdata
         self.cmsswversion = str(infotree.CMSSW_version)
         # strip " and / from parent dataset name
-        self.dataset_source = ''.join( c for c in str(infotree.source_dataset) if c not in '"/')
+        self.dataset_source = ''.join(c for c in str(infotree.source_dataset)
+                                      if c not in '"/')
 
         tfile0.Close('R')
 
@@ -108,10 +117,12 @@ class AnalysisBase(object):
             infochain.GetEntry(entry)
             self.nevents_to_process += infochain.nevents_filled
 
-        logging.info('    Number of events found: {0} in {1} lumi sections in {2} files'.format(self.nevents_to_process, self.numlumis, len(self.filenames)))
+        logging.info(('    Number of events found: {0} in {1} lumi sections '
+            'in {2} files').format(self.nevents_to_process, self.numlumis, len(self.filenames)))
         logging.info('Sample will be processed as {0}'.format('DATA' if self.isdata else 'MC'))
         if self.ismc:
-            logging.info('Sample has been identified as coming from {0} with a nominal cross section of {1} pb.'.format(self.dataset_source, self.nom_xsec))
+            logging.info(('Sample has been identified as coming from {0} with a nominal cross '
+                'section of {1} pb.').format(self.dataset_source, self.nom_xsec))
         else:
             logging.info('Sample has been identified as coming from {0}'.format(self.dataset_source))
 
@@ -125,11 +136,11 @@ class AnalysisBase(object):
         # initialise list of category trees
         self.category_trees = []
         # initialise some other options that will be overridden in the derived class
-        self.pathForTriggerScaleFactors = ''
-        self.doPileupReweighting = False
-        self.includeTriggerScaleFactors = False
-        self.includeLeptonScaleFactors = False
-        self.useRochesterCorrections = False
+        self.path_for_trigger_scale_factors = ''
+        self.do_pileup_reweighting = False
+        self.include_trigger_scale_factors = False
+        self.include_lepton_scale_factors = False
+        self.use_rochester_corrections = False
 
         # summary tree
         self.summary_tree = TTree('Summary', 'Summary')
@@ -172,25 +183,27 @@ class AnalysisBase(object):
         # load pileup info and other scale factors               #
         #                                                        #
         ##########################################################
-        # pileup
-        if self.doPileupReweighting:
-            logging.info('')
-            logging.info('Loading pileup info...')
-            self.puweights = PileupWeights(self.cmsswversion, self.data_dir)
+        if self.ismc:
+            # pileup
+            if self.do_pileup_reweighting:
+                logging.info('')
+                logging.info('Loading pileup info...')
+                self.puweights = PileupWeights(self.cmsswversion, self.data_dir)
 
-        # trigger scale factors
-        if self.includeTriggerScaleFactors:
-            logging.info('')
-            logging.info('Loading trigger scale factor info...')
-            self.hltweights = HLTScaleFactors(self.cmsswversion, self.data_dir, self.pathForTriggerScaleFactors)
+            # trigger scale factors
+            if self.include_trigger_scale_factors:
+                logging.info('')
+                logging.info('Loading trigger scale factor info...')
+                self.hltweights = HLTScaleFactors(self.cmsswversion, self.data_dir, self.path_for_trigger_scale_factors)
 
-        # lepton scale factors
-        if self.includeLeptonScaleFactors:
-            logging.info('')
-            logging.info('Loading lepton scale factor info...')
-            self.muonweights = MuonScaleFactors(self.cmsswversion, self.data_dir)
+            # lepton scale factors
+            if self.include_lepton_scale_factors:
+                logging.info('')
+                logging.info('Loading lepton scale factor info...')
+                self.muonweights = MuonScaleFactors(self.cmsswversion, self.data_dir)
 
         self.eventsprocessed = 0
+        max_events_reached = False
         # how often (in number of events) should we print out progress updates?
         updateevery = 1000
 
@@ -210,6 +223,7 @@ class AnalysisBase(object):
             # loop over each event (row)
             for row in tree:
                 self.eventsprocessed += 1
+
 
                 # progress updates
                 if self.eventsprocessed==2:
@@ -240,10 +254,23 @@ class AnalysisBase(object):
                     )
 
 
+
+                # sync sync sync sync sync
+                # sync sync sync sync sync
+                # sync sync sync sync sync sync
+                # everybodyyyyyyy
+#                if self.eventsprocessed < 123000: continue
+
+
+
+
+
+
+
                 # load required collections
                 self.event     = Event(row, self.sumweights)
                 self.vertices  = [Vertex(row, i) for i in range(row.primvertex_count)]
-                self.muons     = [Muon(row, i, self.useRochesterCorrections) for i in range(row.muon_count)]
+                self.muons     = [Muon(row, i, self.use_rochester_corrections) for i in range(row.muon_count)]
                 # load optional collections
                 self.electrons = [Electron(row, i) for i in range(row.electron_count)] if hasattr(row,'electron_count') else []
                 self.photons   = [Photon(row, i) for i in range(row.photon_count)] if hasattr(row,'photon_count') else []
@@ -265,15 +292,21 @@ class AnalysisBase(object):
                 # do the event analysis!
                 # call the per_event_action method (which is overridden in the derived class)
                 self.cutflow.increment('nEv_Skim')
+
                 passes_event_selection = check_event_selection(self)
                 if not passes_event_selection: continue
+
                 passes_preselection = check_preselection(self)
                 if not passes_preselection: continue
 
                 self.per_event_action()
 
                 # debug
-                if (self.max_events is not -1) and (self.eventsprocessed >= self.max_events): break
+                if (self.max_events is not -1) and (self.eventsprocessed >= self.max_events):
+                    max_events_reached = True
+                    break
+
+            if max_events_reached: break
 
         ##########################################################
         #                                                        #
@@ -348,10 +381,6 @@ class AnalysisBase(object):
         for tree in self.category_trees:
             tree.Write()
 
-        sumw = TH1F('hSumWeights', 'hSumWeights', 3, 0, 3)
-        sumw.SetBinContent(1, sumw_)
-        sumw.Write()
-
         #for hist in self.histograms:
         for hist in sorted(self.histograms):
             self.histograms[hist].Write()
@@ -406,30 +435,30 @@ class AnalysisBase(object):
 
     ## _______________________________________________________
     def calculate_event_weight(self):
-        ##########################################################
-        # Include pileup reweighting                             #
-        ##########################################################
-        eventweight = 1.
+        '''
+        Returns the following named tuple:
+            EventWeight = (base_event_weight, pileup_factor, trigger_factor, lepton_factor)
+        Final event weight can be calculated by multiplying all 4 numbers together.
+        '''
+        if self.isdata: return EventWeight(1., 1., 1., 1., 1.)
 
-        if not self.isdata:
-            eventweight = self.event.GenWeight()
-            if self.doPileupReweighting:
-                eventweight *= self.puweights.getWeight(self.event.NumTruePileUpInteractions())
+        # lepton scale factors
+        base_event_weight = self.event.gen_weight()
 
+        pileup_factor = self.puweights.get_weight(self.event.num_true_pileup_interactions(),
+            self.cuts['PU_scheme']) if self.do_pileup_reweighting else 1.
 
-        ##########################################################
-        # Update event weight (MC only)                          #
-        ##########################################################
-        if not self.isdata:
-            if self.includeTriggerScaleFactors:
-                eventweight *= self.hltweights.getScale(self.good_muons)
-            #else: eventweight *= 0.93
-            if self.includeLeptonScaleFactors:
-                eventweight *= self.muonweights.getIdScale(self.good_muons, self.cuts['cMuID'])
-                # NB: the below only works for PF w/dB isolation
-                eventweight *= self.muonweights.getIsoScale(self.good_muons, self.cuts['cMuID'], self.cuts['cMuIso'])
+        trigger_factor = self.hltweights.get_scale(self.good_muons,
+            self.cuts['SF_scheme']) if self.include_trigger_scale_factors else 1.
 
-        return eventweight
+        lepton_factor = self.muonweights.get_id_scale(self.good_muons, self.cuts['cMuID'],
+            self.cuts['SF_scheme']) if self.include_lepton_scale_factors else 1.
+        lepton_factor *= self.muonweights.get_iso_scale(self.good_muons, self.cuts['cMuID'],
+            self.cuts['cMuIso'], self.cuts['SF_scheme']) if self.include_lepton_scale_factors else 1.
+
+        full = base_event_weight * pileup_factor * trigger_factor * lepton_factor
+
+        return EventWeight(full, base_event_weight, pileup_factor, trigger_factor, lepton_factor)
 
 
 
@@ -442,7 +471,8 @@ def parse_command_line(argv):
     parser.add_argument('-o', '--output_filename', type=str, help='Output file name')
     #parser.add_argument('data_dir', type=str, help='Data directory (usually AnalysisTool/data/)')
     # line below is an example of an optional argument
-    parser.add_argument('-n', '--nevents', type=int, default=-1, help='Max number of events to process (should be only used for debugging; results in incorrect sumweights)')
+    parser.add_argument('-n', '--nevents', type=int, default=-1, help=('Max number of events to '
+        'process (should be only used for debugging; results in incorrect sumweights)'))
 
     return parser.parse_args(argv)
 

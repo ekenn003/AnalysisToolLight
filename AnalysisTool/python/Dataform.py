@@ -9,9 +9,6 @@ from collections import OrderedDict, namedtuple
 
 
 ## ___________________________________________________________
-BeamSpot = namedtuple('BeamSpot', ['x', 'y', 'z', 'xwidth','ywidth','zsigma'])
-
-## ___________________________________________________________
 class Event(object):
     '''
     Event object
@@ -23,61 +20,62 @@ class Event(object):
     def _get(self, var): return getattr(self.tree, var)
 
     # methods
-    def Number(self):       return self.tree.event_nr
-    def Run(self):          return self.tree.event_run
-    def TimeUnix(self):     return self.tree.event_timeunix
-    def TimeMicroSec(self): return self.tree.event_timemicrosec
-    def LumiBlock(self):    return self.tree.event_luminosityblock
-    def Rho(self):          return self.tree.event_rho
-    # beamspot
-    def BeamSpot(self):
-        return Beamspot(self.tree.beamspot_x, self.tree.beamspot_y, self.tree.beamspot_z, self.tree.beamspot_xwidth, self.tree.beamspot_ywidth, self.tree.beamspot_zsigma)
+    def number(self):        return self.tree.event_nr
+    def run(self):           return self.tree.event_run
+    def time_unix(self):     return self.tree.event_timeunix
+    def time_microsec(self): return self.tree.event_timemicrosec
+    def lumi_block(self):    return self.tree.event_luminosityblock
+    def rho(self):           return self.tree.event_rho
     # pileup
-    def NumPileUpInteractionsMinus(self): return self.tree.numpileupinteractionsminus
-    def NumPileUpInteractions(self):      return self.tree.numpileupinteractions
-    def NumPileUpInteractionsPlus(self):  return self.tree.numpileupinteractionsplus
-    def NumTruePileUpInteractions(self):  return self.tree.numtruepileupinteractions
+    def num_pileup_interactions(self):
+        return self.tree.numpileupinteractions
+    def num_pileup_interactions_minus(self):
+        return self.tree.numpileupinteractionsminus
+    def num_pileup_interactions_plus(self):
+        return self.tree.numpileupinteractionsplus
+    def num_true_pileup_interactions(self):
+        return self.tree.numtruepileupinteractions
     # generator info
-    def GenWeight(self):    return (self.tree.genweight)
-    def GenWeightRel(self): return (self.tree.genweight/self.sumweights)
-    def GenId1(self):    return self.tree.genid1
-    def Genx1(self):     return self.tree.genx1
-    def GenId2(self):    return self.tree.genid2
-    def Genx2(self):     return self.tree.genx2
-    def GenScale(self):  return self.tree.genScale
+    def gen_weight(self): return (self.tree.genweight)
+    def gen_id1(self):    return self.tree.genid1
+    def genx1(self):      return self.tree.genx1
+    def gen_id2(self):    return self.tree.genid2
+    def genx2(self):      return self.tree.genx2
+    def gen_scale(self):  return self.tree.genScale
 
     ## _______________________________________________________
-    def PrintAvailableTauDiscriminators(self):
+    def print_available_tau_discriminators(self):
         print 'Available discriminators are:'
         for x in self.tree.GetListOfBranches():
             if 'tau_tdisc_' in x.GetName(): print '    ' + x.GetName()[10:]
         print '\n'
 
     ## _______________________________________________________
-    def PrintAvailableBtags(self):
+    def print_available_btags(self):
         print 'Available btags are:'
         for x in self.tree.GetListOfBranches():
             if 'ak4pfchsjet_btag_' in x.GetName(): print '    ' + x.GetName()[17:]
         print '\n'
 
     ## _______________________________________________________
-    # event.PassesHLTs returns True if any of the triggers fired
-    def PassesHLTs(self, paths):
-        # NB: MC has no trigger info in most 80X!
+    def passes_HLTs(self, paths):
+        ''' Returnsbool whether any of the triggers fired
+        '''
+        result = False
         for pathname in paths:
             try:
-                result = self._get('passes_'+pathname)
-                if result: return True
+                result = result or self._get('passes_'+pathname)
             except AttributeError:
                 print 'PassesHLTs: Event HLT path "' + pathname + '" not available.'
                 #print 'Available paths are:'
                 #for x in self.tree.GetListOfBranches():
-                #    if 'event_hlt_passes_' in x.GetName(): print '    ' + x.GetName()[17:]
+                #    if 'event_hlt_passes_' in x.GetName():
+                #        print '    ' + x.GetName()[17:]
                 #print '\n'
-        return False
+        return result
 
     ## _______________________________________________________
-    def AnyIsPrescaled(self, paths):
+    def any_is_prescaled(self, paths):
         # initialise empty map of results
         results = {}
         for pathname in paths:
@@ -85,10 +83,12 @@ class Event(object):
                 prescale = self._get('prescale_hlt_'+pathname)
             except AttributeError:
                 pass
-                #print 'AnyIsPrescaled: Event HLT path "{0}" not available.'.format(pathname)
+                #print 'AnyIsPrescaled: '
+                #      'Event HLT path "{0}" not available.'.format(pathname)
                 #print 'Available paths are:'
                 #for x in self.tree.GetListOfBranches():
-                #    if 'event_hlt_passes_' in x.GetName(): print '    ' + x.GetName()[17:]
+                #    if 'event_hlt_passes_' in x.GetName():
+                #        print '    ' + x.GetName()[17:]
                 #print '\n'
                 #raise
             # only store results that are prescaled
@@ -100,13 +100,12 @@ class Event(object):
         return True if results else False
 
     ## _______________________________________________________
-    def GetPrescale(self, pathname):
-        prescale = -1
+    def get_prescale(self, pathname):
         try:
-            prescale = self._get('prescale_hlt_'+pathname)
+            return self._get('prescale_hlt_'+pathname)
         except AttributeError:
             pass
-        return prescale
+        return -1
 
 
 ## ___________________________________________________________
@@ -119,22 +118,23 @@ class Vertex(object):
         self.tree = tree
         self.candName = 'primvertex'
         self.entry = entry
-    def _get(self, var): return getattr(self.tree, '{0}_{1}'.format('primvertex', var))[self.entry]
+    def _get(self, var): 
+        return getattr(self.tree, '{0}_{1}'.format('primvertex', var))[self.entry]
 
     # methods
-    def X(self): return self._get('x')
-    def Y(self): return self._get('y')
-    def Z(self): return self._get('z')
-    def XError(self): return self._get('xError')
-    def YError(self): return self._get('yError')
-    def ZError(self): return self._get('zError')
-    def Chi2(self):     return self._get('chi2')
-    def Ndof(self):     return self._get('ndof')
-    def NTracks(self):  return self._get('ntracks')
-    def NormChi2(self): return self._get('normalizedChi2')
-    def IsValid(self):  return self._get('isvalid')
-    def IsFake(self):   return self._get('isfake')
-    def Rho(self):      return self._get('rho')
+    def x(self): return self._get('x')
+    def y(self): return self._get('y')
+    def z(self): return self._get('z')
+    def x_error(self): return self._get('xError')
+    def y_error(self): return self._get('yError')
+    def z_error(self): return self._get('zError')
+    def chi2(self):      return self._get('chi2')
+    def n_dof(self):     return self._get('ndof')
+    def n_tracks(self):  return self._get('ntracks')
+    def norm_chi2(self): return self._get('normalizedChi2')
+    def is_valid(self):  return self._get('isvalid')
+    def is_fake(self):   return self._get('isfake')
+    def rho(self):       return self._get('rho')
 
 
 ## ___________________________________________________________
@@ -147,25 +147,27 @@ class METBase(object):
         self.tree = tree
         self.metName = metName
         self.entry = entry
-    def _get(self, var): return getattr(self.tree, '{0}_{1}'.format(self.metName, var))[self.entry]
+    def _get(self, var):
+        return getattr(self.tree, '{0}_{1}'.format(self.metName, var))[self.entry]
 
     # methods
-    def E(self):  return TVector3(self._get('ex'), self._get('ey'), 0.)
-    def Et(self): return self._get('et')
-    def P4(self): 
+    def e(self):  return TVector3(self._get('ex'), self._get('ey'), 0.)
+    def et(self): return self._get('et')
+    def p4(self): 
         thisp4 = TLorentzVector()
         thisp4.SetPtEtaPhiM(self._get('et'), 0., self._get('phi'), 0.)
         return thisp4
 
-    def Phi(self):    return self._get('phi')
-    def RawEt(self):  return self._get('rawet')
-    def RawPhi(self): return self._get('rawphi')
-    def MtWith(self, *cands):
-        myP4 = self.P4()
+    def phi(self):     return self._get('phi')
+    def raw_et(self):  return self._get('rawet')
+    def raw_phi(self): return self._get('rawphi')
+    def mt_with(self, *cands):
+        myP4 = self.p4()
         lepP4 = TLorentzVector()
-        for lep in cands: lepP4 += lep.P4()
-        # squared transverse mass of system = (met.Et + lep.Et)^2 - (met + lep).Pt)^2
-        mt = math.sqrt(abs((lepP4.Et() + myP4.Et())**2 - ((lepP4 + myP4).Pt())**2))
+        for lep in cands: lepP4 += lep.p4()
+        # squared transverse mass of system = 
+        #     (met.Et + lep.Et)^2 - (met + lep).Pt)^2
+        mt = math.sqrt(abs((lepP4.et() + myP4.et())**2 - ((lepP4 + myP4).pt())**2))
         return mt
 
 
@@ -183,32 +185,34 @@ class PFMETTYPE1(METBase):
 class CandBase(object):
     '''
     Basic objects from reco::Candidate objects
-    P4 = TLorentzVector(Pt, Eta, Phi, Energy)
+    p4 = TLorentzVector(pt, eta, phi, energy)
     '''
     # constructors/helpers
     def __init__(self, tree, candName, entry):
         self.tree = tree
         self.candName = candName
         self.entry = entry
-    def _get(self, var): return getattr(self.tree, '{0}_{1}'.format(self.candName, var))[self.entry]
+    def _get(self, var):
+        return getattr(self.tree, '{0}_{1}'.format(self.candName, var))[self.entry]
 
     # misc methods
-    def Rho(self):          return self.tree.event_rho
-    def deltaR(self, cand): return deltaR(self, cand)
+    def rho(self): return self.tree.event_rho
+    def delta_r(self, cand): return deltaR(self, cand)
 
     # methods
-    def P(self):      return TVector3(self._get('px'), self._get('py'), self._get('pz'))
-    def Pt(self):     return self._get('pt')
-    def Eta(self):    return self._get('eta')
-    def AbsEta(self): return abs(self._get('eta'))
-    def Phi(self):    return self._get('phi')
-    def Energy(self): return self._get('energy')
-    def P4(self):
+    def p(self):
+        return TVector3(self._get('px'), self._get('py'), self._get('pz'))
+    def pt(self):      return self._get('pt')
+    def eta(self):     return self._get('eta')
+    def abs_eta(self): return abs(self._get('eta'))
+    def phi(self):     return self._get('phi')
+    def energy(self):  return self._get('energy')
+    def p4(self):
         thisp4 = TLorentzVector()
-        thisp4.SetPtEtaPhiE(self.Pt(), self.Eta(), self.Phi(), self.Energy())
+        thisp4.SetPtEtaPhiE(self.pt(), self.eta(), self.phi(), self.energy())
         return thisp4
-    def Charge(self): return self._get('charge')
-    def PDGID(self):  return self._get('pdgid')
+    def charge(self): return self._get('charge')
+    def pdg_id(self): return self._get('pdgid')
 
 
 
@@ -237,65 +241,39 @@ class EgammaCand(CommonCand):
        super(EgammaCand, self).__init__(tree, egtype, entry)
 
     # methods
-    def EffectiveArea(self): return self._get('effectiveArea')
-    # supercluster
-    def SCEnergy(self):          return self._get('supercluster_e')
-    def SCEta(self):             return self._get('supercluster_eta')
-    def SCPhi(self):             return self._get('supercluster_phi')
-    def SCRawEnergy(self):       return self._get('supercluster_rawe')
-    def SCPreshowerEnergy(self): return self._get('supercluster_preshowere')
-    def SCPhiWidth(self):        return self._get('supercluster_phiwidth')
-    def SCEtaWidth(self):        return self._get('supercluster_etawidth')
-    def SCNClusters(self):       return self._get('supercluster_nbasiccluster')
-    # shower
-    def E1x5(self): return self._get('e1x5')
-    def E2x5(self): return self._get('e2x5')
-    def E5x5(self): return self._get('e5x5')
+    def effective_area(self): return self._get('effectiveArea')
     # isolation
-    def IsoPFR3Charged(self): return self._get('isolationpfr3charged')
-    def IsoPFR3Photon(self):  return self._get('isolationpfr3photon')
-    def IsoPFR3Neutral(self): return self._get('isolationpfr3neutral')
-    def IsoR3Track(self):     return self._get('isolationr3track')
-    def IsoR3Ecal(self):      return self._get('isolationr3ecal')
-    def IsoR3Hcal(self):      return self._get('isolationr3hcal')
-    def IsoR4Track(self):     return self._get('isolationr4track')
-    def IsoR4Ecal(self):      return self._get('isolationr4ecal')
-    def IsoR4Hcal(self):      return self._get('isolationr4hcal')
+    def iso_PFr3_charged(self): return self._get('isolationpfr3charged')
+    def iso_PFr3_photon(self):  return self._get('isolationpfr3photon')
+    def iso_PFr3_neutral(self): return self._get('isolationpfr3neutral')
+    def iso_r3_track(self):     return self._get('isolationr3track')
+    def iso_r3_ecal(self):      return self._get('isolationr3ecal')
+    def iso_r3_hcal(self):      return self._get('isolationr3hcal')
+    def iso_r4_track(self):     return self._get('isolationr4track')
+    def iso_r4_ecal(self):      return self._get('isolationr4ecal')
+    def iso_r4_hcal(self):      return self._get('isolationr4hcal')
     # corrected relative isolation
-    def IsoPFR3dBCombRel(self):
+    def iso_PFr3dB_comb_rel(self):
         isoval = (
             (self._get('isolationpfr3charged')
-            + max(0.0, self._get('isolationpfr3neutral') + self._get('isolationpfr3photon')
-                  - 0.5 * self._get('isolationpfr3chargedpu')
+            + max(0.0, (self._get('isolationpfr3neutral')
+                        + self._get('isolationpfr3photon')
+                        - 0.5 * self._get('isolationpfr3chargedpu'))
                  )
             ) / self._get('pt')
         )
         return isoval
     # corrected relative isolation
-    def IsoPFR3RhoCombRel(self):
+    def iso_PFr3rho_comb_rel(self):
         isoval = (
             (self._get('isolationpfr3charged')
-            + max(0.0, self._get('isolationpfr3neutral') + self._get('isolationpfr3photon')
-                  - self.Rho() * self._get('effectiveArea')
+            + max(0.0, (self._get('isolationpfr3neutral')
+                     + self._get('isolationpfr3photon')
+                     - self.rho() * self._get('effectiveArea'))
                  )
             ) / self._get('pt')
         )
         return isoval
-
-    # shower shapes
-    def SigmaEtaEta(self):   return self._get('sigmaetaeta')
-    def SigmaIEtaIEta(self): return self._get('sigmaietaieta')
-    def SigmaIPhiIPhi(self): return self._get('sigmaiphiiphi')
-    def SigmaIEtaIPhi(self): return self._get('sigmaietaiphi')
-    # calorimeter
-    def HcalOverEcal(self):        return self._get('hcalOverEcal')
-    def EHcalOverEcal(self):       return (self._get('ehcaloverecaldepth1') + self._get('ehcaloverecaldepth2'))
-    def EHcalOverEcalDepth1(self): return self._get('ehcaloverecaldepth1')
-    def EHcalOverEcalDepth2(self): return self._get('ehcaloverecaldepth2')
-    def EHcalTowerOverEcal(self):  return (self._get('ehcaltoweroverecaldepth1') + self._get('ehcaltoweroverecaldepth2'))
-    def EHcalTowerOverEcalDepth1(self): return self._get('ehcaltoweroverecaldepth1')
-    def EHcalTowerOverEcalDepth2(self): return self._get('ehcaltoweroverecaldepth2')
-
 
 
 
@@ -303,10 +281,11 @@ class EgammaCand(CommonCand):
 class Muon(CommonCand):
     '''
     Muon: 
-    P(), P4(), Pt(), Eta(), Phi(), and Energy() all return uncorrected values by default.
-    To use the rochester corrections (assuming they are available in the ntuple), turn on
-    the option self.useRochesterCorrections, or you can also explicitly call:
-        mu.Pt('Corr') and mu.Pt('Uncorr')
+    p4(), pt(), eta(), phi(), and energy() all return uncorrected values by
+    default. To use the rochester corrections (assuming they are available
+    in the ntuple), turn on the option self.use_rochester_corrections, or
+    you can also explicitly call:
+        mu.pt('corr') and mu.pt('uncorr')
     '''
     # constructors/helpers
     def __init__(self, tree, entry, corrected):
@@ -314,179 +293,195 @@ class Muon(CommonCand):
        self.corrected = corrected
 
     # methods
-    def Dz(self):       return self._get('dz')
-    def DzError(self):  return self._get('dzerr')
-    def Dxy(self):      return self._get('dxy')
-    def DxyError(self): return self._get('dxyerr')
+    def dz(self):        return self._get('dz')
+    def dz_error(self):  return self._get('dzerr')
+    def dxy(self):       return self._get('dxy')
+    def dxy_error(self): return self._get('dxyerr')
 
-    # default is no rochester correction
-    def P(self, correction=''):
-        uncor = TVector3(self._get('px'), self._get('py'), self._get('pz'))
-        cor   = TVector3(self._get('rochesterPx'), self._get('rochesterPy'), self._get('rochesterPz'))
-        # decide which value to return
-        if correction == 'Corr':   return cor
-        if correction == 'Uncorr': return uncor
-        if self.corrected: return cor
-        return uncor
-
-    def Pt(self, correction=''):
+    def pt(self, correction=''):
         uncor = self._get('pt')
         cor   = self._get('rochesterPt')
         # decide which value to return
-        if correction == 'Corr':   return cor
-        if correction == 'Uncorr': return uncor
+        if correction == 'corr':   return cor
+        if correction == 'uncorr': return uncor
         if self.corrected: return cor
         return uncor
 
-    def Eta(self, correction=''):
-        uncor = self._get('eta')
-        cor   = self._get('rochesterEta')
-        # decide which value to return
-        if correction == 'Corr':   return cor
-        if correction == 'Uncorr': return uncor
-        if self.corrected: return cor
-        return uncor
+#    def eta(self):     return self._get('eta')
+#    def abs_eta(self): return abs(self._get('eta'))
+#    def phi(self):     return self._get('phi')
+#    def energy(self):  return self._get('energy')
 
-    def AbsEta(self, correction=''):
-        uncor = abs(self._get('eta'))
-        cor   = abs(self._get('rochesterEta'))
+    def p4(self, correction=''): # pt, eta, phi, e
+        corrp4 = TLorentzVector()
+        corrp4.SetPtEtaPhiE(self.pt('corr'), self.eta(),
+                            self.phi(), self.energy())
+        uncorrp4 = TLorentzVector()
+        uncorrp4.SetPtEtaPhiE(self.pt('uncorr'), self.eta(),
+                              self.phi(), self.energy())
         # decide which value to return
-        if correction == 'Corr':   return cor
-        if correction == 'Uncorr': return uncor
-        if self.corrected: return cor
-        return uncor
+        if correction == 'corr':     return corrp4
+        elif correction == 'uncorr': return uncorrp4
+        elif self.corrected:         return corrp4
+        else: return uncorrp4
 
-    def Phi(self, correction=''):
-        uncor = self._get('phi')
-        cor   = self._get('rochesterPhi')
-        # decide which value to return
-        if correction == 'Corr':   return cor
-        if correction == 'Uncorr': return uncor
-        if self.corrected: return cor
-        return uncor
-
-    def Energy(self, correction=''):
-        uncor = self._get('energy')
-        cor   = self._get('rochesterEnergy')
-        # decide which value to return
-        if correction == 'Corr':   return cor
-        if correction == 'Uncorr': return uncor
-        if self.corrected: return cor
-        return uncor
-
-    def P4(self, correction=''): # pt, eta, phi, e
-        thisp4 = TLorentzVector()
-        # decide which value to return
-        if correction == 'Corr': 
-            thisp4.SetPtEtaPhiE(self.Pt('Corr'), self.Eta('Corr'), self.Phi('Corr'), self.Energy('Corr'))
-            return thisp4
-        if correction == 'Uncorr':
-            thisp4.SetPtEtaPhiE(self.Pt('Uncorr'), self.Eta('Uncorr'), self.Phi('Uncorr'), self.Energy('Uncorr'))
-            return thisp4
-        if self.corrected:
-            thisp4.SetPtEtaPhiE(self.Pt('Corr'), self.Eta('Corr'), self.Phi('Corr'), self.Energy('Corr'))
-            return thisp4
-        thisp4.SetPtEtaPhiE(self.Pt('Uncorr'), self.Eta('Uncorr'), self.Phi('Uncorr'), self.Energy('Uncorr'))
-        return thisp4
-
-    def CorrectionError(self): return self._get('rochesterError')
     # energy
-    def EcalEnergy(self): return self._get('ecalenergy')
-    def HcalEnergy(self): return self._get('hcalenergy')
+    def ecal_energy(self): return self._get('ecalenergy')
+    def hcal_energy(self): return self._get('hcalenergy')
     # muon ID
-    def IsTightMuon(self):  return self._get('is_tight_muon')
-    def IsMediumMuon(self): return self._get('is_medium_muon')
-    def IsMedium2016Muon(self): return self._get('is_medium2016_muon')
-    def IsLooseMuon(self):  return self._get('is_loose_muon')
+    def is_tight(self):      return self._get('is_tight_muon')
+    def is_medium(self):     return self._get('is_medium_muon')
+    def is_medium2016(self): return self._get('is_medium2016_muon')
+    def is_loose(self):      return self._get('is_loose_muon')
     # track info
-    def IsPFMuon(self):       return self._get('is_pf_muon')
-    def IsGlobal(self):       return self._get('is_global')
-    def HasGlobalTrack(self): return self._get('hasglobaltrack') # this might be exactly the above - check
-    def IsTracker(self):      return self._get('is_tracker')
-    def IsStandalone(self):   return self._get('is_standalone')
-    def IsCaloMuon(self):     return self._get('is_calo')
-    def PtError(self):          return self._get('pterror')
-    def Chi2(self):             return self._get('chi2')
-    def Ndof(self):             return self._get('ndof')
-    def NumValidMuonHits(self):        return self._get('numvalidmuonhits')
-    def NumChambers(self):             return self._get('numchambers')
-    def NumMatchedStations(self):      return self._get('nummatchedstations')
-    def NumChambersWithSegments(self): return self._get('numchamberswithsegments')
+    def is_PF_muon(self):    return self._get('is_pf_muon')
+    def is_global(self):     return self._get('is_global')
+    def is_tracker(self):    return self._get('is_tracker')
+    def is_standalone(self): return self._get('is_standalone')
+    def is_calo(self):       return self._get('is_calo')
+    def pt_error(self): return self._get('pterror')
+    def chi2(self):     return self._get('chi2')
+    def n_dof(self):    return self._get('ndof')
+    def num_valid_muon_hits(self):  return self._get('numvalidmuonhits')
+    def num_chambers(self):         return self._get('numchambers')
+    def num_matched_stations(self): return self._get('nummatchedstations')
+    def num_chambers_with_segments(self):
+        return self._get('numchamberswithsegments')
     # inner track
-    def HasInnerTrack(self): return self._get('hasinnertrack')
-    def InnerTrackDz(self):       return self._get('innertrack_dz')
-    def InnerTrackDzError(self):  return self._get('innertrack_dzerr')
-    def InnerTrackDxy(self):      return self._get('innertrack_dxy')
-    def InnerTrackDxyError(self): return self._get('innertrack_dxyerr')
-    def InnerTrackChi2(self):     return self._get('innertrack_chi2')
-    def InnerTrackNdof(self):     return self._get('innertrack_ndof')
-    def InnerTrackCharge(self):   return self._get('innertrack_charge')
-    def InnerTrackNHits(self):        return self._get('innertrack_nhits')
-    def InnerTrackNMissingHits(self): return self._get('innertrack_nmissinghits')
-    def InnerTrackNPixelHits(self):   return self._get('innertrack_npixelhits')
-    def InnerTrackNPixelLayers(self): return self._get('innertrack_npixellayers')
-    def InnerTrackNStripLayers(self): return self._get('innertrack_nstriplayers')
+    def has_inner_track(self): return self._get('hasinnertrack')
+    def inner_track_dz(self):        return self._get('innertrack_dz')
+    def inner_rack_dz_error(self):   return self._get('innertrack_dzerr')
+    def inner_track_dxy(self):       return self._get('innertrack_dxy')
+    def inner_track_dxy_error(self): return self._get('innertrack_dxyerr')
+    def inner_track_chi2(self):   return self._get('innertrack_chi2')
+    def inner_track_n_dof(self):  return self._get('innertrack_ndof')
+    def inner_track_charge(self): return self._get('innertrack_charge')
+    def inner_track_n_hits(self): return self._get('innertrack_nhits')
+    def inner_track_n_missing_hits(self):
+       return self._get('innertrack_nmissinghits')
+    def inner_track_n_pixel_hits(self):
+        return self._get('innertrack_npixelhits')
+    def inner_track_n_pixel_layers(self):
+        return self._get('innertrack_npixellayers')
+    def inner_track_n_strip_layers(self):
+        return self._get('innertrack_nstriplayers')
     # outer track
-    def HasOutTrack(self): return self._get('hasoutertrack')
-    def OuterTrackChi2(self): return self._get('outertrack_chi2')
-    def OuterTrackNdof(self): return self._get('outertrack_ndof')
-    def OuterTrackNHits(self):        return self._get('outertrack_hits')
-    def OuterTrackNMissingHits(self): return self._get('outertrack_missinghits')
+    def has_outer_track(self): return self._get('hasoutertrack')
+    def outer_track_chi2(self):   return self._get('outertrack_chi2')
+    def outer_track_n_dof(self):  return self._get('outertrack_ndof')
+    def outer_track_n_hits(self): return self._get('outertrack_hits')
+    def outer_track_n_missing_hits(self):
+        return self._get('outertrack_missinghits')
     # isolation r3
-    def IsoPFR3ChargedHadrons(self):   return self._get('pfisolationr3_sumchargedhadronpt')
-    def IsoPFR3ChargedParticles(self): return self._get('pfisolationr3_sumchargedparticlept')
-    def IsoPFR3NeutralHadrons(self):   return self._get('pfisolationr3_sumneutralhadronet')
-    def IsoPFR3SumPhotonEt(self):      return self._get('pfisolationr3_sumphotonet')
-    def IsoPFR3SumPUPt(self):          return self._get('pfisolationr3_sumpupt')
+    def iso_PFr3_charged_hadrons(self):
+        return self._get('pfisolationr3_sumchargedhadronpt')
+    def iso_PFr3_charged_particles(self):
+        return self._get('pfisolationr3_sumchargedparticlept')
+    def iso_PFr3_neutral_hadrons(self):
+        return self._get('pfisolationr3_sumneutralhadronet')
+    def iso_PFr3_sum_photon_et(self):
+        return self._get('pfisolationr3_sumphotonet')
+    def iso_PFr3_sum_PU_pt(self):
+        return self._get('pfisolationr3_sumpupt')
     # isolation r4
-    def IsoPFR4ChargedHadrons(self):   return self._get('pfisolationr4_sumchargedhadronpt')
-    def IsoPFR4ChargedParticles(self): return self._get('pfisolationr4_sumchargedparticlept')
-    def IsoPFR4NeutralHadrons(self):   return self._get('pfisolationr4_sumneutralhadronet')
-    def IsoPFR4Photons(self):          return self._get('pfisolationr4_sumphotonet')
-    def IsoPFR4SumPUPt(self):          return self._get('pfisolationr4_sumpupt')
+    def iso_PFr4_charged_hadrons(self):
+        return self._get('pfisolationr4_sumchargedhadronpt')
+    def iso_PFr4_charged_particles(self):
+        return self._get('pfisolationr4_sumchargedparticlept')
+    def iso_PFr4_neutral_hadrons(self):
+        return self._get('pfisolationr4_sumneutralhadronet')
+    def iso_PFr4_sum_photon_et(self):
+        return self._get('pfisolationr4_sumphotonet')
+    def iso_PFr4_sum_PU_pt(self):
+        return self._get('pfisolationr4_sumpupt')
     # more isolation
-    def IsoR3Track(self):       return self._get('isolationr3track')
-    def IsoR3Ecal(self):        return self._get('isolationr3ecal')
-    def IsoR3Hcal(self):        return self._get('isolationr3hcal')
-    def IsoR3TrackRel(self):    return (self._get('isolationr3track') / self._get('pt'))
-    def IsoR3NTrack(self):      return self._get('isolationr3ntrack')
-    def IsoR3Combined(self):    return (self._get('isolationr3track') + self._get('isolationr3ecal') + self._get('isolationr3hcal'))
-    def IsoR3CombinedRel(self): return ((self._get('isolationr3track') + self._get('isolationr3ecal') + self._get('isolationr3hcal')) / self._get('pt'))
+    def iso_r3_track(self):   return self._get('isolationr3track')
+    def iso_r3_ecal(self):    return self._get('isolationr3ecal')
+    def iso_r3_hcal(self):    return self._get('isolationr3hcal')
+    def iso_r3_n_track(self): return self._get('isolationr3ntrack')
+    def iso_r3_track_rel(self):
+        return (self._get('isolationr3track') / self._get('pt'))
+    def iso_r3_combined(self):
+        return (self._get('isolationr3track') + self._get('isolationr3ecal')
+                + self._get('isolationr3hcal'))
+    def iso_r3_combined_rel(self):
+        return ((self._get('isolationr3track') + self._get('isolationr3ecal')
+                + self._get('isolationr3hcal')) / self._get('pt'))
     # corrected relative isolation
-    def IsoPFR3dBCombRel(self): 
+    def iso_PFr3dB_comb_rel(self): 
         isoval = (
             (self._get('pfisolationr3_sumchargedhadronpt')
-            + max(0., self._get('pfisolationr3_sumneutralhadronet') + self._get('pfisolationr3_sumphotonet')
-                  - 0.5 * self._get('pfisolationr3_sumpupt')
+            + max(0., (self._get('pfisolationr3_sumneutralhadronet')
+                       + self._get('pfisolationr3_sumphotonet')
+                       - 0.5 * self._get('pfisolationr3_sumpupt'))
                   )
             ) / self._get('pt')
         )
         return isoval
-    def IsoPFR4dBCombRel(self): 
+    def iso_PFr4dB_comb_rel(self): 
         isoval = (
             (self._get('pfisolationr4_sumchargedhadronpt')
-            + max(0., self._get('pfisolationr4_sumneutralhadronet') + self._get('pfisolationr4_sumphotonet')
-                  - 0.5 * self._get('pfisolationr4_sumpupt')
+            + max(0., (self._get('pfisolationr4_sumneutralhadronet')
+                       + self._get('pfisolationr4_sumphotonet')
+                       - 0.5 * self._get('pfisolationr4_sumpupt'))
                   )
             ) / self._get('pt')
         )
         return isoval
-    # check isolation function
-    def CheckIso(self, isotype, isolevel):
-        ''' Returns whether the muon passes selected hard-coded isolation values taken
-        from https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2#Muon_Isolation
+
+    def check_id(self, idtype):
+        ''' Returns bool whether the muon passes Muon POG ID definitions
         '''
-        # kind of validate input
-        if not (isotype=='PF_dB'):
-            raise ValueError('Muon.CheckIso: "{0}" not an available choice for isotype. Available choices are "PF_dB".'.format(isotype))
-        if not (isolevel=='tight' or isolevel=='loose'):
-            raise ValueError('Muon.CheckIso: "{0}" not an available choice for isolevel. Available choices are "tight" and "loose".'.format(isolevel))
-        # return result of isolation check
-        if isotype=='PF_dB':
-            return (self.IsoPFR4dBCombRel() < 0.15) if isolevel=='tight' else (self.IsoPFR4dBCombRel() < 0.25)
+        if idtype == 'tight':        return self.is_tight()
+        elif idtype == 'medium':     return self.is_medium()
+        elif idtype == 'medium2016': return self.is_medium2016()
+        elif idtype == 'loose':      return self.is_loose()
+        else:
+            raise ValueError('Muon.check_id: "{0}" not an available choice for '
+                             'idtype. Available choices are "tight", "medium", '
+                             '"medium2016", and "loose".'.format(idtype))
+
+    def check_iso(self, isotype, isolevel):
+        ''' Returns bool whether the muon passes selected hard-coded isolation
+            values taken from:
+            https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2#Muon_Isolation
+        '''
+         # r = 0.4
+        PF_dB_tight = 0.15
+        PF_dB_loose = 0.25
+         # r = 0.3
+        tracker_tight = 0.05
+        tracker_loose = 0.10
+
+        # check result
+        if isotype == 'PF_dB':
+            if isolevel == 'tight':
+                return (self.iso_PFr4dB_comb_rel() < PF_dB_tight)
+            elif isolevel == 'loose':
+                return (self.iso_PFr4dB_comb_rel() < PF_dB_loose)
+            else:
+                raise ValueError('Muon.check_iso: "{0}" not an available choice '
+                                 'for isolevel. Available choices are "tight" '
+                                 'and "loose".'.format(isolevel))
+#        elif isotype == 'tracker':
+#            if isolevel == 'tight':
+#                return (self.iso_r3_track_rel() < tracker_tight)
+#            elif isolevel == 'loose':
+#                return (self.iso_r3_track_rel() < tracker_loose)
+#            else:
+#                raise ValueError('Muon.check_iso: "{0}" not an available choice '
+#                                 'for isolevel. Available choices are "tight" '
+#                                 'and "loose".'.format(isolevel))
+        else:
+            raise ValueError('Muon.check_iso: "{0}" not an available choice for '
+                             'isotype. Available choices are "PF_dB" and '
+#                             '"tracker".'.format(isotype))
+                             'that\'s it lol'.format(isotype))
 
     # muon.MatchesHLTs returns True if any of the triggers fired
-    def MatchesHLTs(self, paths):
+    def matches_HLTs(self, paths):
+        ''' Returns bool whether any of the triggers fired
+        '''
         result = False
         for pathname in paths:
             try:
@@ -496,7 +491,8 @@ class Muon(CommonCand):
                 #print 'Muon HLT path "' + pathname + '" not available.'
                 #print 'Available paths are:'
                 #for x in self.tree.GetListOfBranches():
-                #    if 'muon_hlt_matches_' in x.GetName(): print '    ' + x.GetName()[17:]
+                #    if 'muon_hlt_matches_' in x.GetName():
+                #        print '    ' + x.GetName()[17:]
                 #print '\n'
         return result
 
@@ -509,55 +505,47 @@ class Electron(EgammaCand):
        super(Electron, self).__init__(tree, 'electron', entry)
 
     # methods
-    def Dz(self):       return self._get('dz')
-    def DzError(self):  return self._get('dzerr')
-    def Dxy(self):      return self._get('dxy')
-    def DxyError(self): return self._get('dxyerr')
-    def CorrectedEcalEnergy(self):  return self._get('correctedecalenergy')
-    def PassesConversionVeto(self): return self._get('passconversionveto')
-    def EcalDrivenSeed(self):       return self._get('ecaldrivenseed')
-    def TrackerDrivenSeed(self):    return self._get('trackerdrivenseed')
+    def dz(self):        return self._get('dz')
+    def dz_error(self):  return self._get('dzerr')
+    def dxy(self):       return self._get('dxy')
+    def dxy_error(self): return self._get('dxyerr')
+
+    def corrected_ecal_energy(self):  return self._get('correctedecalenergy')
+    def passes_conversion_veto(self): return self._get('passconversionveto')
+    def ecal_driven_seed(self):       return self._get('ecaldrivenseed')
+    def tracker_driven_seed(self):    return self._get('trackerdrivenseed')
     # track
-    def TrackChi2(self): return self._get('trackchi2')
-    def TrackNdof(self): return self._get('trackndof')
-    def NHits(self):         return self._get('nhits')
-    def NPixelHits(self):    return self._get('npixelhits')
-    def NPixelLayers(self):  return self._get('npixellayers')
-    def NStripLayers(self):  return self._get('nstriplayers')
-    def NMissingHits(self):  return self._get('nmissinghits')
-    def NHitsExpected(self): return self._get('nhitsexpected')
+    def track_chi2(self):  return self._get('trackchi2')
+    def track_n_dof(self): return self._get('trackndof')
+    def n_hits(self):          return self._get('nhits')
+    def n_pixel_hits(self):    return self._get('npixelhits')
+    def n_pixel_layers(self):  return self._get('npixellayers')
+    def n_strip_layers(self):  return self._get('nstriplayers')
+    def n_missing_hits(self):  return self._get('nmissinghits')
+    def n_hits_expected(self): return self._get('nhitsexpected')
     # shower 
-    def R9(self):   return self._get('r9')
-    def FractionBrems(self): return self._get('fbrems')
-    def NumBrems(self):      return self._get('numbrems')
-    # supercluster
-    def SCE1x5(self):        return self._get('scE1x5')
-    def SCE2x5Max(self):     return self._get('scE2x5Max')
-    def SCE5x5(self):        return self._get('scE5x5')
-    def ESuperClusterOverTrack(self):    return self._get('esuperclusterovertrack')
-    def ESeedClusterOverTrack(self):     return self._get('eseedclusterovertrack')
-    def DeltaEtaSuperClusterTrack(self): return self._get('deltaetasuperclustertrack')
-    def DeltaPhiSuperClusterTrack(self): return self._get('deltaphisuperclustertrack')
+    def r9(self): return self._get('r9')
+    def fraction_brems(self): return self._get('fbrems')
+    def num_brems(self):      return self._get('numbrems')
     # electron id
-    def IsVetoElectron(self):   return self._get('cutBasedVeto')
-    def IsLooseElectron(self):  return self._get('cutBasedLoose')
-    def IsMediumElectron(self): return self._get('cutBasedMedium')
-    def IsTightElectron(self):  return self._get('cutBasedTight')
-    def WP90_v1(self): return self._get('mvaNonTrigWP90')
-    def WP80_v1(self): return self._get('mvaNonTrigWP80')
+    def is_veto(self):   return self._get('cutBasedVeto')
+    def is_loose(self):  return self._get('cutBasedLoose')
+    def is_medium(self): return self._get('cutBasedMedium')
+    def is_tight(self):  return self._get('cutBasedTight')
 
     # electron.MatchesHLTs returns True if any of the triggers fired
-    def MatchesHLTs(self, paths):
+    def matches_HLTs(self, paths):
         result = False
         for pathname in paths:
             try:
-                result = self._get('matches_'+pathname)
+                result = result or self._get('matches_'+pathname)
             except AttributeError:
                 pass
                 #print 'Electron HLT path "{0}" not available.'.format(pathname)
                 #print 'Available paths are:'
                 #for x in self.tree.GetListOfBranches():
-                #    if 'electron_hlt_matches_' in x.GetName(): print '    ' + x.GetName()[21:]
+                #    if 'electron_hlt_matches_' in x.GetName():
+                #        print '    ' + x.GetName()[21:]
                 #print '\n'
         return result
 
@@ -568,20 +556,18 @@ class Photon(EgammaCand):
        super(Photon, self).__init__(tree, 'photon', entry)
 
     # methods
-    def HasConversionTracks(self): return self._get('hasconversiontracks')
-    def HasPixelSeed(self):        return self._get('haspixelseed')
-    def PassesElectronVeto(self):  return self._get('passelectronveto')
-    def IsPFPhoton(self):          return self._get('ispfphoton')
-    def MaxEnergyXtal(self):       return self._get('maxenergyxtal')
-    # shower
-    def E3x3(self): return self._get('e3x3')
+    def has_conversion_tracks(self): return self._get('hasconversiontracks')
+    def has_pixel_seed(self):        return self._get('haspixelseed')
+    def passes_electron_veto(self):  return self._get('passelectronveto')
+    def is_PF_photon(self):          return self._get('ispfphoton')
+    def max_energy_xtal(self):       return self._get('maxenergyxtal')
     # more isolation
-    def IsoR3TrackHollow(self):  return self._get('isolationr3trackhollow')
-    def IsoR3NTrack(self):       return self._get('isolationr3ntrack')
-    def IsoR3NTrackHollow(self): return self._get('isolationr3ntrackhollow')
-    def IsoR4TrackHollow(self):  return self._get('isolationr4trackhollow')
-    def IsoR4NTrack(self):       return self._get('isolationr4ntrack')
-    def IsoR4NTrackHollow(self): return self._get('isolationr4ntrackhollow')
+    def iso_r3_track_hollow(self):   return self._get('isolationr3trackhollow')
+    def iso_r3_n_track(self):        return self._get('isolationr3ntrack')
+    def iso_r3_n_track_hollow(self): return self._get('isolationr3ntrackhollow')
+    def iso_r4_track_hollow(self):   return self._get('isolationr4trackhollow')
+    def iso_r4_n_track(self):        return self._get('isolationr4ntrack')
+    def iso_r4_n_track_hollow(self): return self._get('isolationr4ntrackhollow')
 
 ## ___________________________________________________________
 class Tau(JettyCand):
@@ -590,39 +576,35 @@ class Tau(JettyCand):
        super(Tau, self).__init__(tree, 'tau', entry)
 
     # methods
-    def Dz(self):       return self._get('dz')
-    def DzError(self):  return self._get('dzerr')
-    def Dxy(self):      return self._get('dxy')
-    def DxyError(self): return self._get('dxyerr')
+    def dz(self):        return self._get('dz')
+    def dz_error(self):  return self._get('dzerr')
+    def dxy(self):       return self._get('dxy')
+    def dxy_error(self): return self._get('dxyerr')
 
     #ak4pfjet_*
 
     # isolation
-    def IsoNeutralsPt(self):  return self._get('isolationneutralspt')
-    def IsoNeutralsNum(self): return self._get('isolationneutralsnum')
-    def IsoChargedPt(self):   return self._get('isolationchargedpt')
-    def IsoChargedNum(self):  return self._get('isolationchargednum')
-    def IsoGammaPt(self):     return self._get('isolationgammapt')
-    def IsoGammaNum(self):    return self._get('isolationgammanum')
+    def iso_neutrals_pt(self):  return self._get('isolationneutralspt')
+    def iso_neutrals_num(self): return self._get('isolationneutralsnum')
+    def iso_charged_pt(self):   return self._get('isolationchargedpt')
+    def iso_charged_num(self):  return self._get('isolationchargednum')
+    def iso_gamma_pt(self):     return self._get('isolationgammapt')
+    def iso_gamma_num(self):    return self._get('isolationgammanum')
     # raw values of the isolation
-    def NeutralIsoPtSumWeight(self): return self._get('neutralIsoPtSumWeight')
-    def FootprintCorrection(self):   return self._get('footprintCorrection')
-    def PUCorrPtSum(self):           return self._get('puCorrPtSum')
+    def neutral_iso_pt_sum_weight(self): return self._get('neutralIsoPtSumWeight')
+    def footprint_correction(self):      return self._get('footprintCorrection')
+    def PU_corr_pt_sum(self):            return self._get('puCorrPtSum')
 
     # tau ids
-    def TauDiscriminator(self, discname): 
-        result = False
+    def tau_discriminator(self, discname): 
         try:
-            result = self._get('tdisc_'+discname)
+            return self._get('tdisc_'+discname)
         except AttributeError:
             print 'Tau discriminator "' + discname + '" not available.'
-            print 'Print a list of available discriminators with:\n    self.event.PrintAvailableTauDiscriminators()'
+            print ('Print a list of available discriminators with:'
+                   '\n    self.event.print_available_tau_discriminators()')
             #raise
-        return result
 
-
-## ___________________________________________________________
-JetShape = namedtuple('JetShape', ['chargeda', 'chargedb', 'neutrala', 'neutralb', 'alla', 'allb', 'chargedfractionmv'])
 
 ## ___________________________________________________________
 class Jet(JettyCand):
@@ -631,49 +613,28 @@ class Jet(JettyCand):
        super(Jet, self).__init__(tree, 'ak4pfchsjet', entry)
 
     # methods
-    def Area(self): return self._get('area')
+    def area(self): return self._get('area')
     # energy
-    def HadEnergy(self):        return self._get('hadronicenergy')
-    def ChargedHadEnergy(self): return self._get('chargedhadronicenergy')
-    def EMEnergy(self):         return self._get('emenergy')
-    def ChargedEMEnergy(self):  return self._get('chargedemenergy')
-    def HFHadEnergy(self):      return self._get('hfhadronicenergy')
-    def HFEMEnergy(self):       return self._get('hfemenergy')
-    def ElectronEnergy(self):   return self._get('electronenergy')
-    def MuonEnergy(self):       return self._get('muonenergy')
-    # multiplicities
-    def ChargedMulti(self):  return self._get('chargedmulti')
-    def NeutralMulti(self):  return self._get('neutralmulti')
-    def HFHadMulti(self):    return self._get('hfhadronicmulti')
-    def HFEMMulti(self):     return self._get('hfemmulti')
-    def ElectronMulti(self): return self._get('electronmulti')
-    def MuonMulti(self):     return self._get('muonmulti')
-    # energy fractions
-    def NeutralHadEnergyFraction(self): return self._get('neutralhadronenergyfraction')
-    def NeutralEMEnergyFraction(self):  return self._get('neutralemenergyfraction')
-    def ChargedHadEnergyFraction(self): return self._get('chargedhadronenergyfraction')
-    def MuonEnergyFraction(self):       return self._get('muonenergyfraction')
-    def ChargedEMEnergyFraction(self):  return self._get('chargedemenergyfraction')
+    def had_energy(self):         return self._get('hadronicenergy')
+    def charged_had_energy(self): return self._get('chargedhadronicenergy')
+    def em_energy(self):          return self._get('emenergy')
+    def charged_em_energy(self):  return self._get('chargedemenergy')
+    def hf_had_energy(self):      return self._get('hfhadronicenergy')
+    def hf_em_energy(self):       return self._get('hfemenergy')
+    def electron_energy(self):    return self._get('electronenergy')
+    def muon_energy(self):        return self._get('muonenergy')
     # jet id
-    def IsLooseJet(self):        return self._get('is_loose')
-    def IsTightJet(self):        return self._get('is_tight')
-    def IsTightLepVetoJet(self): return self._get('is_tightLepVeto')
-    # shape
-    def Shape(self):
-        return JetShape(self._get('chargeda'), self._get('chargedb'), self._get('neutrala'), self._get('neutralb'), self._get('alla'), self._get('allb'), self._get('chargedfractionmv'))
+    def is_loose(self):          return self._get('is_loose')
+    def is_tight(self):          return self._get('is_tight')
+    def is_tight_lep_veto(self): return self._get('is_tightLepVeto')
     # btagging
-    def Btag(self, tagname): 
+    def btag(self, tagname): 
         result = False
         try:
-            result = self._get('btag_'+tagname)
+            return self._get('btag_pass'+tagname)
         except AttributeError:
             print 'Btag "' + tagname + '" not available.'
-            print 'Print a list of available btags with:\n    self.event.PrintAvailableBtags()'
+            print ('Print a list of available btags with:'
+                   '\n    self.event.print_available_btags()')
             #raise
-        return result
-
-
-
-
-
 
