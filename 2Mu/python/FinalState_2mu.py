@@ -41,11 +41,11 @@ class Ana2Mu(AnalysisBase):
         # Some run options (defaults are False)                  #
         #                                                        #
         ##########################################################
-        self.do_pileup_reweighting = True
-        self.include_trigger_scale_factors = True
-        self.include_lepton_scale_factors = True
+#        self.do_pileup_reweighting = True
+#        self.include_trigger_scale_factors = True
+#        self.include_lepton_scale_factors = True
 
-        self.use_rochester_corrections = True
+#        self.use_rochester_corrections = True
 
         ##########################################################
         #                                                        #
@@ -176,8 +176,9 @@ class Ana2Mu(AnalysisBase):
 
 
         vbfevtlist = [
-            20194,
-         #   112520,
+            123462,
+            179489,
+            232626,
         ]
 
 
@@ -196,10 +197,6 @@ class Ana2Mu(AnalysisBase):
         # More channel-specific selections                       #
         #                                                        #
         ##########################################################
-
-        # 80X sync evt selection: exactly 2 muons, 0 electrons
-        if (len(self.good_electrons) != 0 or len(self.good_muons) != 2): return
-
         ##########################################################
         #                                                        #
         # Calculate event weight                                 #
@@ -257,6 +254,12 @@ class Ana2Mu(AnalysisBase):
 
         this_cat = 999
 
+        # 80X sync evt selection: exactly 2 muons, 0 electrons
+        if (len(self.good_electrons) == 0 and len(self.good_muons) == 2):
+            passes_sync_selection = True
+        else:
+            passes_sync_selection = False
+
 
 
         ###################################
@@ -295,14 +298,16 @@ class Ana2Mu(AnalysisBase):
 
             if vbftight_dijet_mass_ok and vbftight_dijet_deta_ok:
                 have_vbftight_pair = True
+                break
 
         passes_sync_vbftight = have_vbftight_pair
 
         ###################################
         # GGFTight                        #
         ###################################
-        ggftight_dijet_mass_ok = False
-        ggftight_dimuon_pt_ok = False
+#        ggftight_dijet_mass_ok = False
+#        ggftight_dimuon_pt_ok = False
+        have_ggftight_pair = False
 
         for i, p in enumerate(self.dijet_pairs):    
             ggftight_dijet_mass_ok = False
@@ -311,19 +316,21 @@ class Ana2Mu(AnalysisBase):
             thisdijet = self.good_jets[p[0]].p4() + self.good_jets[p[1]].p4()
             if thisdijet.M() > 250.: ggftight_dijet_mass_ok = True
             if dimuonobj.Pt() > 50.: ggftight_dimuon_pt_ok = True
+            if ggftight_dijet_mass_ok and ggftight_dimuon_pt_ok:
+                have_ggftight_pair = True
+                break
 
-        passes_sync_ggftight = True if (ggftight_dijet_mass_ok and ggftight_dimuon_pt_ok) else False
-
-
-
-
-
+        passes_sync_ggftight = have_ggftight_pair
 
 
 
 
 
-        if passes_sync_preselection:
+
+
+
+
+        if passes_sync_selection and passes_sync_preselection:
             if passes_sync_vbftight:
                 self.fnumCat1 += 1
                 this_cat = 1
@@ -333,15 +340,16 @@ class Ana2Mu(AnalysisBase):
             else:
                 self.fnumCat3 += 1
                 this_cat = 3
-        else:
+        elif passes_sync_selection:
             if dimuonobj.Pt() >= 25.:
                 self.fnumCat4 += 1
                 this_cat = 4
             else:
                 self.fnumCat5 += 1
                 this_cat = 5
+        else: this_cat = -1
 
-#        if this_cat == 1: printevtinfo = True
+        if this_cat == 1: printevtinfo = True
 
         if printevtinfo:
             print '\n=================================================='
@@ -349,6 +357,7 @@ class Ana2Mu(AnalysisBase):
             print '=================================================='
             print 'CAT{3} - {0}:{1}:{2}\n'.format(thisrun, thislumi, thisevent, this_cat)
             # print muon info
+            print 'good electrons: {0}'.format(len(self.good_electrons) if self.good_electrons else 0)
             print 'good muons: {0}'.format(len(self.good_muons) if self.good_muons else 0)
             for i, m in enumerate(self.good_muons):
                 print '  Muon({2}):\n    pT = {0:0.4f}\n    eta = {1:0.4f}'.format(m.pt(), m.eta(), i)
@@ -360,6 +369,7 @@ class Ana2Mu(AnalysisBase):
                 print '    Muon(1):\n      pT = {0:0.4f}\n      eta = {1:0.4f}'.format(self.good_muons[p[1]].pt(), self.good_muons[p[1]].eta())
                 thisdimuon = self.good_muons[p[0]].p4() + self.good_muons[p[1]].p4()
                 print '    dimuon mass = {0:0.4f}'.format(thisdimuon.M())
+                print '    dimuon pt = {0:0.4f}\n'.format(thisdimuon.Pt())
                 print '    dimuon eta = {0:0.4f}\n'.format(thisdimuon.Eta())
             print
 
@@ -419,13 +429,14 @@ class Ana2Mu(AnalysisBase):
 
     ## _______________________________________________________
     def end_of_job_action(self):
-        logging.info('nSyncEvents = ' + str(self.nSyncEvents))
-        logging.info('Category0 (Total) events      = {0}'.format(self.fnumCat0))
+#        logging.info('nSyncEvents = ' + str(self.nSyncEvents))
         logging.info('Category1 (VBFTight) events   = {0}'.format(self.fnumCat1))
         logging.info('Category2 (GGFTight) events   = {0}'.format(self.fnumCat2))
         logging.info('Category3 (VBFLoose) events   = {0}'.format(self.fnumCat3))
         logging.info('Category4 (01JetTight) events = {0}'.format(self.fnumCat4))
         logging.info('Category5 (01JetLoose) events = {0}'.format(self.fnumCat5))
+        logging.info('')
+        logging.info('Category0 (Total) events      = {0}'.format(self.fnumCat0))
 
 
 
