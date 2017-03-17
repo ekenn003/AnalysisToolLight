@@ -4,7 +4,7 @@ import math
 import itertools
 from tools.tools import delta_r, Z_MASS, event_is_on_list
 
-## ___________________________________________________________
+## _____________________________________________________________________________
 def initialize_cutflow(analysis):
     cutflow = CutFlow()
     cuts = analysis.cuts
@@ -15,31 +15,49 @@ def initialize_cutflow(analysis):
     # check_event_selection #####
     #############################
     # event selection
-    cutflow.add('nEv_Trigger', 'Trigger')
+    cutflow.add('nEv_Trigger',
+        'Trigger')
     # muon selection
-    cutflow.add('nEv_GAndTr',   'Global+Tracker muon')
-    cutflow.add('nEv_Pt',       'Muon pT > {0}'.format(cuts['cMuPt']))
-    cutflow.add('nEv_Eta',      'Muon |eta| < {0}'.format(cuts['cMuEta']))
-    cutflow.add('nEv_PtEtaMax', 'At least 1 trigger-matched mu with pT > {0} and |eta| < {1}'.format(cuts['cMuPtMax'], cuts['cMuEtaMax']))
-    cutflow.add('nEv_Iso',      'Muon has {0} isolation'.format(cuts['cMuIso']))
-    cutflow.add('nEv_ID',       'Muon has {0} muon ID'.format(cuts['cMuID']))
-    cutflow.add('nEv_2Mu',      'Require 2 "good" muons')
+    cutflow.add('nEv_GAndTr',
+        'Global+Tracker muon')
+    cutflow.add('nEv_Pt',
+        'Muon pT > {0}'.format(cuts['cMuPt']))
+    cutflow.add('nEv_Eta',
+        'Muon |eta| < {0}'.format(cuts['cMuEta']))
+    cutflow.add('nEv_PtEtaMax',
+        'At least 1 trigger-matched mu with '
+        'pT > {0} and |eta| < {1}'.format(cuts['cMuPtMax'], cuts['cMuEtaMax']))
+    #cutflow.add('nEv_Iso',
+    #    'Muon has {0} isolation'.format(cuts['cMuIso']))
+    #cutflow.add('nEv_ID',
+    #    'Muon has {0} muon ID'.format(cuts['cMuID']))
+    cutflow.add('nEv_IDAndIso',
+        'Muon has {0} muon ID and {1} {2} isolation'.format(cuts['cMuID'],
+        cuts['cMuIsoLevel'], cuts['cMuIsoType']))
+    cutflow.add('nEv_2Mu',
+        'Require 2 "good" muons')
     #############################
     # check_preselection ########
     #############################
     # muon pair selection
-    cutflow.add('nEv_ChargeDiMu',  'Dimu pair has opposite-sign mus')
-    cutflow.add('nEv_SamePVDiMu',  'Dimu pair has same pv mus')
-    cutflow.add('nEv_InvMassDiMu', 'Dimu pair has invariant mass > {0}'.format(cuts['cDiMuInvMass']))
-    cutflow.add('nEv_PtDiMu',      'Dimu pair has pT > {0}'.format(cuts['cDiMuPt']))
-    cutflow.add('nEv_1DiMu',       'Require at least 1 "good" dimuon pair')
+    cutflow.add('nEv_ChargeDiMu',
+        'Dimu pair has opposite-sign mus')
+    cutflow.add('nEv_SamePVDiMu',
+        'Dimu pair has same pv mus')
+    cutflow.add('nEv_InvMassDiMu',
+        'Dimu pair has invariant mass > {0}'.format(cuts['cDiMuInvMass']))
+    cutflow.add('nEv_PtDiMu',
+        'Dimu pair has pT > {0}'.format(cuts['cDiMuPt']))
+    cutflow.add('nEv_1DiMu',
+        'Require at least 1 "good" dimuon pair')
     # preselection
-    cutflow.add('nEv_4Lep', 'Preselection: Require 4 or fewer total isolated leptons')
+    cutflow.add('nEv_4Lep', 
+        'Preselection: Require 4 or fewer total isolated leptons')
 
     return cutflow
 
 
-## ___________________________________________________________
+## _____________________________________________________________________________
 def check_event_selection(analysis):
     cuts = analysis.cuts
 
@@ -87,8 +105,9 @@ def check_event_selection(analysis):
     isPtCutOK = False
     isEtaCutOK = False
     nMuPtEtaMax = 0
-    isIsoOK = False
-    isIDOK = False
+    #isIsoOK = False
+    #isIDOK = False
+    isIDAndIsoOK = False
     for muon in analysis.muons:
         # muon cuts
         if not (muon.is_global() and muon.is_tracker()): continue
@@ -99,16 +118,19 @@ def check_event_selection(analysis):
         isEtaCutOK = True
 
         # make sure at least one HLT-matched muon passes extra cuts
-        #if muon.MatchesHLTs(analysis.hltriggers) and muon.Pt() > cuts['cMuPtMax'] and muon.AbsEta() < cuts['cMuEtaMax']: nMuPtEtaMax += 1
-        if muon.pt() > cuts['cMuPtMax'] and muon.abs_eta() < cuts['cMuEtaMax']: nMuPtEtaMax += 1
+        if (muon.pt() > cuts['cMuPtMax']
+            and muon.abs_eta() < cuts['cMuEtaMax']): nMuPtEtaMax += 1
 
-        # check isolation
-        if not (muon.check_iso('PF_dB', cuts['cMuIso'])): continue
-        isIsoOK = True
-
-        # check muon ID
-        if not (muon.check_id(cuts['cMuID'])): continue
-        isIDOK = True
+        # check muon ID and isolation
+        if not all(muon.check_id_and_iso(cuts['cMuID'],
+            cuts['cMuIsoType'], cuts['cMuIsoLevel'])): continue
+        isIDAndIsoOK = True
+        #if not muon.check_id(cuts['cMuID']):
+        #    continue
+        #isIDOK = True
+        #if not muon.check_iso(cuts['cMuIsoType'], cuts['cMuIsoLevel']):
+        #    continue
+        #isIsoOK = True
 
         # if we get to this point, push muon into goodMuons
         analysis.good_muons += [muon]
@@ -122,8 +144,9 @@ def check_event_selection(analysis):
     if nMuPtEtaMax < 1: return False
     analysis.cutflow.increment('nEv_PtEtaMax')
 
-    if isIsoOK: analysis.cutflow.increment('nEv_Iso')
-    if isIDOK: analysis.cutflow.increment('nEv_ID')
+    #if isIsoOK: analysis.cutflow.increment('nEv_Iso')
+    #if isIDOK: analysis.cutflow.increment('nEv_ID')
+    if isIDAndIsoOK: analysis.cutflow.increment('nEv_IDAndIso')
 
     # require at least 2 good muons in this event
     if len(analysis.good_muons) < 2: return False
@@ -289,18 +312,18 @@ def check_event_selection(analysis):
     return True
 
 
-## ___________________________________________________________
+## _____________________________________________________________________________
 def check_preselection(analysis):
     cuts = analysis.cuts
 
     num_leptons = len(analysis.good_muons) + len(analysis.good_electrons)
 
-    if (num_leptons > 4): return
+    if (num_leptons > 4): return False
     analysis.cutflow.increment('nEv_4Lep')
     return True
 
 
-## ___________________________________________________________
+## _____________________________________________________________________________
 def check_vh_preselection(analysis):
     cuts = analysis.cuts
 

@@ -307,11 +307,6 @@ class Muon(CommonCand):
         if self.corrected: return cor
         return uncor
 
-#    def eta(self):     return self._get('eta')
-#    def abs_eta(self): return abs(self._get('eta'))
-#    def phi(self):     return self._get('phi')
-#    def energy(self):  return self._get('energy')
-
     def p4(self, correction=''): # pt, eta, phi, e
         corrp4 = TLorentzVector()
         corrp4.SetPtEtaPhiE(self.pt('corr'), self.eta(),
@@ -400,13 +395,13 @@ class Muon(CommonCand):
     def iso_r3_hcal(self):    return self._get('isolationr3hcal')
     def iso_r3_n_track(self): return self._get('isolationr3ntrack')
     def iso_r3_track_rel(self):
-        return (self._get('isolationr3track') / self._get('pt'))
+        return (self._get('isolationr3track') / self.pt())
     def iso_r3_combined(self):
         return (self._get('isolationr3track') + self._get('isolationr3ecal')
                 + self._get('isolationr3hcal'))
     def iso_r3_combined_rel(self):
         return ((self._get('isolationr3track') + self._get('isolationr3ecal')
-                + self._get('isolationr3hcal')) / self._get('pt'))
+                + self._get('isolationr3hcal')) / self.pt())
     # corrected relative isolation
     def iso_PFr3dB_comb_rel(self): 
         isoval = (
@@ -415,7 +410,7 @@ class Muon(CommonCand):
                        + self._get('pfisolationr3_sumphotonet')
                        - 0.5 * self._get('pfisolationr3_sumpupt'))
                   )
-            ) / self._get('pt')
+            ) / self.pt()
         )
         return isoval
     def iso_PFr4dB_comb_rel(self): 
@@ -425,9 +420,12 @@ class Muon(CommonCand):
                        + self._get('pfisolationr4_sumphotonet')
                        - 0.5 * self._get('pfisolationr4_sumpupt'))
                   )
-            ) / self._get('pt')
+            ) / self.pt()
         )
         return isoval
+
+    def check_id_and_iso(self, idtype, isotype, isolevel):
+        return (self.check_id(idtype), self.check_iso(isotype, isolevel))
 
     def check_id(self, idtype):
         ''' Returns bool whether the muon passes Muon POG ID definitions
