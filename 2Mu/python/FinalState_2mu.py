@@ -27,8 +27,8 @@ class Ana2Mu(AnalysisBase):
         self.debug = False
 
         self.nSyncEvents = 0
-        self.syncLow = 100. # GeV
-        self.syncHigh = 110. # GeV
+        self.sync_low = 100. # GeV
+        self.sync_high = 110. # GeV
 
         # signal region for control plots
         self.sigLow = 120. # GeV
@@ -41,11 +41,11 @@ class Ana2Mu(AnalysisBase):
         # Some run options (defaults are False)                  #
         #                                                        #
         ##########################################################
-#        self.do_pileup_reweighting = True
-#        self.include_trigger_scale_factors = True
-#        self.include_lepton_scale_factors = True
+        self.do_pileup_reweighting = True
+        self.include_trigger_scale_factors = True
+        self.include_lepton_scale_factors = True
 
-#        self.use_rochester_corrections = True
+        self.use_rochester_corrections = True
 
         ##########################################################
         #                                                        #
@@ -98,7 +98,7 @@ class Ana2Mu(AnalysisBase):
         for name in self.histograms.keys():
             self.histograms_ctrl[name+'_ctrl'] = self.histograms[name].Clone(self.histograms[name].GetName()+'_ctrl')
         # add it to the extra histogram map
-        self.extraHistogramMap['control'] = self.histograms_ctrl
+        self.extra_histogram_map['control'] = self.histograms_ctrl
 
 
 
@@ -134,7 +134,7 @@ class Ana2Mu(AnalysisBase):
                 self.histograms_categories[name+'_'+cat] = self.histograms[name].Clone(
                     (self.histograms[name].GetName()+'_'+cat))
         # add it to the extra histogram map
-        self.extraHistogramMap['categories'] = self.histograms_categories
+        self.extra_histogram_map['categories'] = self.histograms_categories
 
 
 
@@ -172,23 +172,83 @@ class Ana2Mu(AnalysisBase):
         thisrun = self.event.run()
         thislumi = self.event.lumi_block()
         thisevent = self.event.number()
-        printevtinfo = False
 
 
         vbfevtlist = [
-            123462,
-            179489,
-            232626,
+#            232626,
+#            179489,
+#            123462,
+
+            53974,
+            4115,
+            188189,
+
+
+
+ # rochester corrections
+#            105005,
+#            108654,
+#            114785,
+#            115239,
+#            115434,
+#            115889,
+#            118885,
+#            121125,
+#            121943,
+#            122467,
+#            125021,
+#            130950,
+#            131273,
+#            135799,
+#            143943,
+#            144680,
+#            149966,
+#            15013,
+#            151679,
+#            208643,
+#            212737,
+#            214687,
+#            2196,
+#            219650,
+#            22591,
+#            233563,
+#            233980,
+#            242424,
+#            242832,
+#            244524,
+#            247428,
+#            249270,
+#            249940,
+#            25061,
+#            34777,
+#            38193,
+#            57881,
+#            59611,
+#            6742,
+#            69989,
+#            72317,
+#            72463,
+#            74008,
+#            7459,
+#            74870,
+#            75424,
+#            78132,
+#            78153,
+#            95103,
+#            98351,
+
+
+
         ]
 
 
         # sync
-        #if thisevent not in vbfevtlist: return
+#        if thisevent not in vbfevtlist: return
         #printevtinfo = True
         printevtinfo = False
 
 
-        if thisevent in vbfevtlist: printevtinfo = True
+ #       if thisevent in vbfevtlist: printevtinfo = True
 
 
 
@@ -328,8 +388,9 @@ class Ana2Mu(AnalysisBase):
 
 
 
+        #if dimuonobj.M() < self.sync_low or dimuonobj.M() > self.sync_high: return
 
-
+        self.fnumCat0 += 1
         if passes_sync_selection and passes_sync_preselection:
             if passes_sync_vbftight:
                 self.fnumCat1 += 1
@@ -349,7 +410,8 @@ class Ana2Mu(AnalysisBase):
                 this_cat = 5
         else: this_cat = -1
 
-        if this_cat == 1: printevtinfo = True
+        #if this_cat == 1: printevtinfo = True
+   #     print 'CAT{3} - {0}:{1}:{2}\n'.format(thisrun, thislumi, thisevent, this_cat)
 
         if printevtinfo:
             print '\n=================================================='
@@ -358,9 +420,20 @@ class Ana2Mu(AnalysisBase):
             print 'CAT{3} - {0}:{1}:{2}\n'.format(thisrun, thislumi, thisevent, this_cat)
             # print muon info
             print 'good electrons: {0}'.format(len(self.good_electrons) if self.good_electrons else 0)
+            for i, e in enumerate(self.good_electrons):
+                print '  Electron({0}):'.format(i)
+                print '    pT = {0:0.4f}\n    eta = {1:0.4f}'.format(e.pt(), e.eta())
+                print '    is_veto   = {0}'.format('True' if e.is_veto() else 'False')
+                print '    is_loose  = {0}'.format('True' if e.is_loose() else 'False')
+                print '    is_medium = {0}'.format('True' if e.is_medium() else 'False')
+                print '    is_tight  = {0}'.format('True' if e.is_tight() else 'False')
+            print
             print 'good muons: {0}'.format(len(self.good_muons) if self.good_muons else 0)
             for i, m in enumerate(self.good_muons):
-                print '  Muon({2}):\n    pT = {0:0.4f}\n    eta = {1:0.4f}'.format(m.pt(), m.eta(), i)
+                print '  Muon({0}):'.format(i)
+                print '    pT(corr) = {0:0.4f}\n    eta = {1:0.4f}'.format(m.pt('corr'), m.eta())
+                print '    pT(uncorr) = {0:0.4f}\n    eta = {1:0.4f}'.format(m.pt('uncorr'), m.eta())
+                print '    isoval = {0:0.4f}'.format(m.iso_PFr4dB_comb_rel())
             print
             print 'good dimuon cands: {0}'.format(len(self.dimuon_pairs) if self.dimuon_pairs else 0)
             for i, p in enumerate(self.dimuon_pairs):
@@ -369,7 +442,7 @@ class Ana2Mu(AnalysisBase):
                 print '    Muon(1):\n      pT = {0:0.4f}\n      eta = {1:0.4f}'.format(self.good_muons[p[1]].pt(), self.good_muons[p[1]].eta())
                 thisdimuon = self.good_muons[p[0]].p4() + self.good_muons[p[1]].p4()
                 print '    dimuon mass = {0:0.4f}'.format(thisdimuon.M())
-                print '    dimuon pt = {0:0.4f}\n'.format(thisdimuon.Pt())
+                print '    dimuon pt = {0:0.4f}'.format(thisdimuon.Pt())
                 print '    dimuon eta = {0:0.4f}\n'.format(thisdimuon.Eta())
             print
 
@@ -418,7 +491,6 @@ class Ana2Mu(AnalysisBase):
         ###self.tInvMass[0] = mytInvMass
         ###self.tEventWt[0] = eventweight
 
-        self.fnumCat0 += 1
 
         ###if this_cat: self.category_trees[this_cat-1].Fill()
 
