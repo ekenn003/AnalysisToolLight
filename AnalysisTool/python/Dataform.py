@@ -185,7 +185,7 @@ class PFMETTYPE1(METBase):
 class CandBase(object):
     '''
     Basic objects from reco::Candidate objects
-    p4 = TLorentzVector(pt, eta, phi, energy)
+    p4 = TLorentzVector(pt, eta, phi, mass)
     '''
     # constructors/helpers
     def __init__(self, tree, candName, entry):
@@ -209,9 +209,10 @@ class CandBase(object):
     def energy(self):  return self._get('energy')
     def p4(self):
         thisp4 = TLorentzVector()
-        thisp4.SetPtEtaPhiE(self.pt(), self.eta(), self.phi(), self.energy())
+        thisp4.SetPtEtaPhiM(self.pt(), self.eta(), self.phi(), self.mass())
         return thisp4
     def charge(self): return self._get('charge')
+    def mass(self):   return self._get('mass')
     def pdg_id(self): return self._get('pdgid')
 
 
@@ -307,13 +308,13 @@ class Muon(CommonCand):
         if self.corrected: return cor
         return uncor
 
-    def p4(self, correction=''): # pt, eta, phi, e
+    def p4(self, correction=''): # pt, eta, phi, m
         corrp4 = TLorentzVector()
-        corrp4.SetPtEtaPhiE(self.pt('corr'), self.eta(),
-                            self.phi(), self.energy())
+        corrp4.SetPtEtaPhiM(self.pt('corr'), self.eta(),
+                            self.phi(), self.mass())
         uncorrp4 = TLorentzVector()
-        uncorrp4.SetPtEtaPhiE(self.pt('uncorr'), self.eta(),
-                              self.phi(), self.energy())
+        uncorrp4.SetPtEtaPhiM(self.pt('uncorr'), self.eta(),
+                              self.phi(), self.mass())
         # decide which value to return
         if correction == 'corr':     return corrp4
         elif correction == 'uncorr': return uncorrp4
