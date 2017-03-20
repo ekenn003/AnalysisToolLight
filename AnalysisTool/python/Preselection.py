@@ -51,8 +51,8 @@ def initialize_cutflow(analysis):
     cutflow.add('nEv_1DiMu',
         'Require at least 1 "good" dimuon pair')
     # preselection
-    cutflow.add('nEv_4Lep', 
-        'Preselection: Require 4 or fewer total isolated leptons')
+    #cutflow.add('nEv_4Lep', 
+    #    'Preselection: Require 4 or fewer total isolated leptons')
 
     return cutflow
 
@@ -105,8 +105,6 @@ def check_event_selection(analysis):
     isPtCutOK = False
     isEtaCutOK = False
     nMuPtEtaMax = 0
-    #isIsoOK = False
-    #isIDOK = False
     isIDAndIsoOK = False
     for muon in analysis.muons:
         # muon cuts
@@ -125,12 +123,6 @@ def check_event_selection(analysis):
         if not all(muon.check_id_and_iso(cuts['cMuID'],
             cuts['cMuIsoType'], cuts['cMuIsoLevel'])): continue
         isIDAndIsoOK = True
-        #if not muon.check_id(cuts['cMuID']):
-        #    continue
-        #isIDOK = True
-        #if not muon.check_iso(cuts['cMuIsoType'], cuts['cMuIsoLevel']):
-        #    continue
-        #isIsoOK = True
 
         # if we get to this point, push muon into goodMuons
         analysis.good_muons += [muon]
@@ -144,8 +136,6 @@ def check_event_selection(analysis):
     if nMuPtEtaMax < 1: return False
     analysis.cutflow.increment('nEv_PtEtaMax')
 
-    #if isIsoOK: analysis.cutflow.increment('nEv_Iso')
-    #if isIDOK: analysis.cutflow.increment('nEv_ID')
     if isIDAndIsoOK: analysis.cutflow.increment('nEv_IDAndIso')
 
     # require at least 2 good muons in this event
@@ -161,8 +151,8 @@ def check_event_selection(analysis):
     # loop over electrons and save the good ones
     for electron in analysis.electrons:
         # electron cuts
-        if not electron.pt() > cuts['cEPt']: continue
-        if not electron.abs_eta() < cuts['cEEta']: continue
+        if electron.pt() < cuts['cEPt']: continue
+        if electron.abs_eta() > cuts['cEEta']: continue
 
         # check electron id
         # options: cutbased: IsVetoElectron, IsLooseElectron, IsMediumElectron, IsTightElectron
@@ -176,7 +166,9 @@ def check_event_selection(analysis):
         if not electronIDOK: continue
 
         # sync
-        if not (electron.abs_eta() < 1.4442 or (electron.abs_eta() < 2.5 and electron.abs_eta() > 1.566)): continue
+        if not (electron.abs_eta() < 1.4442
+            or (electron.abs_eta() < 2.5 and electron.abs_eta() > 1.566)):
+            continue
 
 
         # if we get to this point, push electron into goodElectrons
@@ -219,12 +211,6 @@ def check_event_selection(analysis):
     #############################
     evtmet = analysis.met.et()
     evtmetphi = analysis.met.phi()
-
-
-
-
-
-
 
 
 
@@ -305,10 +291,6 @@ def check_event_selection(analysis):
         goodpair = (i, j) if jet_i.pt() > jet_j.pt() else (j, i)
         analysis.dijet_pairs += [goodpair]
 
-
-
-
-
     return True
 
 
@@ -319,7 +301,7 @@ def check_preselection(analysis):
     num_leptons = len(analysis.good_muons) + len(analysis.good_electrons)
 
     if (num_leptons > 4): return False
-    analysis.cutflow.increment('nEv_4Lep')
+    #analysis.cutflow.increment('nEv_4Lep')
     return True
 
 
@@ -335,4 +317,98 @@ def check_vh_preselection(analysis):
     if num_leptons < 3: return False
     analysis.cutflow.increment('nEv_3or4Lep')
     return True
+
+
+
+## _____________________________________________________________________________
+def get_event_category(analysis, dimuonobj):
+    #cuts = analysis.cuts
+
+    # 80X sync evt selection: exactly 2 muons, 0 electrons
+    passes_sync_selection = (len(analysis.good_electrons) == 0
+        and len(analysis.good_muons) == 2)
+
+    # 80X sync preselection: 0 bjets, at least 2 regular jets,
+    #     leading/subleading jet 40/30 GeV
+    jet_count_is_ok = len(analysis.good_bjets) == 0 and len(analysis.good_jets) >= 2
+
+    jet_pts_are_ok = False
+    for i, p in enumerate(analysis.dijet_pairs):
+        # should already be ordered by pT
+        if (analysis.good_jets[p[0]].pt() > 40.
+            and analysis.good_jets[p[1]].pt() > 30.):
+            jet_pts_are_ok = True
+
+    passes_sync_preselection = jet_count_is_ok and jet_pts_are_ok
+
+
+    if not passes_sync_selection: return -1
+
+
+
+    # check if we have a VBF tight jet pair
+    have_vbftight_pair = False
+
+    for i, p in enumerate(analysis.dijet_pairs):
+        vbftight_dijet_mass_ok = False
+        vbftight_dijet_deta_ok = False
+
+        if not (analysis.good_jets[p[0]].pt() > 40.
+            and analysis.good_jets[p[1]].pt() > 30.): continue
+
+        thisdijet = analysis.good_jets[p[0]].p4() + analysis.good_jets[p[1]].p4()
+
+        # VBFTight: two conditions
+        if thisdijet.M() > 650.:
+            vbftight_dijet_mass_ok = True
+        if abs(analysis.good_jets[p[0]].eta()
+            - analysis.good_jets[p[1]].eta()) > 3.5:
+            vbftight_dijet_deta_ok = True
+
+        if vbftight_dijet_mass_ok and vbftight_dijet_deta_ok:
+            have_vbftight_pair = True
+            break
+
+    # check if we have a GGF tight jet pair
+    have_ggftight_pair = False
+
+    for i, p in enumerate(analysis.dijet_pairs):    
+        ggftight_dijet_mass_ok = False
+        ggftight_dimuon_pt_ok = False
+
+        if not (analysis.good_jets[p[0]].pt() > 40.
+            and analysis.good_jets[p[1]].pt() > 30.): continue
+
+        thisdijet = analysis.good_jets[p[0]].p4() + analysis.good_jets[p[1]].p4()
+
+        # GGFTight: two conditions
+        if thisdijet.M() > 250.: ggftight_dijet_mass_ok = True
+        if dimuonobj.Pt() > 50.: ggftight_dimuon_pt_ok = True
+
+        if ggftight_dijet_mass_ok and ggftight_dimuon_pt_ok:
+            have_ggftight_pair = True
+            break
+
+
+
+    analysis.fnumCat0 += 1
+    if passes_sync_selection and passes_sync_preselection:
+        if have_vbftight_pair:
+            analysis.fnumCat1 += 1
+            return 1
+        elif have_ggftight_pair:
+            analysis.fnumCat2 += 1
+            return 2
+        else:
+            analysis.fnumCat3 += 1
+            return 3
+    elif passes_sync_selection:
+        if dimuonobj.Pt() >= 25.:
+            analysis.fnumCat4 += 1
+            return 4
+        else:
+            analysis.fnumCat5 += 1
+            return 5
+    else: return -111111111111111111111
+
 
