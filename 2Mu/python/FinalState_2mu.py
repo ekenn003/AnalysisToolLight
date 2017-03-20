@@ -176,30 +176,6 @@ class Ana2Mu(AnalysisBase):
 
 
         vbfevtlist = [
-            #194101,
-            #194250,
-            #194251,
-            #194252,
-            #194449,
-            #194809,
-            #194890,
-            #194907,
-            #194922,
-            #19269,
-            #195157,
-            #195274,
-            #196006,
-            #196008,
-            #196286,
-            #196300,
-            #196324,
-            #196329,
-            #196987,
-            #197018,
-            #197145,
-            #197163,
-
-
             158113,
             53974,
             188189,
@@ -239,23 +215,9 @@ class Ana2Mu(AnalysisBase):
         ##########################################################
         ##########################################################
         #                                                        #
-        # Calculate event weight                                 #
-        #                                                        #
-        ##########################################################
-        eventweight_ = self.calculate_event_weight()
-        #print 'eventweight_.base_event_weight =', eventweight_.base_event_weight
-        #print 'eventweight_.pileup_factor =',     eventweight_.pileup_factor
-        #print 'eventweight_.trigger_factor =',    eventweight_.trigger_factor
-        #print 'eventweight_.lepton_factor =',     eventweight_.lepton_factor
-
-        eventweight = eventweight_.full
-
-        ##########################################################
-        #                                                        #
         # Determine dimuon pairs                                 #
         #                                                        #
         ##########################################################
-        self.histograms['hNumDiMu'].Fill(len(self.dimuon_pairs), eventweight)
 
 
         pairindex1, pairindex2 = self.dimuon_pairs[0]
@@ -269,6 +231,19 @@ class Ana2Mu(AnalysisBase):
 
         # decide whether to fill control plots
         fill_control_plots = mytInvMass > self.sigHigh or mytInvMass < self.sigLow
+
+        ##########################################################
+        #                                                        #
+        # Calculate event weight                                 #
+        #                                                        #
+        ##########################################################
+        eventweight_ = self.calculate_event_weight()
+        #print 'eventweight_.base_event_weight =', eventweight_.base_event_weight
+        #print 'eventweight_.pileup_factor =',     eventweight_.pileup_factor
+        #print 'eventweight_.trigger_factor =',    eventweight_.trigger_factor
+        #print 'eventweight_.lepton_factor =',     eventweight_.lepton_factor
+
+        eventweight = eventweight_.full
 
         ##########################################################
         #                                                        #
