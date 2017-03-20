@@ -500,6 +500,139 @@ class AnalysisBase(object):
             trigger_factor, lepton_factor)
 
 
+    ## _________________________________________________________________________
+    def print_event_info(self, this_cat):
+        '''
+        Prints collection info after selection.
+        '''
+        thisrun = self.event.run()
+        thislumi = self.event.lumi_block()
+        thisevent = self.event.number()
+
+        print '\n=================================================='
+        print 'Event info for {0}:{1}:{2}'.format(thisrun, thislumi, thisevent)
+        print '=================================================='
+        print 'CAT{3} - {0}:{1}:{2}\n'.format(thisrun,
+            thislumi, thisevent, this_cat)
+
+        # print electron info
+        print 'good electrons: {0}'.format(len(self.good_electrons)
+            if self.good_electrons else 0)
+        for i, e in enumerate(self.good_electrons):
+            print '    Electron({0}):'.format(i)
+            print '        pT = {0:0.4f}'.format(e.pt())
+            print '        eta = {0:0.4f}'.format(e.eta())
+            print '        phi = {0:0.4f}'.format(e.phi())
+            print '        is_loose  = {0}'.format('True' if e.is_loose() else 'False')
+            print '        is_medium = {0}'.format('True' if e.is_medium() else 'False')
+            print '        is_tight  = {0}'.format('True' if e.is_tight() else 'False')
+        print
+
+        # print muon info
+        print 'good muons: {0}'.format(len(self.good_muons)
+            if self.good_muons else 0)
+        for i, m in enumerate(self.good_muons):
+            print '    Muon({0}):'.format(i)
+            print '        pT(uncorr) = {0:0.4f}'.format(m.pt('uncorr'))
+            print '        pT(corr)   = {0:0.4f}'.format(m.pt('corr'))
+            print '        eta = {0:0.4f}'.format(m.eta())
+            print '        phi = {0:0.4f}'.format(m.phi())
+            print '        isoval = {0:0.4f}'.format(m.iso_PFr4dB_comb_rel())
+            print '        is_loose  = {0}'.format('True' if m.is_loose() else 'False')
+            print '        is_medium = {0}'.format('True' if m.is_medium() else 'False')
+            print '        is_medium2016 = {0}'.format('True' if m.is_medium2016() else 'False')
+            print '        is_tight  = {0}'.format('True' if m.is_tight() else 'False')
+        print
+
+        # print dimuon info
+        print 'good dimuon cands: {0}'.format(len(self.dimuon_pairs)
+            if self.dimuon_pairs else 0)
+        for i, p in enumerate(self.dimuon_pairs):
+            thisdimuon = self.good_muons[p[0]].p4() + self.good_muons[p[1]].p4()
+            print '    Pair({0}):'.format(i)
+            print '        dimuon inv mass = {0:0.4f}'.format(thisdimuon.M())
+            print '        dimuon pt  = {0:0.4f}'.format(thisdimuon.Pt())
+            print '        dimuon eta = {0:0.4f}'.format(thisdimuon.Eta())
+            print '        Muon({0}):'.format(p[0])
+            print '            pT = {0:0.4f}'.format(self.good_muons[p[0]].pt())
+            print '        Muon({0}):'.format(p[1])
+            print '            pT = {0:0.4f}'.format(self.good_muons[p[1]].pt())
+        print
+
+            # check effects of rochester corrections
+            #thisdimuonuncorr_first  = self.good_muons[p[0]].p4('uncorr')
+            #thisdimuonuncorr_second = self.good_muons[p[1]].p4('uncorr')
+            #thisdimuonuncorr = thisdimuonuncorr_first + thisdimuonuncorr_second
+            #thisdimuoncorr_first  = self.good_muons[p[0]].p4('corr')
+            #thisdimuoncorr_second = self.good_muons[p[1]].p4('corr')
+            #thisdimuoncorr = thisdimuoncorr_first + thisdimuoncorr_second
+            #print 'uncor muon0 Pt, Eta, Phi, E =', thisdimuonuncorr_first.Pt(), \
+            #thisdimuonuncorr_first.Eta(), thisdimuonuncorr_first.Phi(), \
+            #thisdimuonuncorr_first.E()
+            #print '  cor muon0 Pt, Eta, Phi, E =', thisdimuoncorr_first.Pt(), \
+            #thisdimuoncorr_first.Eta(), thisdimuoncorr_first.Phi(), \
+            #thisdimuoncorr_first.E()
+            #print
+            #print 'uncor muon0 Px, Py, Pz =', thisdimuonuncorr_first.Px(), \
+            #thisdimuonuncorr_first.Py(), thisdimuonuncorr_first.Pz()
+            #print '  cor muon0 Px, Py, Pz =', thisdimuoncorr_first.Px(), \
+            #thisdimuoncorr_first.Py(), thisdimuoncorr_first.Pz()
+            #print
+            #print
+            #print 'uncor muon1 Pt, Eta, Phi, E =', thisdimuonuncorr_second.Pt(), \
+            #thisdimuonuncorr_second.Eta(), thisdimuonuncorr_second.Phi(), \
+            #thisdimuonuncorr_second.E()
+            #print '  cor muon1 Pt, Eta, Phi, E =', thisdimuoncorr_second.Pt(), \
+            #thisdimuoncorr_second.Eta(), thisdimuoncorr_second.Phi(), \
+            #thisdimuoncorr_second.E()
+            #print
+            #print 'uncor muon1 Px, Py, Pz =', thisdimuonuncorr_second.Px(), \
+            #thisdimuonuncorr_second.Py(), thisdimuonuncorr_second.Pz()
+            #print '  cor muon1 Px, Py, Pz =', thisdimuoncorr_second.Px(), \
+            #thisdimuoncorr_second.Py(), thisdimuoncorr_second.Pz()
+            #print '    corr dimuon mass = {0:0.4f}'.format(thisdimuoncorr.M())
+            #print '    uncorr dimuon mass = {0:0.4f}'.format(thisdimuonuncorr.M())
+            #print '    corr dimuon pt = {0:0.4f}'.format(thisdimuoncorr.Pt())
+            #print '    uncorr dimuon pt = {0:0.4f}'.format(thisdimuonuncorr.Pt())
+            #print '    dimuon eta = {0:0.4f}\n'.format(thisdimuonuncorr.Eta())
+
+
+        # print jet info
+        print 'good b jets: {0}'.format(len(self.good_bjets)
+            if self.good_bjets else 0)
+        for i, j in enumerate(self.good_bjets):
+            print '    BJet({0}):'.format(i)
+            print '        pT = {0:0.4f}'.format(j.pt())
+            print '        eta = {0:0.4f}'.format(j.eta())
+        print
+
+        print 'good jets: {0}'.format(len(self.good_jets)
+            if self.good_jets else 0)
+        for i, j in enumerate(self.good_jets):
+            print '    Jet({0}):'.format(i)
+            print '        pT = {0:0.4f}'.format(j.pt())
+            print '        eta = {0:0.4f}'.format(j.eta())
+        print
+
+        # print dijet info
+        print 'dijet cands: {0}'.format(len(self.dijet_pairs)
+            if self.dijet_pairs else 0)
+        for i, p in enumerate(self.dijet_pairs):
+            thisdijet = self.good_jets[p[0]].p4() + self.good_jets[p[1]].p4()
+            print '    Pair({0}):'.format(i)
+            print '        dijet inv mass = {0:0.4f}'.format(thisdijet.M())
+            print '        dijet pt  = {0:0.4f}'.format(thisdijet.Pt())
+            print '        dijet eta = {0:0.4f}'.format(thisdijet.Eta())
+            print '        Jet({0}):'.format(p[0])
+            print '            pT = {0:0.4f}'.format(self.good_jets[p[0]].pt())
+            print '        Jet({0}):'.format(p[1])
+            print '            pT = {0:0.4f}'.format(self.good_jets[p[1]].pt())
+        print
+
+        # print met info
+        print 'MET: {0:0.4f}\n'.format(self.met.et())
+
+
 
 ## _____________________________________________________________________________
 def parse_command_line(argv):
@@ -515,7 +648,7 @@ def parse_command_line(argv):
     parser.add_argument('-n', '--nevents', type=int, default=-1,
         help=('Max number of events to process (should be only used for '
             'debugging; results in incorrect sumweights)'))
-    parser.add_argument('-sn', '--skipevents', type=int, default=-1,
+    parser.add_argument('-ns', '--skipevents', type=int, default=-1,
         help=('Number of events to skip before processing (should be only used '
             'for debugging; results in incorrect sumweights)'))
 
