@@ -42,11 +42,11 @@ class Ana2Mu(AnalysisBase):
         # Some run options (defaults are False)                  #
         #                                                        #
         ##########################################################
-        #self.do_pileup_reweighting = True
-        #self.include_trigger_scale_factors = True
-        #self.include_lepton_scale_factors = True
+        self.do_pileup_reweighting = True
+        self.include_trigger_scale_factors = True
+        self.include_lepton_scale_factors = True
 
-        #self.use_rochester_corrections = True
+        self.use_rochester_corrections = True
 
         ##########################################################
         #                                                        #
@@ -176,24 +176,8 @@ class Ana2Mu(AnalysisBase):
 
 
         vbfevtlist = [
-            158113,
-            53974,
-            188189,
-            65309,
-            112520,
-            113484,
-            212289,
-            92672,
-            118829,
-            149051,
+
             153657,
-            179489,
-            222785,
-            232626,
-            45742,
-            49446,
-            59095,
-            75466,
 
         ]
 
@@ -270,7 +254,7 @@ class Ana2Mu(AnalysisBase):
 
 
 #        if this_cat == 3: printevtinfo = True
-#        print 'CAT{3} - {0}:{1}:{2}\n'.format(thisrun, thislumi, thisevent, this_cat)
+#        print 'CAT{3} - {0}:{1}:{2}'.format(thisrun, thislumi, thisevent, this_cat)
 
 
 

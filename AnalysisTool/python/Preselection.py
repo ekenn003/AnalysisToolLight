@@ -315,7 +315,7 @@ def check_vh_preselection(analysis):
     analysis.cutflow.increment('nEv_NoBJets')
 
     if num_leptons < 3: return False
-    analysis.cutflow.increment('nEv_3or4Lep')
+    #analysis.cutflow.increment('nEv_3or4Lep')
     return True
 
 
@@ -326,7 +326,8 @@ def get_event_category(analysis, dimuonobj):
 
     # 80X sync evt selection: exactly 2 muons, 0 electrons
     passes_sync_selection = (len(analysis.good_electrons) == 0
-        and len(analysis.good_muons) == 2)
+        and len(analysis.good_muons) == 2
+        and len(analysis.good_bjets) == 0)
 
     # 80X sync preselection: 0 bjets, at least 2 regular jets,
     #     leading/subleading jet 40/30 GeV

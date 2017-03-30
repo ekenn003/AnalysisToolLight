@@ -307,7 +307,7 @@ class MuonScaleFactors(ScaleFactor):
                     self.mufile.Get(cut+'_GH'))
 
             self.maxpt = self.muonideffs['tightID']['R'].GetXaxis().GetXmax()-1.
-            self.minpt = self.muonideffs['tightID']['R'].GetXaxis().GetXmin()
+            self.minpt = self.muonideffs['tightID']['R'].GetXaxis().GetXmin()+0.01
             self.maxeta = self.muonideffs['tightID']['R'].GetYaxis().GetXmax()
 
 
@@ -334,7 +334,8 @@ class MuonScaleFactors(ScaleFactor):
         sf = 1.
         for mu in muons:
             # make sure the muon is in range
-            pt_ = min(self.maxpt, mu.pt())
+            #pt_ = min(self.maxpt, mu.pt())
+            pt_ = max( self.minpt, min(self.maxpt, mu.pt()) )
             eta_ = min(self.maxeta, mu.abs_eta())
             # find efficiencies for this muon
             musf = self.muonideffs[cut]['R'+scheme].GetBinContent(
@@ -393,7 +394,8 @@ class MuonScaleFactors(ScaleFactor):
         sf = 1.
         for mu in muons:
             # make sure the muon is in range
-            pt_ = min(self.maxpt, mu.pt())
+            #pt_ = min(self.maxpt, mu.pt())
+            pt_ = max( self.minpt, min(self.maxpt, mu.pt()) )
             eta_ = min(self.maxeta, mu.abs_eta())
             # find efficiencies for this muon
             musf = self.muonisoeffs[cut]['R'+scheme].GetBinContent(

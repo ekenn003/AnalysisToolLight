@@ -316,11 +316,17 @@ class AnalysisBase(object):
 
                 # check all-category preselection
                 passes_preselection = check_preselection(self)
-                if not passes_preselection: continue
+                if not passes_preselection: pass
+             #   if not passes_preselection: continue
 
                 # call the per_event_action method
                 #     (which is overridden in the derived class)
                 self.per_event_action()
+
+            if (self.max_events is not -1
+                and self.eventsprocessed >= self.max_events):
+                break
+
 
 
         ##########################################################

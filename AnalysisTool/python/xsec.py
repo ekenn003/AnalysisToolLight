@@ -25,6 +25,8 @@ xsecs = {
     # t-tbar (choose one)
     'TTJets_TuneCUETP8M1_13TeV-madgraphMLM-pythia8'                    :    502.2      * pb,
     'TTJets_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8'                   :    831.76     * pb,
+    'TTJets_Dilept_TuneCUETP8M2T4_13TeV-amcatnloFXFX-pythia8'          :     85.656    * pb,
+    'TTJets_TuneCUETP8M2T4_13TeV-amcatnloFXFX-pythia8'                 :    815.96     * pb,
 
     # tt associated production w/boson (inclusive)
     'ttZJets_13TeV_madgraphMLM'                                        :      0.259    * pb,

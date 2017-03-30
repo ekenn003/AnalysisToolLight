@@ -1,12 +1,10 @@
 # FinalState_2mu.py
-#import glob
 import itertools
 import argparse
 import sys, logging
-#import ROOT
 from ROOT import TTree, TH1F
 from array import array
-from AnalysisToolLight.AnalysisTool.tools.tools import DeltaR, Z_MASS, EventIsOnList
+from AnalysisToolLight.AnalysisTool.tools.tools import delta_r, Z_MASS, event_is_on_list
 from AnalysisToolLight.AnalysisTool.CutFlow import CutFlow
 from AnalysisToolLight.AnalysisTool.AnalysisBase import AnalysisBase
 from AnalysisToolLight.AnalysisTool.AnalysisBase import main as analysisBaseMain
@@ -15,12 +13,12 @@ from AnalysisToolLight.AnalysisTool.histograms import fill_base_histograms
 from cuts import vh_cuts as cuts
 
 ## ___________________________________________________________
-class Ana2Mu(AnalysisBase):
+class VH2Mu(AnalysisBase):
     def __init__(self, args):
 
         self.cuts = cuts
 
-        super(Ana2Mu, self).__init__(args)
+        super(VH2Mu, self).__init__(args)
 
         ##########################################################
         #                                                        #
@@ -30,8 +28,8 @@ class Ana2Mu(AnalysisBase):
         self.debug = False
 
         self.nSyncEvents = 0
-        self.syncLow = 110. # GeV
-        self.syncHigh = 130. # GeV
+        self.sync_low = 100. # GeV
+        self.sync_high = 110. # GeV
 
         # signal region for control plots
         self.sigLow = 120. # GeV
@@ -41,15 +39,14 @@ class Ana2Mu(AnalysisBase):
 
         ##########################################################
         #                                                        #
-        # Some run options                                       #
+        # Some run options (defaults are False)                  #
         #                                                        #
         ##########################################################
-        self.do_pileup_reweighting = True
-        self.include_trigger_scale_factors = True
-        self.include_lepton_scale_factors = True
+        #self.do_pileup_reweighting = True
+        #self.include_trigger_scale_factors = True
+        #self.include_lepton_scale_factors = True
 
-        # use rochester corrections (default is false)
-        self.use_rochester_corrections = True
+        #self.use_rochester_corrections = True
 
         ##########################################################
         #                                                        #
@@ -66,8 +63,16 @@ class Ana2Mu(AnalysisBase):
         # Initialize additional event counters                   #
         #                                                        #
         ##########################################################
-        self.cutflow.add('nEv_NoBJets', 'V(lep)h selection: Require 0 bjets')
+        #self.cutflow.add('nEv_NoBJets', 'V(lep)h selection: Require 0 bjets')
         self.cutflow.add('nEv_3or4Lep', 'V(lep)h selection: Require 1 or 2 extra isolated leptons')
+
+
+        self.cutflow.add('nEv_NoElectrons', 'Require 0 electrons')
+        self.cutflow.add('nEv_NoBJets', 'Require 0 bjets')
+        self.cutflow.add('nEv_2Jets', 'Require 2 jets')
+        self.cutflow.add('nEv_MET', 'Require <40 MET')
+
+
 
 
         ##########################################################
@@ -94,7 +99,7 @@ class Ana2Mu(AnalysisBase):
         for name in self.histograms.keys():
             self.histograms_ctrl[name+'_ctrl'] = self.histograms[name].Clone(self.histograms[name].GetName()+'_ctrl')
         # add it to the extra histogram map
-        self.extraHistogramMap['control'] = self.histograms_ctrl
+        self.extra_histogram_map['control'] = self.histograms_ctrl
 
 
 
@@ -106,12 +111,14 @@ class Ana2Mu(AnalysisBase):
         ##########################################################
 
         self.categories = [
-            'Category1_V_mu_h',
-            'Category2_V_e_h',
-            'Category3_Z_tau_h',
-            'Category4_Z_mu_h',
-            'Category5_Z_e_h',
+            'Category0_All',
+            'Category1_VBFTight',
+            'Category2_GGFTight',
+            'Category3_VBFLoose',
+            'Category4_01JetTight',
+            'Category5_01JetLoose',
         ]
+        self.fnumCat0 = 0
         self.fnumCat1 = 0
         self.fnumCat2 = 0
         self.fnumCat3 = 0
@@ -119,15 +126,16 @@ class Ana2Mu(AnalysisBase):
         self.fnumCat5 = 0
         self.fnumBucket = 0
 
-        category_hists = ['hVtxN', 'hMET', 'hDiMuPt', 'hDiMuInvMass', 'hNumMu', 'hNumE', 'hMuPt', 'hMuEt', 'hEPt']
+        category_hists = ['hVtxN', 'hMET', 'hDiMuPt', 'hDiMuInvMass', 'hNumMu', 'hMuPt']
 
         self.histograms_categories = {}
         for name in self.histograms.keys():
             if name not in category_hists: continue
             for cat in self.categories:
-                self.histograms_categories[name+'_'+cat] = self.histograms[name].Clone(self.histograms[name].GetName()+'_'+cat)
+                self.histograms_categories[name+'_'+cat] = self.histograms[name].Clone(
+                    (self.histograms[name].GetName()+'_'+cat))
         # add it to the extra histogram map
-        self.extraHistogramMap['categories'] = self.histograms_categories
+        self.extra_histogram_map['categories'] = self.histograms_categories
 
 
 
@@ -143,13 +151,6 @@ class Ana2Mu(AnalysisBase):
         self.tEventWt = array('f', [0.])
 
         self.category_trees = []
-#        self.ftreeCat0 = TTree('Category0', 'Category0')
-#        self.category_trees += [self.ftreeCat0]
-#        self.ftreeCat0.Branch('tEventNr', self.tEventNr, 'tEventNr/l')
-#        self.ftreeCat0.Branch('tLumiNr', self.tLumiNr, 'tLumiNr/l')
-#        self.ftreeCat0.Branch('tRunNr', self.tRunNr, 'tRunNr/l')
-#        self.ftreeCat0.Branch('tInvMass', self.tInvMass, 'tInvMass/F')
-#        self.ftreeCat0.Branch('tEventWt', self.tEventWt, 'tEventWt/F')
 
         for i, cat in enumerate(self.categories):
             self.category_trees += [TTree(cat, cat)]
@@ -168,13 +169,17 @@ class Ana2Mu(AnalysisBase):
         This method only executes if the event passes event selection and
         preselection found in python/Preselection.
         '''
-        ##########################################################
-        #                                                        #
-        # Check VH preselection                                  #
-        #                                                        #
-        ##########################################################
-#        passes_vh = check_vh_preselection(self)
-#        if not passes_vh: return
+
+        thisrun = self.event.run()
+        thislumi = self.event.lumi_block()
+        thisevent = self.event.number()
+
+        #printevtinfo = True
+        printevtinfo = False
+
+
+        #if thisevent in vbfevtlist: printevtinfo = True
+
 
 
         ##########################################################
@@ -183,9 +188,30 @@ class Ana2Mu(AnalysisBase):
         #                                                        #
         ##########################################################
 
+        #if not check_vh_preselection(self): return
+
+        #if len(self.good_muons) != 4: return
+
+        num_mu, num_e = len(analysis.good_muons), len(analysis.good_electrons)
+
+        ##########################################################
+        #                                                        #
+        # Determine dimuon pairs                                 #
+        #                                                        #
+        ##########################################################
 
 
+        pairindex1, pairindex2 = self.dimuon_pairs[0]
+        muon1 = self.good_muons[pairindex1]
+        muon2 = self.good_muons[pairindex2]
+        dimuonobj = muon1.p4() + muon2.p4()
 
+        # pick which inv mass to put in limit tree
+
+        mytInvMass = dimuonobj.M()
+
+        # decide whether to fill control plots
+        fill_control_plots = mytInvMass > self.sigHigh or mytInvMass < self.sigLow
 
         ##########################################################
         #                                                        #
@@ -199,26 +225,6 @@ class Ana2Mu(AnalysisBase):
         #print 'eventweight_.lepton_factor =',     eventweight_.lepton_factor
 
         eventweight = eventweight_.full
-
-        ##########################################################
-        #                                                        #
-        # Determine dimuon pairs                                 #
-        #                                                        #
-        ##########################################################
-        self.histograms['hNumDiMu'].Fill(len(self.dimuon_pairs), eventweight)
-
-
-        pairindex1, pairindex2 = self.dimuon_pairs[0]
-        muon1 = self.good_muons[pairindex1]
-        muon2 = self.good_muons[pairindex2]
-        dimuonobj = muon1.P4() + muon2.P4()
-
-        # pick which inv mass to put in limit tree
-
-        mytInvMass = dimuonobj.M()
-
-        # decide whether to fill control plots
-        fill_control_plots = mytInvMass > self.sigHigh or mytInvMass < self.sigLow
 
         ##########################################################
         #                                                        #
@@ -239,71 +245,52 @@ class Ana2Mu(AnalysisBase):
         # Determine category                                     #
         #                                                        #
         ##########################################################
-        num_muons = len(self.good_muons)
-        num_electrons = len(self.good_electrons)
 
-        if self.met.Et() >= 40.:
-            # V_mu_h
-            if num_muons==3 and num_electrons==0:
-                this_cat = 1
-                self.fnumCat1 += 1
-            # V_e_h
-            elif num_muons==2 and num_electrons==1:
-                this_cat = 2
-                self.fnumCat2 += 1
-            # Z_tau_h
-            elif num_muons==3 and num_electrons==1:
-                this_cat = 3
-                self.fnumCat3 += 1
-            # leftover
-            else:
-                this_cat = 0
-                self.fnumBucket += 1
-        else:
-            # Z_mu_h
-            if num_muons==4 and num_electrons==0:
-                this_cat = 4
-                self.fnumCat4 += 1
-            # Z_e_h
-            elif num_muons==2 and num_electrons==2:
-                this_cat = 5
-                self.fnumCat5 += 1
-            # leftover
-            else:
-                this_cat = 0
-                self.fnumBucket += 1
-
-        #if this_cat: logging.info('THISCATEGORY = ' + str(this_cat))
-
-        ##########################################################
-        #                                                        #
-        # Fill limit trees                                       #
-        #                                                        #
-        ##########################################################
-        self.tEventNr[0] = self.event.Number()
-        self.tLumiNr[0]  = self.event.LumiBlock()
-        self.tRunNr[0]   = self.event.Run()
-        self.tInvMass[0] = mytInvMass
-        self.tEventWt[0] = eventweight
-        if this_cat: self.category_trees[this_cat-1].Fill()
-    #    self.ftreeCat0.Fill()
-    #    self.fnumCat0 += 1
+        #this_cat = get_event_category(self, dimuonobj)
+        this_cat = 0
 
 
-        for cat in self.categories:
-            if 'Category{0}'.format(this_cat) not in cat: continue
-            self.histograms_categories['hDiMuInvMass_'+self.categories[this_cat-1]].Fill(mytInvMass, eventweight)
+#        if this_cat == 3: printevtinfo = True
+#        print 'CAT{3} - {0}:{1}:{2}\n'.format(thisrun, thislumi, thisevent, this_cat)
+
+
+
+        if printevtinfo:
+            self.print_event_info(this_cat)
+
+
+
+        
+
+        #############################################################
+        ####                                                        #
+        #### Fill limit trees                                       #
+        ####                                                        #
+        #############################################################
+        ###self.tEventNr[0] = self.event.Number()
+        ###self.tLumiNr[0]  = self.event.LumiBlock()
+        ###self.tRunNr[0]   = self.event.Run()
+        ###self.tInvMass[0] = mytInvMass
+        ###self.tEventWt[0] = eventweight
+
+
+        ###if this_cat: self.category_trees[this_cat-1].Fill()
+
+        ###for cat in self.categories:
+        ###    if 'Category{0}'.format(this_cat) not in cat: continue
+        ###    self.histograms_categories['hDiMuInvMass_'+self.categories[this_cat-1]].Fill(mytInvMass, eventweight)
 
 
     ## _______________________________________________________
     def end_of_job_action(self):
-        logging.info('nSyncEvents = ' + str(self.nSyncEvents))
-        logging.info('Category1 (V_mu_h) events  = {0}'.format(self.fnumCat1))
-        logging.info('Category2 (V_e_h) events   = {0}'.format(self.fnumCat2))
-        logging.info('Category3 (Z_tau_h) events = {0}'.format(self.fnumCat3))
-        logging.info('Category4 (Z_mu_h) events  = {0}'.format(self.fnumCat4))
-        logging.info('Category5 (Z_e_h) events   = {0}'.format(self.fnumCat5))
-        logging.info('Bucket events = {0}'.format(self.fnumBucket))
+#        logging.info('nSyncEvents = ' + str(self.nSyncEvents))
+        logging.info('Category1 (VBFTight) events   = {0}'.format(self.fnumCat1))
+        logging.info('Category2 (GGFTight) events   = {0}'.format(self.fnumCat2))
+        logging.info('Category3 (VBFLoose) events   = {0}'.format(self.fnumCat3))
+        logging.info('Category4 (01JetTight) events = {0}'.format(self.fnumCat4))
+        logging.info('Category5 (01JetLoose) events = {0}'.format(self.fnumCat5))
+        logging.info('')
+        logging.info('Category0 (Total) events      = {0}'.format(self.fnumCat0))
 
 
 
@@ -311,9 +298,9 @@ class Ana2Mu(AnalysisBase):
 # actually execute the analysis
 def main(argv=None):
 #    try:
-    Ana2Mu(analysisBaseMain(argv)).analyze()
+    VH2Mu(analysisBaseMain(argv)).analyze()
 #    except KeyboardInterrupt:
-#        Ana2Mu(analysisBaseMain(argv)).end_job()
+#        VH2Mu(analysisBaseMain(argv)).end_job()
 
 ## ___________________________________________________________
 # checks if this was run from the command line
