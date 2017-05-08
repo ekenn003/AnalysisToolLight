@@ -36,8 +36,8 @@ xsecs = {
     'ttH_M125_13TeV_powheg_pythia8'                                    :      0.5085   * pb,
 
     # single top 
-    'ST_tW_antitop_5f_inclusiveDecays_13TeV-powheg-pythia8_TuneCUETP8M1', :  35.85     * pb,
-    'ST_tW_top_5f_inclusiveDecays_13TeV-powheg-pythia8_TuneCUETP8M1',  :     35.85     * pb,
+    'ST_tW_antitop_5f_inclusiveDecays_13TeV-powheg-pythia8_TuneCUETP8M1' :   35.85     * pb,
+    'ST_tW_top_5f_inclusiveDecays_13TeV-powheg-pythia8_TuneCUETP8M1'  :      35.85     * pb,
     'tZq_ll_4f_13TeV-amcatnlo-pythia8_TuneCUETP8M1'                    :      0.0758   * pb,
     'tZq_ll_4f_13TeV-amcatnlo-pythia8'                                 :      0.0758   * pb,
 

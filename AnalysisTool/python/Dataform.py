@@ -308,6 +308,9 @@ class Muon(CommonCand):
         if self.corrected: return cor
         return uncor
 
+    def pt_roch(self):
+        return self._get('rochesterPt')
+
     def p4(self, correction=''): # pt, eta, phi, m
         corrp4 = TLorentzVector()
         corrp4.SetPtEtaPhiM(self.pt('corr'), self.eta(),

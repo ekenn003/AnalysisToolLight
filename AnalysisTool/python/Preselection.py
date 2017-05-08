@@ -78,16 +78,11 @@ def check_event_selection(analysis):
     # save good vertices
     isVtxNdfOK = False
     isVtxZOK = False
-    for pv in analysis.vertices:
-        if not isVtxNdfOK: isVtxNdfOK = pv.n_dof() > cuts['cVtxNdf']
-        if not isVtxZOK:   isVtxZOK = pv.z() < cuts['cVtxZ']
-        # check if it's passed
-        if not (isVtxNdfOK and isVtxZOK): continue
-        # save it if it did
-        analysis.good_vertices += [pv]
-
-    # require at least one good vertex
-    if not analysis.good_vertices: return False
+    pv = analysis.vertices[0]
+    isVtxNdfOK = pv.n_dof() > cuts['cVtxNdf']
+    isVtxZOK = pv.z() < cuts['cVtxZ']
+    # check if it's passed
+    if not (isVtxNdfOK and isVtxZOK): return False
 
 
 
@@ -115,14 +110,15 @@ def check_event_selection(analysis):
         if muon.abs_eta() > cuts['cMuEta']: continue
         isEtaCutOK = True
 
-        # make sure at least one HLT-matched muon passes extra cuts
-        if (muon.pt() > cuts['cMuPtMax']
-            and muon.abs_eta() < cuts['cMuEtaMax']): nMuPtEtaMax += 1
-
         # check muon ID and isolation
         if not all(muon.check_id_and_iso(cuts['cMuID'],
             cuts['cMuIsoType'], cuts['cMuIsoLevel'])): continue
         isIDAndIsoOK = True
+
+        # make sure at least one HLT-matched muon passes extra cuts
+        if (muon.pt() > cuts['cMuPtMax']
+            and muon.abs_eta() < cuts['cMuEtaMax']
+            and muon.matches_HLTs(analysis.hltriggers)): nMuPtEtaMax += 1
 
         # if we get to this point, push muon into goodMuons
         analysis.good_muons += [muon]
@@ -236,8 +232,8 @@ def check_event_selection(analysis):
         # require opposite sign
         if muon_i.charge() * muon_j.charge() > 0: continue
         isChargeMuCutOK = True
-        # require from same PV
-        if abs(muon_i.dz() - muon_j.dz()) > 0.14: continue
+#        # require from same PV
+#        if abs(muon_i.dz() - muon_j.dz()) > 0.14: continue
         isSamePVMuCutOK = True
         # create composite four-vector
         diMuonP4 = muon_i.p4() + muon_j.p4()
@@ -258,6 +254,17 @@ def check_event_selection(analysis):
 
     # require at least one dimuon pair
     if len(analysis.dimuon_pairs) < 1: return False
+
+
+
+
+
+
+
+    if len(analysis.dimuon_pairs) != 1: return False
+
+
+
     analysis.cutflow.increment('nEv_1DiMu')
 
 
@@ -272,7 +279,7 @@ def check_event_selection(analysis):
 
         # electron pair cuts
         if elec_i.charge() * elec_j.charge() > 0: continue
-        if abs(elec_i.dz() - elec_j.dz()) > 0.14: continue
+        #if abs(elec_i.dz() - elec_j.dz()) > 0.14: continue
 
         #thispair = pair if pair[0].Pt() > pair[1].Pt() else (pair[1], pair[0])
         goodpair = (i, j) if elec_i.pt() > elec_j.pt() else (j, i)

@@ -72,7 +72,7 @@ vh_cuts = {
     # h candidate cuts
     #'cDiMuInvMass' : 60., # GeV
     #'cDiMuPt' : 30., # GeV
-    'cDiMuInvMass' : 0., # GeV
+    'cDiMuInvMass' : 60., # GeV
     'cDiMuPt' : 0., # GeV
 
 }

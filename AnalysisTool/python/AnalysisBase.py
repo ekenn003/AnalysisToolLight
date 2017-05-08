@@ -41,6 +41,7 @@ class AnalysisBase(object):
         input_file_list = args.input_file_list
         self.max_events = args.nevents
         self.skip_events = args.skipevents
+        self.whichfile = args.whichfile
         self.data_dir   = ('{0}/src/AnalysisToolLight/AnalysisTool'
             '/data'.format(os.environ['CMSSW_BASE']))
         # outputs
@@ -222,6 +223,9 @@ class AnalysisBase(object):
         ##########################################################
         # loop over each input file
         for f, fname in enumerate(self.filenames):
+
+            if self.whichfile != -1 and f+1 != self.whichfile: continue
+
             logging.info('')
             logging.info('Processing file {0} of {1}:'.format(f+1,
                 len(self.filenames)))
@@ -278,6 +282,8 @@ class AnalysisBase(object):
                 self.muons     = ([Muon(row, i, self.use_rochester_corrections)
                     for i in range(row.muon_count)]
                     if hasattr(row,'muon_count') else [])
+                if self.use_rochester_corrections:
+                    self.muons.sort(key=lambda m: m.pt_roch(), reverse=True)
                 self.electrons = ([Electron(row, i)
                     for i in range(row.electron_count)]
                     if hasattr(row,'electron_count') else [])
@@ -654,8 +660,11 @@ def parse_command_line(argv):
     parser.add_argument('-n', '--nevents', type=int, default=-1,
         help=('Max number of events to process (should be only used for '
             'debugging; results in incorrect sumweights)'))
-    parser.add_argument('-ns', '--skipevents', type=int, default=-1,
+    parser.add_argument('-s', '--skipevents', type=int, default=-1,
         help=('Number of events to skip before processing (should be only used '
+            'for debugging; results in incorrect sumweights)'))
+    parser.add_argument('-f', '--whichfile', type=int, default=-1,
+        help=('Number of input file (should be only used '
             'for debugging; results in incorrect sumweights)'))
 
     return parser.parse_args(argv)

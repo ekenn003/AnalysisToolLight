@@ -42,7 +42,7 @@ class Ana2Mu(AnalysisBase):
         # Some run options (defaults are False)                  #
         #                                                        #
         ##########################################################
-        self.do_pileup_reweighting = True
+        #self.do_pileup_reweighting = True
         self.include_trigger_scale_factors = True
         self.include_lepton_scale_factors = True
 
@@ -174,10 +174,12 @@ class Ana2Mu(AnalysisBase):
         thislumi = self.event.lumi_block()
         thisevent = self.event.number()
 
+        if len(self.good_muons) != 2: return
 
         vbfevtlist = [
 
-            153657,
+            #153657,
+            391898480,
 
         ]
 
@@ -186,7 +188,6 @@ class Ana2Mu(AnalysisBase):
         #if thisevent not in vbfevtlist: return
         #printevtinfo = True
         printevtinfo = False
-
 
         #if thisevent in vbfevtlist: printevtinfo = True
 
@@ -203,18 +204,19 @@ class Ana2Mu(AnalysisBase):
         #                                                        #
         ##########################################################
 
-
-        pairindex1, pairindex2 = self.dimuon_pairs[0]
-        muon1 = self.good_muons[pairindex1]
-        muon2 = self.good_muons[pairindex2]
-        dimuonobj = muon1.p4() + muon2.p4()
-
-        # pick which inv mass to put in limit tree
-
-        mytInvMass = dimuonobj.M()
-
-        # decide whether to fill control plots
-        fill_control_plots = mytInvMass > self.sigHigh or mytInvMass < self.sigLow
+#
+#        pairindex1, pairindex2 = self.dimuon_pairs[0]
+#        muon1 = self.good_muons[pairindex1]
+#        muon2 = self.good_muons[pairindex2]
+#        dimuonobj = muon1.p4() + muon2.p4()
+#
+#        # pick which inv mass to put in limit tree
+#
+#        mytInvMass = dimuonobj.M()
+#
+#        # decide whether to fill control plots
+#        fill_control_plots = mytInvMass > self.sigHigh or mytInvMass < self.sigLow
+        fill_control_plots = False
 
         ##########################################################
         #                                                        #
@@ -248,20 +250,21 @@ class Ana2Mu(AnalysisBase):
         # Determine category                                     #
         #                                                        #
         ##########################################################
-
-        this_cat = get_event_category(self, dimuonobj)
-
-
-
-#        if this_cat == 3: printevtinfo = True
-#        print 'CAT{3} - {0}:{1}:{2}'.format(thisrun, thislumi, thisevent, this_cat)
-
-
-
+#####
+#####        this_cat = get_event_category(self, dimuonobj)
+#####
+#####
+#####
+######        if this_cat == 3: printevtinfo = True
+######        print 'CAT{3} - {0}:{1}:{2}'.format(thisrun, thislumi, thisevent, this_cat)
+#####
+#####
+#####
         if printevtinfo:
-            self.print_event_info(this_cat)
-
-
+            #self.print_event_info(this_cat)
+            self.print_event_info(2)
+#####
+#####
 
         
 

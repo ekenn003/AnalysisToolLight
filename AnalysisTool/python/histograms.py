@@ -227,13 +227,21 @@ def fill_base_histograms(analysis, eventweight, fillcontrol):
     # PV after selection ########
     #############################
     # fill histograms with good pvs
-    analysis.histograms['hVtxN'].Fill(len(analysis.good_vertices), eventweight)
+    analysis.histograms['hVtxN'].Fill(len(analysis.vertices), eventweight)
 
     #############################
     # Muons #####################
     #############################
     analysis.histograms['hNumMu'].Fill(len(analysis.good_muons), eventweight)
     analysis.histograms['hLeadMuPt'].Fill(analysis.good_muons[0].pt(), eventweight)
+
+    if analysis.good_muons[0].pt() < 26.:
+    #if analysis.good_muons[0].pt('uncor') != analysis.good_muons[0].pt('cor'):
+        print '****************************\npt anomaly found :', analysis.event.number()
+        print 'pt muon[0] =', analysis.good_muons[0].pt(), ' pt muon[1] =', analysis.good_muons[1].pt()
+        print '****************************'
+
+
     analysis.histograms['hSubLeadMuPt'].Fill(analysis.good_muons[1].pt(), eventweight)
     if fillcontrol:
         analysis.histograms_ctrl['hLeadMuPt_ctrl'].Fill(analysis.good_muons[0].pt(), eventweight)
