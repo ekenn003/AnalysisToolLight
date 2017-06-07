@@ -4,7 +4,7 @@ import argparse
 import sys, logging
 from ROOT import TTree, TH1F
 from array import array
-from AnalysisToolLight.AnalysisTool.tools.tools import delta_r, Z_MASS, event_is_on_list
+from AnalysisToolLight.AnalysisTool.tools.tools import *
 from AnalysisToolLight.AnalysisTool.CutFlow import CutFlow
 from AnalysisToolLight.AnalysisTool.AnalysisBase import AnalysisBase
 from AnalysisToolLight.AnalysisTool.AnalysisBase import main as analysisBaseMain
@@ -67,10 +67,10 @@ class Ana2Mu(AnalysisBase):
         #self.cutflow.add('nEv_3or4Lep', 'V(lep)h selection: Require 1 or 2 extra isolated leptons')
 
 
-        self.cutflow.add('nEv_NoElectrons', 'Require 0 electrons')
-        self.cutflow.add('nEv_NoBJets', 'Require 0 bjets')
-        self.cutflow.add('nEv_2Jets', 'Require 2 jets')
-        self.cutflow.add('nEv_MET', 'Require <40 MET')
+        #self.cutflow.add('nEv_NoElectrons', 'Require 0 electrons')
+        #self.cutflow.add('nEv_NoBJets', 'Require 0 bjets')
+        #self.cutflow.add('nEv_2Jets', 'Require 2 jets')
+        #self.cutflow.add('nEv_MET', 'Require <40 MET')
 
 
 
@@ -195,28 +195,97 @@ class Ana2Mu(AnalysisBase):
 
         ##########################################################
         #                                                        #
-        # More channel-specific selections                       #
-        #                                                        #
-        ##########################################################
-        ##########################################################
-        #                                                        #
         # Determine dimuon pairs                                 #
         #                                                        #
         ##########################################################
 
-#
-#        pairindex1, pairindex2 = self.dimuon_pairs[0]
-#        muon1 = self.good_muons[pairindex1]
-#        muon2 = self.good_muons[pairindex2]
-#        dimuonobj = muon1.p4() + muon2.p4()
+
+        pairindex1, pairindex2 = self.dimuon_pairs[0]
+        muon1 = self.good_muons[pairindex1]
+        muon2 = self.good_muons[pairindex2]
+        dimuonobj = muon1.p4() + muon2.p4()
 #
 #        # pick which inv mass to put in limit tree
 #
-#        mytInvMass = dimuonobj.M()
+        mytInvMass = dimuonobj.M()
 #
 #        # decide whether to fill control plots
-#        fill_control_plots = mytInvMass > self.sigHigh or mytInvMass < self.sigLow
-        fill_control_plots = False
+        fill_control_plots = mytInvMass > self.sigHigh or mytInvMass < self.sigLow
+#        fill_control_plots = False
+
+
+
+
+
+
+
+
+
+        ##########################################################
+        #                                                        #
+        # Determine category                                     #
+        #                                                        #
+        ##########################################################
+
+        thisdimupt = dimuonobj.Pt()
+        this_cat = -1
+        self.fnumCat0 += 1
+
+        # VBF tagged
+        if (len(self.good_jets) > 1 
+            and self.good_jets[0] > cuts['VBF_lead_jet_pt']
+            and self.good_jets[1] > cuts['VBF_sublead_jet_pt']
+            and self.met.et() < cuts['VBF_met']):
+
+
+            thisdijetmass = (self.good_jets[0].p4() + self.good_jets[1].p4()).M()
+            thisdijetdeta = abs(self.good_jets[0].eta() - self.good_jets[1].eta())
+
+            # VBFTight
+            if (thisdijetmass > cuts['VBF_dijet_mass'] 
+                and thisdijetdeta > cuts['VBF_dijet_deta']):
+                this_cat = 1
+                self.fnumCat1 += 1
+            # GGFTight
+            elif (thisdijetmass > cuts['GGF_dijet_mass']
+                and thisdimupt > cuts['GGF_dimu_pt']):
+                this_cat = 2
+                self.fnumCat2 += 1
+            # VBFLoose
+            else: 
+                this_cat = 3
+                self.fnumCat3 += 1
+
+        # non-VBF tagged
+        else:
+            geo_cat = self.get_geo_cat(muon1, muon2)
+            # 01JetTight
+            if thisdimupt > cuts['nonVBF_dimu_pt']:
+                self.fnumCat4 += 1
+                if   geo_cat == 'BB': this_cat = 4
+                elif geo_cat == 'BO': this_cat = 5
+                elif geo_cat == 'BE': this_cat = 6
+                elif geo_cat == 'OO': this_cat = 7
+                elif geo_cat == 'OE': this_cat = 8
+                elif geo_cat == 'EE': this_cat = 9
+            # 01JetLoose
+            else:
+                self.fnumCat5 += 1
+                if   geo_cat == 'BB': this_cat = 10
+                elif geo_cat == 'BO': this_cat = 11
+                elif geo_cat == 'BE': this_cat = 12
+                elif geo_cat == 'OO': this_cat = 13
+                elif geo_cat == 'OE': this_cat = 14
+                elif geo_cat == 'EE': this_cat = 15
+
+
+
+
+
+
+
+
+
 
         ##########################################################
         #                                                        #
@@ -298,6 +367,26 @@ class Ana2Mu(AnalysisBase):
         logging.info('')
         logging.info('Category0 (Total) events      = {0}'.format(self.fnumCat0))
 
+    ## _______________________________________________________
+    def get_geo_cat(self, m0, m1):
+        n, n0, n1 = 0, 0, 0
+        nB, nO, nE = self.cuts['nB'], self.cuts['nO'], self.cuts['nE']
+        if m0.abs_eta() <= cuts['nB']: n0 = 4
+        elif nB < m0.abs_eta() and m0.abs_eta() <= nO: n0 = 2
+        elif nO < m0.abs_eta() and m0.abs_eta() <= nE: n0 = 1
+        if m1.abs_eta() <= cuts['nB']: n1 = 4
+        elif nB < m1.abs_eta() and m1.abs_eta() <= nO: n1 = 2
+        elif nO < m1.abs_eta() and m1.abs_eta() <= nE: n1 = 1
+        n = n0+n1
+        if   n==8: return 'BB'
+        elif n==6: return 'BO'
+        elif n==5: return 'BE'
+        elif n==4: return 'OO'
+        elif n==3: return 'OE'
+        elif n==2: return 'EE'
+        return 'XX'
+
+
 
 
 ## ___________________________________________________________
@@ -313,3 +402,11 @@ def main(argv=None):
 if __name__ == '__main__':
     status = main()
     sys.exit(status)
+
+
+
+
+
+
+
+
