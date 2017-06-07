@@ -75,5 +75,26 @@ vh_cuts = {
     'cDiMuInvMass' : 60., # GeV
     'cDiMuPt' : 0., # GeV
 
+
+    # category cuts
+    'VBF_lead_jet_pt'    : 40., # GeV
+    'VBF_sublead_jet_pt' : 30., # GeV
+    'VBF_dijet_mass' : 650., # GeV
+    'VBF_dijet_deta' : 3.5,
+    'VBF_met' : 40., # GeV,
+
+
+    'GGF_dijet_mass' : 250., # GeV
+    'GGF_dimu_pt' : 50., # GeV
+
+
+    'nonVBF_dimu_pt' : 15., # GeV
+
+
+     'nB' : 0.8,
+     'nO' : 1.6,
+     'nE' : 2.4,
+
+
 }
 
