@@ -233,8 +233,8 @@ class Ana2Mu(AnalysisBase):
 
         # VBF tagged
         if (len(self.good_jets) > 1 
-            and self.good_jets[0] > cuts['VBF_lead_jet_pt']
-            and self.good_jets[1] > cuts['VBF_sublead_jet_pt']
+            and self.good_jets[0].pt() > cuts['VBF_lead_jet_pt']
+            and self.good_jets[1].pt() > cuts['VBF_sublead_jet_pt']
             and self.met.et() < cuts['VBF_met']):
 
 
