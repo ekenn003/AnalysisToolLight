@@ -322,8 +322,9 @@ class AnalysisBase(object):
 
                 # check all-category preselection
                 passes_preselection = check_preselection(self)
-                if not passes_preselection: pass
-             #   if not passes_preselection: continue
+                if not passes_preselection:
+                    #pass
+                    continue
 
                 # call the per_event_action method
                 #     (which is overridden in the derived class)
@@ -416,8 +417,8 @@ class AnalysisBase(object):
             tree.Write()
 
         #for hist in self.histograms:
-        for hist in sorted(self.histograms):
-            self.histograms[hist].Write()
+        #for hist in sorted(self.histograms):
+        #    self.histograms[hist].Write()
 
         # make a directory and go into it
         for dirname in self.extra_histogram_map.keys():
@@ -427,11 +428,11 @@ class AnalysisBase(object):
             # self.extra_histogram_map is a map of string:histogram map
             # self.extra_histogram_map[dirname] is a map 
             #     in the same form as self.histograms
-            for hist in self.extra_histogram_map[dirname]:
-                # only write histograms that aren't empty
-                if (self.extra_histogram_map[dirname][hist].GetEntries()
-                    or dirname=='categories'):
-                    self.extra_histogram_map[dirname][hist].Write()
+            for hist in sorted(self.extra_histogram_map[dirname]):
+            #    # only write histograms that aren't empty
+            #    if (self.extra_histogram_map[dirname][hist].GetEntries()
+            #        or dirname=='categories'):
+                self.extra_histogram_map[dirname][hist].Write()
             tdir.cd('../')
 
         # finish up

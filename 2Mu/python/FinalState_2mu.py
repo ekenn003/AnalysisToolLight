@@ -9,7 +9,7 @@ from AnalysisToolLight.AnalysisTool.CutFlow import CutFlow
 from AnalysisToolLight.AnalysisTool.AnalysisBase import AnalysisBase
 from AnalysisToolLight.AnalysisTool.AnalysisBase import main as analysisBaseMain
 from AnalysisToolLight.AnalysisTool.Preselection import get_event_category
-from AnalysisToolLight.AnalysisTool.histograms import fill_base_histograms
+from AnalysisToolLight.AnalysisTool.histograms import fill_category_hists
 from cuts import vh_cuts as cuts
 
 ## ___________________________________________________________
@@ -75,18 +75,18 @@ class Ana2Mu(AnalysisBase):
 
 
 
-        ##########################################################
-        #                                                        #
-        # Book additional histograms                             #
-        #                                                        #
-        ##########################################################
-        self.histograms['hNumDiMu'] = TH1F('hNumDiMu', 'hNumDiMu', 20, 0., 20.)
-        self.histograms['hNumDiMu'].GetXaxis().SetTitle('N_{#mu^{+}#mu^{-}}')
-        self.histograms['hNumDiMu'].GetYaxis().SetTitle('Candidates')
-
-        self.histograms['hMetMtWithMu'] = TH1F('hMetMtWithMu', 'hMetMtWithMu', 500, 0., 1000.)
-        self.histograms['hMetMtWithMu'].GetXaxis().SetTitle('M_{T}(#mu, MET)[GeV/c^{2}]')
-        self.histograms['hMetMtWithMu'].GetYaxis().SetTitle('Candidates/2.0[GeV/c^{2}]')
+#        ##########################################################
+#        #                                                        #
+#        # Book additional histograms                             #
+#        #                                                        #
+#        ##########################################################
+#        self.histograms['hNumDiMu'] = TH1F('hNumDiMu', 'hNumDiMu', 20, 0., 20.)
+#        self.histograms['hNumDiMu'].GetXaxis().SetTitle('N_{#mu^{+}#mu^{-}}')
+#        self.histograms['hNumDiMu'].GetYaxis().SetTitle('Candidates')
+#
+#        self.histograms['hMetMtWithMu'] = TH1F('hMetMtWithMu', 'hMetMtWithMu', 500, 0., 1000.)
+#        self.histograms['hMetMtWithMu'].GetXaxis().SetTitle('M_{T}(#mu, MET)[GeV/c^{2}]')
+#        self.histograms['hMetMtWithMu'].GetYaxis().SetTitle('Candidates/2.0[GeV/c^{2}]')
 
 
         ##########################################################
@@ -110,14 +110,14 @@ class Ana2Mu(AnalysisBase):
         #                                                        #
         ##########################################################
 
-        self.categories = [
-            'Category0_All',
-            'Category1_VBFTight',
-            'Category2_GGFTight',
-            'Category3_VBFLoose',
-            'Category4_01JetTight',
-            'Category5_01JetLoose',
-        ]
+        #self.categories = [
+        #    'Category0_All',
+        #    'Category1_VBFTight',
+        #    'Category2_GGFTight',
+        #    'Category3_VBFLoose',
+        #    'Category4_01JetTight',
+        #    'Category5_01JetLoose',
+        #]
         self.fnumCat0 = 0
         self.fnumCat1 = 0
         self.fnumCat2 = 0
@@ -126,11 +126,15 @@ class Ana2Mu(AnalysisBase):
         self.fnumCat5 = 0
         self.fnumBucket = 0
 
-        category_hists = ['hVtxN', 'hMET', 'hDiMuPt', 'hDiMuInvMass', 'hNumMu', 'hMuPt']
+        #category_hists = ['hVtxN', 'hMET', 'hDiMuPt', 'hDiMuInvMass', 'hNumMu', 'hMuPt']
+
+
+        self.categories = ['cat'+str(i).zfill(2) for i in xrange(0,16)]
+
 
         self.histograms_categories = {}
         for name in self.histograms.keys():
-            if name not in category_hists: continue
+            #if name not in category_hists: continue
             for cat in self.categories:
                 self.histograms_categories[name+'_'+cat] = self.histograms[name].Clone(
                     (self.histograms[name].GetName()+'_'+cat))
@@ -138,6 +142,17 @@ class Ana2Mu(AnalysisBase):
         self.extra_histogram_map['categories'] = self.histograms_categories
 
 
+        ##########################################################
+        #                                                        #
+        # Book category control plot histograms                  #
+        #                                                        #
+        ##########################################################
+        # make control versions of new the plots - they won't all be filled though
+        self.histograms_categories_ctrl = {}
+        for name in self.histograms_categories.keys():
+            self.histograms_categories_ctrl[name+'_ctrl'] = self.histograms_categories[name].Clone(self.histograms_categories[name].GetName()+'_ctrl')
+        # add it to the extra histogram map
+        self.extra_histogram_map['control'] = self.histograms_categories_ctrl
 
         ##########################################################
         #                                                        #
@@ -307,9 +322,10 @@ class Ana2Mu(AnalysisBase):
         ##########################################################
 
         # fill base histograms
-        fill_base_histograms(self, eventweight, fill_control_plots)
+#        fill_base_histograms(self, eventweight, fill_control_plots)
 
         # fill extra histograms
+        fill_category_hists(self, eventweight, fill_control_plots, this_cat, pairindex1, pairindex2)
         #if len(self.good_muons)==3:
         #    self.histograms['hMetMtWithMu'].Fill(self.met.MtWith(mu), eventweight)
 
