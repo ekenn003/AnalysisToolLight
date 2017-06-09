@@ -13,7 +13,7 @@ version = '80X'
 t2 = 'T2_CH_CERN'
 #t2 = 'T2_US_UCSD'
 
-era = 'feb17'
+era = 'final'
 
 
 ds = [
@@ -28,24 +28,33 @@ ds = [
 ]
 
 ms = [
-     'GluGlu_HToMuMu',
-     'WMinusH_HToMuMu',
-     'WPlusH_HToMuMu',
-     'VBF_HToMuMu',
-     'ZH_HToMuMu',
 
-     'DYJetsToLL',
-     'TTJets',
-     'WWTo2L2Nu',
-     'WWW',
-     'WWZ',
-#     'WZTo2L2Q',
-     'WZTo3LNu',
-     'WZZ',
-     'ZZTo2L2Nu',
-     'ZZTo2L2Q',
-     'ZZTo4L',
-     'ZZZ',
+    'GluGlu_HToMuMu',
+    'VBF_HToMuMu',
+    'WMinusH_HToMuMu',
+    'WPlusH_HToMuMu',
+    'ZH_HToMuMu',
+
+    'DYJetsToLL',
+    'TTJets',
+    'WJetsToLNu',
+    'WWTo2L2Nu',
+    'WWW',
+    'WWZ',
+    'WZTo2L2Q',
+    'WZTo3LNu',
+    'WZZ',
+    'ZZTo2L2Nu',
+    'ZZTo2L2Q',
+    'ZZTo4L',
+    'ZZZ',
+
+    'ST_tW_antitop_5f',
+    'ST_tW_top_5f',
+    'TTWJetsToLNu',
+    'TTZToLLNuNu',
+    'TZQ_ll_4f',
+
 ]
 
 

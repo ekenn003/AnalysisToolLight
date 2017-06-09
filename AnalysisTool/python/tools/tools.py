@@ -46,4 +46,3 @@ def event_is_on_list(run, lumi, event, evtlist):
 
 
 
-

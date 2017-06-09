@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os, sys
 import math
-from AnalysisToolLight.AnalysisTool.datasets import datasets76X, datasets80X
+from AnalysisToolLight.AnalysisTool.datasets import datasets80X
 
 scram = os.environ['CMSSW_BASE']
 basedir = scram + '/src/AnalysisToolLight'
@@ -31,7 +31,7 @@ def find_analysis_code(analysisname):
 ## ___________________________________________________________
 def fill_datasets_map(v, ana, dsetlist, resultsdir):
 
-    dsetmap_ = datasets76X if v=='76X' else datasets80X
+    dsetmap_ = {} if v=='76X' else datasets80X
     dsetmap = {}
     # "remove" ones we don't want to submit
     for key in dsetmap_:
