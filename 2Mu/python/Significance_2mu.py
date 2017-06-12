@@ -120,7 +120,6 @@ class Ana2Mu(AnalysisBase):
                             print hname
                             self.histograms_scan[hname] = dijetdeta_hist.Clone(hname)
 
-
         # dimupt ggf
         for met in range(2):
             for dijetmassvbf in range(2):
@@ -135,7 +134,6 @@ class Ana2Mu(AnalysisBase):
                             print hname
                             self.histograms_scan[hname] = dimupt_hist.Clone(hname)
 
-
         # dimupt
         for met in range(2):
             for dijetmassvbf in range(2):
@@ -149,13 +147,6 @@ class Ana2Mu(AnalysisBase):
                                          dijetmassvbf, dijetmass, dijetdeta, dimuptggf)
                             print hname
                             self.histograms_scan[hname] = dimupt_hist.Clone(hname)
-
-
-
-
-
-
-
 
 
 
@@ -244,9 +235,10 @@ class Ana2Mu(AnalysisBase):
 
 
         self.histograms_scan[thishMET].Fill(thismet, eventweight)
-        self.histograms_scan[thishDiJetInvMassVBF].Fill(thisdijetmass, eventweight)
-        self.histograms_scan[thishDiJetInvMass].Fill(thisdijetmass, eventweight)
-        self.histograms_scan[thishDiJetDeltaEta].Fill(thisdijetdeta, eventweight)
+        if twojetcondition:
+            self.histograms_scan[thishDiJetInvMassVBF].Fill(thisdijetmass, eventweight)
+            self.histograms_scan[thishDiJetInvMass].Fill(thisdijetmass, eventweight)
+            self.histograms_scan[thishDiJetDeltaEta].Fill(thisdijetdeta, eventweight)
         self.histograms_scan[thishDiMuPtGGF].Fill(thisdimupt, eventweight)
         self.histograms_scan[thishDiMuPt].Fill(thisdimupt, eventweight)
 
