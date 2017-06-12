@@ -104,9 +104,6 @@ class Ana2Mu(AnalysisBase):
                             print hname
                             self.histograms_scan[hname] = dijetmass_hist.Clone(hname)
 
-
-
-
         # dijet d eta
         for met in range(2):
             for dijetmassvbf in range(2):
@@ -240,7 +237,7 @@ class Ana2Mu(AnalysisBase):
 
         thishDiMuPt = ('hDiMuPt_met{0}_dijetmassvbf{1}_dijetmass{2}_'
                  'dijetdeta{3}_dimuptggf{4}').format(b_met, b_dijetmassvbf, b_dijetmass,
-                     b_dijetdeta, b_dimupt)
+                     b_dijetdeta, b_dimuptggf)
 
 
 
