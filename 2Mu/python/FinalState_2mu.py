@@ -138,6 +138,10 @@ class Ana2Mu(AnalysisBase):
             for cat in self.categories:
                 self.histograms_categories[name+'_'+cat] = self.histograms[name].Clone(
                     (self.histograms[name].GetName()+'_'+cat))
+            if name in ['hDiMuInvMass', 'hDiMuPt', 'hDiJetInvMass', 'hDiJetDeltaEta']:
+                for kitten in ['VBFTight', 'GGFTight', 'VBFLoose', '01JetTight', '01JetLoose']:
+                    self.histograms_categories[name+'_'+kitten] = self.histograms[name].Clone(
+                        (self.histograms[name].GetName()+'_'+kitten))
         # add it to the extra histogram map
         self.extra_histogram_map['categories'] = self.histograms_categories
 
