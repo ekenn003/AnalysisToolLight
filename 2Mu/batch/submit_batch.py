@@ -9,9 +9,7 @@ from AnalysisToolLight.AnalysisTool.tools.batch_helper import *
 ## ___________________________________________________________
 def wrapper(args):
     # define analysis
-    #this_analysis = args.analysis
-    this_analysis = '2Mu'
-    #this_version = args.version
+    this_analysis = args.analysis
     this_version = '80X'
     # define working dirs
     tmpdir = basedir + '/2Mu/batch/tmp{0}'.format(this_version)
@@ -59,46 +57,47 @@ def wrapper(args):
 
 ## ___________________________________________________________
 def get_datasets_to_use(args, resultsdir):
-    #v = args.version
     v = '80X'
-    #ana = args.analysis
-    ana = '2Mu'
+    #ana = '2Mu'
+    ana = args.analysis
     # get template datasets
-    #dsetmap = datasets76X if v=='76X' else datasets80X
     # get sets to use
-    if v=='80X':
-        dsets = (
-        ##### data
-            'SingleMuon_Run2016Bv2',
-            'SingleMuon_Run2016C',
-            'SingleMuon_Run2016D',
-            'SingleMuon_Run2016E',
-            'SingleMuon_Run2016F',
-            'SingleMuon_Run2016G',
-            'SingleMuon_Run2016Hv2',
-            'SingleMuon_Run2016Hv3',
-        ##### signal
-#            'GluGlu_HToMuMu',
-#            'WMinusH_HToMuMu',
-#            'WPlusH_HToMuMu',
-#            'VBF_HToMuMu',
-#            'ZH_HToMuMu',
-        ##### background
-            'DYJetsToLL',
-            'TTJets',
-            'WWTo2L2Nu',
-          #  'WZTo2L2Q',
-            'WZTo3LNu',
-            'ZZTo2L2Nu',
-            'ZZTo2L2Q',
-            'ZZTo4L',
-            'WWW',
-            'WWZ',
-            'WZZ',
-            'ZZZ',
-        )
-    else:
-        dsets = ()
+    dsets = (
+#        # data
+#        'SingleMuon_Run2016Bv2',
+#        'SingleMuon_Run2016C',
+#        'SingleMuon_Run2016D',
+#        'SingleMuon_Run2016E',
+#        'SingleMuon_Run2016F',
+#        'SingleMuon_Run2016G',
+#        'SingleMuon_Run2016Hv2',
+#        'SingleMuon_Run2016Hv3',
+#        # signal
+        'GluGlu_HToMuMu',
+        'VBF_HToMuMu',
+        'WMinusH_HToMuMu',
+        'WPlusH_HToMuMu',
+        'ZH_HToMuMu',
+        # background
+        'DYJetsToLL',
+        'TTJets',
+#        'WJetsToLNu',
+        'WWTo2L2Nu',
+        'WZTo2L2Q',
+        'WZTo3LNu',
+        'ZZTo2L2Nu',
+        'ZZTo2L2Q',
+        'ZZTo4L',
+#        'WWW',
+#        'WWZ',
+#        'WZZ',
+#        'ZZZ',
+#        'ST_tW_top_5f',
+#        'ST_tW_antitop_5f',
+#        'TTZToLLNuNu',
+#        'TTWJetsToLNu',
+#        'TZQ_ll_4f',
+    )
 
     return dsets, fill_datasets_map(v, ana, dsets, resultsdir)
 
@@ -106,9 +105,16 @@ def get_datasets_to_use(args, resultsdir):
 ## ___________________________________________________________
 def parse_command_line(argv):
     parser = argparse.ArgumentParser(description='Submit jobs to lxplus batch')
-    parser.add_argument('-a', '--analysis', type=str, help='Analysis to perform', choices=['2Mu'], required=True)
-    parser.add_argument('-v', '--version',  type=str, help='CMSSW version used to make ntuples', choices=['76X','80X'], required=True)
-    parser.add_argument('--mail', action='store_true', help='Send mail upon job completion')
+    parser.add_argument('-a', '--analysis', type=str,
+        help='Analysis to perform',
+        choices=['2Mu','2MuSig'],
+        required=True)
+    parser.add_argument('-v', '--version',  type=str,
+        help='CMSSW version used to make ntuples',
+        choices=['80X'],
+        required=True)
+    parser.add_argument('--mail', action='store_true',
+        help='Send mail upon job completion')
 
     return parser.parse_args(argv)
 

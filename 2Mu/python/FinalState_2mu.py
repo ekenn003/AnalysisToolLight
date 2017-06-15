@@ -138,12 +138,57 @@ class Ana2Mu(AnalysisBase):
             for cat in self.categories:
                 self.histograms_categories[name+'_'+cat] = self.histograms[name].Clone(
                     (self.histograms[name].GetName()+'_'+cat))
-            if name in ['hDiMuInvMass', 'hDiMuPt', 'hDiJetInvMass', 'hDiJetDeltaEta']:
-                for kitten in ['VBFTight', 'GGFTight', 'VBFLoose', '01JetTight', '01JetLoose']:
+            if name in ['hDiMuInvMass', 'hDiMuPt', 'hDiJetInvMass', 'hDiJetDeltaEta', 'hNumJets']:
+                for kitten in ['k1', 'k2']:
                     self.histograms_categories[name+'_'+kitten] = self.histograms[name].Clone(
                         (self.histograms[name].GetName()+'_'+kitten))
         # add it to the extra histogram map
         self.extra_histogram_map['categories'] = self.histograms_categories
+
+
+        self.histograms_opt = {}
+        self.etacutmap = {
+            '1p5' : 1.5,
+            '2p0' : 2.0, 
+            '2p5' : 2.5,
+            '3p0' : 3.0,
+            '3p5' : 3.5,
+            '4p0' : 4.0,
+            '4p5' : 4.5,
+            '5p0' : 5.0,
+        }
+        for eta in self.etacutmap.keys():
+            hname = 'hDiJetInvMass_'+eta
+            self.histograms_opt[hname] = self.histograms['hDiJetInvMass'].Clone(hname)
+
+        self.metcutmap = {
+            '20' : 20.,
+            '30' : 30., 
+            '40' : 40.,
+            '50' : 50.,
+            '60' : 60.,
+            '70' : 70.,
+            '80' : 80.,
+            '90' : 90.,
+        }
+        for met in self.metcutmap.keys():
+            hname = 'hNumJets_'+met
+            self.histograms_opt[hname] = self.histograms['hNumJets'].Clone(hname)
+
+
+        for eta in self.etacutmap.keys():
+            for met in self.metcutmap.keys():
+                hname = 'hDiMuInvMass_eta'+eta+'_met'+met
+                self.histograms_opt[hname] = self.histograms['hDiMuInvMass'].Clone(hname)
+
+
+
+
+
+
+
+
+        self.extra_histogram_map['opt'] = self.histograms_opt
 
 
         ##########################################################
@@ -229,15 +274,8 @@ class Ana2Mu(AnalysisBase):
         mytInvMass = dimuonobj.M()
 #
 #        # decide whether to fill control plots
-        fill_control_plots = mytInvMass > self.sigHigh or mytInvMass < self.sigLow
-#        fill_control_plots = False
-
-
-
-
-
-
-
+#        fill_control_plots = mytInvMass > self.sigHigh or mytInvMass < self.sigLow
+        fill_control_plots = False
 
 
         ##########################################################
@@ -334,27 +372,41 @@ class Ana2Mu(AnalysisBase):
         #    self.histograms['hMetMtWithMu'].Fill(self.met.MtWith(mu), eventweight)
 
 
-        ##########################################################
-        #                                                        #
-        # Determine category                                     #
-        #                                                        #
-        ##########################################################
-#####
-#####        this_cat = get_event_category(self, dimuonobj)
-#####
-#####
-#####
-######        if this_cat == 3: printevtinfo = True
-######        print 'CAT{3} - {0}:{1}:{2}'.format(thisrun, thislumi, thisevent, this_cat)
-#####
-#####
-#####
+        twojetcondition = (len(self.good_jets) > 1 
+            and self.good_jets[0].pt() > cuts['VBF_lead_jet_pt']
+            and self.good_jets[1].pt() > cuts['VBF_sublead_jet_pt'])
+
+
+        thisdijetmass = (self.good_jets[0].p4() + self.good_jets[1].p4()).M() if twojetcondition else 0.
+        thisdijetdeta = abs(self.good_jets[0].eta() - self.good_jets[1].eta()) if twojetcondition else 0.
+        thismet = self.met.et()
+
+        if twojetcondition and thismet < cuts['VBF_met']:
+            for eta_p, eta_cut in self.etacutmap.iteritems():
+                if thisdijetdeta > eta_cut:
+                    self.histograms_opt['hDiJetInvMass_'+eta_p].Fill(thisdijetmass, eventweight)
+
+        for met_p, met_cut in self.metcutmap.iteritems():
+            if thismet < met_cut:
+                self.histograms_opt['hNumJets_'+met_p].Fill(len(self.good_jets), eventweight)
+
+
+
+        if twojetcondition:
+            for eta_p, eta_cut in self.etacutmap.iteritems():
+                for met_p, met_cut in self.metcutmap.iteritems():
+                    if (thisdijetdeta > eta_cut and thismet < met_cut):
+                        hname = 'hDiMuInvMass_eta'+eta_p+'_met'+met_p
+                        self.histograms_opt[hname].Fill(mytInvMass, eventweight)
+
+
+
+
+
+
         if printevtinfo:
             #self.print_event_info(this_cat)
             self.print_event_info(2)
-#####
-#####
-
         
 
         #############################################################

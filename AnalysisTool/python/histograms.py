@@ -391,6 +391,7 @@ def fill_category_hists(analysis, eventweight, fillcontrol, thiscat, pairindex1,
     analysis.histograms_categories['hVtxN_cat00'].Fill(len(analysis.vertices), eventweight)
 
     this_cat = 'cat'+str(thiscat).zfill(2)
+    this_kitten = '1' if (thiscat > 0 and thiscat < 4) else '2'
 
     mu1, mu2 = analysis.good_muons[pairindex1], analysis.good_muons[pairindex2]
     dimu = mu1.p4() + mu2.p4()
@@ -464,6 +465,10 @@ def fill_category_hists(analysis, eventweight, fillcontrol, thiscat, pairindex1,
         analysis.histograms_categories['hDiMuDeltaPhi_'+this_cat].Fill(muon1.phi() - muon2.phi(), eventweight)
         analysis.histograms_categories['hDiMuDeltaPhi_cat00'].Fill(muon1.phi() - muon2.phi(), eventweight)
 
+        analysis.histograms_categories['hDiMuPt_k'+this_kitten].Fill(dimuobj.Pt(), eventweight)
+        analysis.histograms_categories['hDiMuInvMass_k'+this_kitten].Fill(dimuobj.M(), eventweight)
+
+
         # fill control plots
         if fillcontrol:
             analysis.histograms_categories_ctrl['hDiMuPt_'+this_cat+'_ctrl'].Fill(dimuobj.Pt(), eventweight)
@@ -530,6 +535,8 @@ def fill_category_hists(analysis, eventweight, fillcontrol, thiscat, pairindex1,
         analysis.histograms_categories['hDiJetDeltaPhi_'+this_cat].Fill(abs(jet1.phi() - jet2.phi()), eventweight)
         analysis.histograms_categories['hDiJetDeltaPhi_cat00'].Fill(abs(jet1.phi() - jet2.phi()), eventweight)
 
+        analysis.histograms_categories['hDiJetInvMass_k'+this_kitten].Fill(dijet.M(), eventweight)
+        analysis.histograms_categories['hDiJetDeltaEta_k'+this_kitten].Fill(abs(jet1.eta() - jet2.eta()), eventweight)
 
     #############################
     # MET #######################

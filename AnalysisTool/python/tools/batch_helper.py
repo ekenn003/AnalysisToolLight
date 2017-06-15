@@ -16,6 +16,8 @@ def find_analysis_code(analysisname):
         tail = 'AnalysisTool/pileupstudy/FinalState_2mu.py'
     elif analysisname=='2Mu':
         tail = '2Mu/python/FinalState_2mu.py'
+    elif analysisname=='2MuSig':
+        tail = '2Mu/python/Significance_2mu.py'
     elif analysisname=='VH4Mu':
         tail = 'VH/python/FinalState_4mu.py'
     elif analysisname=='VH2Mu':
