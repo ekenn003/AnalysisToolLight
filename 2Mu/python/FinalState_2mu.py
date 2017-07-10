@@ -10,13 +10,13 @@ from AnalysisToolLight.AnalysisTool.AnalysisBase import AnalysisBase
 from AnalysisToolLight.AnalysisTool.AnalysisBase import main as analysisBaseMain
 from AnalysisToolLight.AnalysisTool.Preselection import get_event_category
 from AnalysisToolLight.AnalysisTool.histograms import fill_category_hists
-from cuts import vh_cuts as cuts
+from cuts import vh_cuts
 
 ## ___________________________________________________________
 class Ana2Mu(AnalysisBase):
     def __init__(self, args):
 
-        self.cuts = cuts
+        self.cuts = vh_cuts
 
         super(Ana2Mu, self).__init__(args)
 
@@ -27,6 +27,7 @@ class Ana2Mu(AnalysisBase):
         ##########################################################
         self.debug = False
 
+        self.nMultipleDimuEvents = 0
         self.nSyncEvents = 0
         self.sync_low = 100. # GeV
         self.sync_high = 110. # GeV
@@ -53,8 +54,8 @@ class Ana2Mu(AnalysisBase):
         # Define event HLT requirement                           #
         #                                                        #
         ##########################################################
-        self.hltriggers = cuts['HLT']
-        self.path_for_trigger_scale_factors = cuts['HLTstring']
+        self.hltriggers = self.cuts['HLT']
+        self.path_for_trigger_scale_factors = self.cuts['HLTstring']
 
 
 
@@ -97,9 +98,47 @@ class Ana2Mu(AnalysisBase):
         # make control versions of new the plots - they won't all be filled though
         self.histograms_ctrl = {}
         for name in self.histograms.keys():
-            self.histograms_ctrl[name+'_ctrl'] = self.histograms[name].Clone(self.histograms[name].GetName()+'_ctrl')
+            self.histograms_ctrl[name+'_ctrl'] = self.histograms[name].Clone(
+                self.histograms[name].GetName()+'_ctrl')
         # add it to the extra histogram map
         self.extra_histogram_map['control'] = self.histograms_ctrl
+
+
+
+
+        ##########################################################
+        #                                                        #
+        # Book optimi. plot histograms                           #
+        #                                                        #
+        ##########################################################
+
+        self.opt_met   = [ 30.,  40.,  50.]
+        self.opt_djm   = [550., 650., 750.]
+        self.opt_dje   = [  3.,  3.5,   4.]
+        self.opt_djm_g = [200., 250., 300.]
+        self.opt_dm_pt = [ 40.,  50.,  60.]
+
+        # make control versions of new the plots - they won't all be filled though
+        self.histograms_opt = {}
+        #for name in self.histograms.keys():
+        #    self.histograms_ctrl[name+'_ctrl'] = self.histograms[name].Clone(
+        #        self.histograms[name].GetName()+'_ctrl')
+
+        for c in xrange(1,4):
+            for v in self.opt_met:
+                for w in self.opt_djm:
+                    for x in self.opt_dje:
+                        for y in self.opt_djm_g:
+                            for z in self.opt_dm_pt:
+                                hn = ('hDiMuInvMass_{0}_'
+                                      '{1}{2}{3}{4}{5}').format(c,v,w,x,y,z)
+                                self.histograms_opt[hn] = self.histograms[
+                                    'hDiMuInvMass'].Clone(
+
+
+
+        # add it to the extra histogram map
+        self.extra_histogram_map['opt'] = self.histograms_opt
 
 
 
@@ -146,49 +185,8 @@ class Ana2Mu(AnalysisBase):
         self.extra_histogram_map['categories'] = self.histograms_categories
 
 
-        self.histograms_opt = {}
-        self.etacutmap = {
-            '1p5' : 1.5,
-            '2p0' : 2.0, 
-            '2p5' : 2.5,
-            '3p0' : 3.0,
-            '3p5' : 3.5,
-            '4p0' : 4.0,
-            '4p5' : 4.5,
-            '5p0' : 5.0,
-        }
-        for eta in self.etacutmap.keys():
-            hname = 'hDiJetInvMass_'+eta
-            self.histograms_opt[hname] = self.histograms['hDiJetInvMass'].Clone(hname)
-
-        self.metcutmap = {
-            '20' : 20.,
-            '30' : 30., 
-            '40' : 40.,
-            '50' : 50.,
-            '60' : 60.,
-            '70' : 70.,
-            '80' : 80.,
-            '90' : 90.,
-        }
-        for met in self.metcutmap.keys():
-            hname = 'hNumJets_'+met
-            self.histograms_opt[hname] = self.histograms['hNumJets'].Clone(hname)
 
 
-        for eta in self.etacutmap.keys():
-            for met in self.metcutmap.keys():
-                hname = 'hDiMuInvMass_eta'+eta+'_met'+met
-                self.histograms_opt[hname] = self.histograms['hDiMuInvMass'].Clone(hname)
-
-
-
-
-
-
-
-
-        self.extra_histogram_map['opt'] = self.histograms_opt
 
 
         ##########################################################
@@ -199,7 +197,8 @@ class Ana2Mu(AnalysisBase):
         # make control versions of new the plots - they won't all be filled though
         self.histograms_categories_ctrl = {}
         for name in self.histograms_categories.keys():
-            self.histograms_categories_ctrl[name+'_ctrl'] = self.histograms_categories[name].Clone(self.histograms_categories[name].GetName()+'_ctrl')
+            self.histograms_categories_ctrl[name+'_ctrl'] = self.histograms_categories[name
+                ].Clone(self.histograms_categories[name].GetName()+'_ctrl')
         # add it to the extra histogram map
         self.extra_histogram_map['control'] = self.histograms_categories_ctrl
 
@@ -264,6 +263,7 @@ class Ana2Mu(AnalysisBase):
         ##########################################################
 
 
+        if len(self.dimuon_pairs) > 1: self.nMultipleDimuEvents += 1
         pairindex1, pairindex2 = self.dimuon_pairs[0]
         muon1 = self.good_muons[pairindex1]
         muon2 = self.good_muons[pairindex2]
@@ -290,22 +290,22 @@ class Ana2Mu(AnalysisBase):
 
         # VBF tagged
         if (len(self.good_jets) > 1 
-            and self.good_jets[0].pt() > cuts['VBF_lead_jet_pt']
-            and self.good_jets[1].pt() > cuts['VBF_sublead_jet_pt']
-            and self.met.et() < cuts['VBF_met']):
+            and self.good_jets[0].pt() > self.cuts['VBF_lead_jet_pt']
+            and self.good_jets[1].pt() > self.cuts['VBF_sublead_jet_pt']
+            and self.met.et() < self.cuts['VBF_met']):
 
 
             thisdijetmass = (self.good_jets[0].p4() + self.good_jets[1].p4()).M()
             thisdijetdeta = abs(self.good_jets[0].eta() - self.good_jets[1].eta())
 
             # VBFTight
-            if (thisdijetmass > cuts['VBF_dijet_mass'] 
-                and thisdijetdeta > cuts['VBF_dijet_deta']):
+            if (thisdijetmass > self.cuts['VBF_dijet_mass'] 
+                and thisdijetdeta > self.cuts['VBF_dijet_deta']):
                 this_cat = 1
                 self.fnumCat1 += 1
             # GGFTight
-            elif (thisdijetmass > cuts['GGF_dijet_mass']
-                and thisdimupt > cuts['GGF_dimu_pt']):
+            elif (thisdijetmass > self.cuts['GGF_dijet_mass']
+                and thisdimupt > self.cuts['GGF_dimu_pt']):
                 this_cat = 2
                 self.fnumCat2 += 1
             # VBFLoose
@@ -317,7 +317,7 @@ class Ana2Mu(AnalysisBase):
         else:
             geo_cat = self.get_geo_cat(muon1, muon2)
             # 01JetTight
-            if thisdimupt > cuts['nonVBF_dimu_pt']:
+            if thisdimupt > self.cuts['nonVBF_dimu_pt']:
                 self.fnumCat4 += 1
                 if   geo_cat == 'BB': this_cat = 4
                 elif geo_cat == 'BO': this_cat = 5
@@ -373,22 +373,26 @@ class Ana2Mu(AnalysisBase):
 
 
         twojetcondition = (len(self.good_jets) > 1 
-            and self.good_jets[0].pt() > cuts['VBF_lead_jet_pt']
-            and self.good_jets[1].pt() > cuts['VBF_sublead_jet_pt'])
+            and self.good_jets[0].pt() > self.cuts['VBF_lead_jet_pt']
+            and self.good_jets[1].pt() > self.cuts['VBF_sublead_jet_pt'])
 
 
-        thisdijetmass = (self.good_jets[0].p4() + self.good_jets[1].p4()).M() if twojetcondition else 0.
-        thisdijetdeta = abs(self.good_jets[0].eta() - self.good_jets[1].eta()) if twojetcondition else 0.
+        thisdijetmass = (self.good_jets[0].p4()
+            + self.good_jets[1].p4()).M() if twojetcondition else 0.
+        thisdijetdeta = abs(self.good_jets[0].eta()
+            - self.good_jets[1].eta()) if twojetcondition else 0.
         thismet = self.met.et()
 
-        if twojetcondition and thismet < cuts['VBF_met']:
+        if twojetcondition and thismet < self.cuts['VBF_met']:
             for eta_p, eta_cut in self.etacutmap.iteritems():
                 if thisdijetdeta > eta_cut:
-                    self.histograms_opt['hDiJetInvMass_'+eta_p].Fill(thisdijetmass, eventweight)
+                    self.histograms_opt['hDiJetInvMass_'
+                        +eta_p].Fill(thisdijetmass, eventweight)
 
         for met_p, met_cut in self.metcutmap.iteritems():
             if thismet < met_cut:
-                self.histograms_opt['hNumJets_'+met_p].Fill(len(self.good_jets), eventweight)
+                self.histograms_opt['hNumJets_'
+                    +met_p].Fill(len(self.good_jets), eventweight)
 
 
 
@@ -438,15 +442,16 @@ class Ana2Mu(AnalysisBase):
         logging.info('Category5 (01JetLoose) events = {0}'.format(self.fnumCat5))
         logging.info('')
         logging.info('Category0 (Total) events      = {0}'.format(self.fnumCat0))
+        logging.info('Multiple dimuon events        = {0}'.format(self.nMultipleDimuEvents))
 
     ## _______________________________________________________
     def get_geo_cat(self, m0, m1):
         n, n0, n1 = 0, 0, 0
         nB, nO, nE = self.cuts['nB'], self.cuts['nO'], self.cuts['nE']
-        if m0.abs_eta() <= cuts['nB']: n0 = 4
+        if m0.abs_eta() <= self.cuts['nB']: n0 = 4
         elif nB < m0.abs_eta() and m0.abs_eta() <= nO: n0 = 2
         elif nO < m0.abs_eta() and m0.abs_eta() <= nE: n0 = 1
-        if m1.abs_eta() <= cuts['nB']: n1 = 4
+        if m1.abs_eta() <= self.cuts['nB']: n1 = 4
         elif nB < m1.abs_eta() and m1.abs_eta() <= nO: n1 = 2
         elif nO < m1.abs_eta() and m1.abs_eta() <= nE: n1 = 1
         n = n0+n1
