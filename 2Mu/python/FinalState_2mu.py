@@ -124,21 +124,29 @@ class Ana2Mu(AnalysisBase):
         #    self.histograms_ctrl[name+'_ctrl'] = self.histograms[name].Clone(
         #        self.histograms[name].GetName()+'_ctrl')
 
-        for c in xrange(1,4):
-            for v in self.opt_met:
-                for w in self.opt_djm:
-                    for x in self.opt_dje:
-                        for y in self.opt_djm_g:
-                            for z in self.opt_dm_pt:
-                                hn = ('hDiMuInvMass_{0}_'
-                                      '{1}{2}{3}{4}{5}').format(c,v,w,x,y,z)
-                                self.histograms_opt[hn] = self.histograms[
-                                    'hDiMuInvMass'].Clone(
+        #self.itergrid = [(c,v,w,x,y,z) \
+        #            for c in range(1,4) \
+        #            for v in range(len(self.opt_met)) \
+        #            for w in range(len(self.opt_djm)) \
+        #            for x in range(len(self.opt_dje)) \
+        #            for y in range(len(self.opt_djm_g)) \
+        #            for z in range(len(self.opt_dm_pt))]
+
+
+        #for c in xrange(1,4):
+        #    for v in xrange(1,1+len(self.opt_met)):
+        #        for w in xrange(1,1+len(self.opt_djm)):
+        #            for x in xrange(1,1+len(self.opt_dje)):
+        #                for y in xrange(1,1+len(self.opt_djm_g)):
+        #                    for z in xrange(1,1+len(self.opt_dm_pt)):
+        #for c, v, w, x, y, z in self.itergrid:
+        #    hn = ('hDiMuInvMass_{1}{2}{3}{4}{5}_cat0{0}').format(c,v,w,x,y,z)
+        #    self.histograms_opt[hn] = self.histograms['hDiMuInvMass'].Clone(hn)
 
 
 
         # add it to the extra histogram map
-        self.extra_histogram_map['opt'] = self.histograms_opt
+        #self.extra_histogram_map['opt'] = self.histograms_opt
 
 
 
@@ -340,10 +348,6 @@ class Ana2Mu(AnalysisBase):
 
 
 
-
-
-
-
         ##########################################################
         #                                                        #
         # Calculate event weight                                 #
@@ -366,43 +370,75 @@ class Ana2Mu(AnalysisBase):
         # fill base histograms
 #        fill_base_histograms(self, eventweight, fill_control_plots)
 
-        # fill extra histograms
-        fill_category_hists(self, eventweight, fill_control_plots, this_cat, pairindex1, pairindex2)
-        #if len(self.good_muons)==3:
-        #    self.histograms['hMetMtWithMu'].Fill(self.met.MtWith(mu), eventweight)
-
-
-        twojetcondition = (len(self.good_jets) > 1 
-            and self.good_jets[0].pt() > self.cuts['VBF_lead_jet_pt']
-            and self.good_jets[1].pt() > self.cuts['VBF_sublead_jet_pt'])
-
-
-        thisdijetmass = (self.good_jets[0].p4()
-            + self.good_jets[1].p4()).M() if twojetcondition else 0.
-        thisdijetdeta = abs(self.good_jets[0].eta()
-            - self.good_jets[1].eta()) if twojetcondition else 0.
-        thismet = self.met.et()
-
-        if twojetcondition and thismet < self.cuts['VBF_met']:
-            for eta_p, eta_cut in self.etacutmap.iteritems():
-                if thisdijetdeta > eta_cut:
-                    self.histograms_opt['hDiJetInvMass_'
-                        +eta_p].Fill(thisdijetmass, eventweight)
-
-        for met_p, met_cut in self.metcutmap.iteritems():
-            if thismet < met_cut:
-                self.histograms_opt['hNumJets_'
-                    +met_p].Fill(len(self.good_jets), eventweight)
+#        # fill extra histograms
+#        fill_category_hists(self, eventweight, fill_control_plots, this_cat, pairindex1, pairindex2)
+#        #if len(self.good_muons)==3:
+#        #    self.histograms['hMetMtWithMu'].Fill(self.met.MtWith(mu), eventweight)
 
 
 
-        if twojetcondition:
-            for eta_p, eta_cut in self.etacutmap.iteritems():
-                for met_p, met_cut in self.metcutmap.iteritems():
-                    if (thisdijetdeta > eta_cut and thismet < met_cut):
-                        hname = 'hDiMuInvMass_eta'+eta_p+'_met'+met_p
-                        self.histograms_opt[hname].Fill(mytInvMass, eventweight)
 
+
+        #twojetcondition = (len(self.good_jets) > 1 
+        #        and self.good_jets[0].pt() > self.cuts['VBF_lead_jet_pt']
+        #        and self.good_jets[1].pt() > self.cuts['VBF_sublead_jet_pt'])
+
+        #if twojetcondition:
+        #    thisdijetmass = (self.good_jets[0].p4() + self.good_jets[1].p4()).M()
+        #    thisdijetdeta = abs(self.good_jets[0].eta() - self.good_jets[1].eta())
+
+        #    for c, v, w, x, y, z in self.itergrid:
+        #        # vwxyz defines a unique opt scheme
+        #        this_opt_scheme = '{0}{1}{2}{3}{4}'.format(v,w,x,y,z)
+        #        if self.met.et() < self.opt_met[v]:
+        #            # VBFTight
+        #            if (thisdijetmass > self.opt_djm[w]
+        #                and thisdijetdeta > self.opt_dje[x]):
+        #                this_opt_cat = 'cat01'
+        #            # GGFTight
+        #            elif (thisdijetmass > self.opt_djm_g[y]
+        #                and thisdimupt > self.opt_dm_pt[z]):
+        #                this_opt_cat = 'cat02'
+        #            # VBFLoose
+        #            else: 
+        #                this_opt_cat = 'cat03'
+        #            this_opt_hn = 'hDiMuInvMass_{0}_{1}'.format(
+        #                this_opt_scheme, this_opt_cat)
+        #            self.histograms_opt[this_opt_hn].Fill(mytInvMass, eventweight)
+
+
+#
+#        twojetcondition = (len(self.good_jets) > 1 
+#            and self.good_jets[0].pt() > self.cuts['VBF_lead_jet_pt']
+#            and self.good_jets[1].pt() > self.cuts['VBF_sublead_jet_pt'])
+#
+#
+#        thisdijetmass = (self.good_jets[0].p4()
+#            + self.good_jets[1].p4()).M() if twojetcondition else 0.
+#        thisdijetdeta = abs(self.good_jets[0].eta()
+#            - self.good_jets[1].eta()) if twojetcondition else 0.
+#        thismet = self.met.et()
+#
+#        if twojetcondition and thismet < self.cuts['VBF_met']:
+#            for eta_p, eta_cut in self.etacutmap.iteritems():
+#                if thisdijetdeta > eta_cut:
+#                    self.histograms_opt['hDiJetInvMass_'
+#                        +eta_p].Fill(thisdijetmass, eventweight)
+#
+#        for met_p, met_cut in self.metcutmap.iteritems():
+#            if thismet < met_cut:
+#                self.histograms_opt['hNumJets_'
+#                    +met_p].Fill(len(self.good_jets), eventweight)
+#
+#
+#
+#        if twojetcondition:
+#            for eta_p, eta_cut in self.etacutmap.iteritems():
+#                for met_p, met_cut in self.metcutmap.iteritems():
+#                    if (thisdijetdeta > eta_cut and thismet < met_cut):
+#                        hname = 'hDiMuInvMass_eta'+eta_p+'_met'+met_p
+#                        self.histograms_opt[hname].Fill(mytInvMass, eventweight)
+#
 
 
 
