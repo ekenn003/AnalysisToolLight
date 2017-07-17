@@ -179,7 +179,7 @@ def check_event_selection(analysis):
     # loop over jets
     for jet in analysis.jets:
         # jet cuts
-        if jet.pt() < cuts['cJetPt']: continue
+        if jet.pt(analysis.jet_shift) < cuts['cJetPt']: continue
         if jet.abs_eta() > cuts['cJetEta']: continue
         if not jet.is_loose(): continue
 
@@ -198,7 +198,7 @@ def check_event_selection(analysis):
         # btag
         if (jet.btag(cuts['cBJetAlg'])
             and jet.abs_eta() < cuts['cBJetEta']
-            and jet.pt() > cuts['cBJetPt']):
+            and jet.pt(analysis.jet_shift) > cuts['cBJetPt']):
             analysis.good_bjets += [jet]
 
 
@@ -261,7 +261,7 @@ def check_event_selection(analysis):
 
 
 
-    if len(analysis.dimuon_pairs) != 1: return False
+    #if len(analysis.dimuon_pairs) != 1: return False
 
 
 
@@ -295,7 +295,7 @@ def check_event_selection(analysis):
     for p in itertools.combinations(enumerate(analysis.good_jets), 2):
         (i, jet_i), (j, jet_j) = p
 
-        goodpair = (i, j) if jet_i.pt() > jet_j.pt() else (j, i)
+        goodpair = (i, j) if jet_i.pt(analysis.jet_shift) > jet_j.pt(analysis.jet_shift) else (j, i)
         analysis.dijet_pairs += [goodpair]
 
     return True
@@ -343,8 +343,8 @@ def get_event_category(analysis, dimuonobj):
     jet_pts_are_ok = False
     for i, p in enumerate(analysis.dijet_pairs):
         # should already be ordered by pT
-        if (analysis.good_jets[p[0]].pt() > 40.
-            and analysis.good_jets[p[1]].pt() > 30.):
+        if (analysis.good_jets[p[0]].pt(analysis.jet_shift) > 40.
+            and analysis.good_jets[p[1]].pt(analysis.jet_shift) > 30.):
             jet_pts_are_ok = True
 
     passes_sync_preselection = jet_count_is_ok and jet_pts_are_ok
@@ -361,8 +361,8 @@ def get_event_category(analysis, dimuonobj):
         vbftight_dijet_mass_ok = False
         vbftight_dijet_deta_ok = False
 
-        if not (analysis.good_jets[p[0]].pt() > 40.
-            and analysis.good_jets[p[1]].pt() > 30.): continue
+        if not (analysis.good_jets[p[0]].pt(analysis.jet_shift) > 40.
+            and analysis.good_jets[p[1]].pt(analysis.jet_shift) > 30.): continue
 
         thisdijet = analysis.good_jets[p[0]].p4() + analysis.good_jets[p[1]].p4()
 
@@ -384,8 +384,8 @@ def get_event_category(analysis, dimuonobj):
         ggftight_dijet_mass_ok = False
         ggftight_dimuon_pt_ok = False
 
-        if not (analysis.good_jets[p[0]].pt() > 40.
-            and analysis.good_jets[p[1]].pt() > 30.): continue
+        if not (analysis.good_jets[p[0]].pt(analysis.jet_shift) > 40.
+            and analysis.good_jets[p[1]].pt(analysis.jet_shift) > 30.): continue
 
         thisdijet = analysis.good_jets[p[0]].p4() + analysis.good_jets[p[1]].p4()
 

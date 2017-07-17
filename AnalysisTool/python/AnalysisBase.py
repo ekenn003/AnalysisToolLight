@@ -144,10 +144,21 @@ class AnalysisBase(object):
         # initialise some other options that will be overridden
         #     in the derived class
         self.path_for_trigger_scale_factors = ''
-        self.do_pileup_reweighting         = False
+
+        self.do_pileup_reweighting = False
+        self.pu_shift = ''
+
         self.include_trigger_scale_factors = False
-        self.include_lepton_scale_factors  = False
-        self.use_rochester_corrections     = False
+        self.hlt_shift = ''
+
+        self.include_lepton_scale_factors = False
+        self.sf_shift = ''
+
+        self.use_rochester_corrections = False
+
+        self.jet_shift = ''
+        self.jet_shift_down = None
+        self.jet_shift_up   = None
 
         # summary tree
         self.summary_tree = TTree('Summary', 'Summary')
@@ -175,7 +186,7 @@ class AnalysisBase(object):
     ## _________________________________________________________________________
     def analyze(self):
         '''
-        The primary analysis loop.
+        Contains the primary analysis loop.
         Iterate over each input file and row in trees.
         Calls the per_event_action method (which is overridden
         in the derived class).
@@ -191,21 +202,45 @@ class AnalysisBase(object):
             if self.do_pileup_reweighting:
                 logging.info('')
                 logging.info('Loading pileup info...')
-                self.puweights = PileupWeights(self.cmsswversion, self.data_dir)
+                self.puweights = PileupWeights(self.cmsswversion,
+                    self.data_dir, self.pu_shift)
 
             # trigger scale factors
             if self.include_trigger_scale_factors:
                 logging.info('')
                 logging.info('Loading trigger scale factor info...')
                 self.hltweights = HLTScaleFactors(self.cmsswversion,
-                    self.data_dir, self.path_for_trigger_scale_factors)
+                    self.data_dir, self.path_for_trigger_scale_factors,
+                    self.hlt_shift)
 
             # lepton scale factors
             if self.include_lepton_scale_factors:
                 logging.info('')
                 logging.info('Loading lepton scale factor info...')
                 self.muonweights = MuonScaleFactors(self.cmsswversion,
-                    self.data_dir)
+                    self.data_dir, self.sf_shift)
+
+            # jet corr uncertainties
+            if self.jet_shift:
+                logging.info('')
+                logging.info('Loading jet correction uncertainty info...')
+                jec_unc_filename = '{0}/systematics/jetshifts_{1}.root'.format(
+                    self.datadir, self.cmsswversion)
+                if not os.path.exists(jec_unc_filename):
+                    logging.info('       *   ')
+                    logging.info('    *******')
+                    logging.info('    WARNING: Can\'t find jet shifts file.')
+                    logging.info('    Will not include jet shifts.')
+                    logging.info('    *******')
+                    logging.info('       *   ')
+                else:
+                    jec_unc_f = TFile.Open(jec_unc_filename)
+                    self.jet_shift_down = TH2F(jec_unc_f.Get(
+                        'hJetShift_MC_Down').Clone('jec_shift_down'))
+                    self.jet_shift_up   = TH2F(jec_unc_f.Get(
+                        'hJetShift_MC_Up').Clone('jec_shift_up'))
+                    jec_unc_f.Close('R')
+
 
         ##########################################################
         #                                                        #
@@ -277,29 +312,37 @@ class AnalysisBase(object):
 
                 # load required collections
                 self.event     = Event(row, self.sumweights)
+
                 self.vertices  = ([Vertex(row, i)
                     for i in range(row.primvertex_count)])
+
                 self.muons     = ([Muon(row, i, self.use_rochester_corrections)
                     for i in range(row.muon_count)]
                     if hasattr(row,'muon_count') else [])
                 if self.use_rochester_corrections:
                     self.muons.sort(key=lambda m: m.pt_roch(), reverse=True)
+
                 self.electrons = ([Electron(row, i)
                     for i in range(row.electron_count)]
                     if hasattr(row,'electron_count') else [])
+
+                self.jets      = ([Jet(row, i, self.jet_shift,
+                    self.jet_shift_down, self.jet_shift_up)
+                    for i in range(row.ak4pfchsjet_count)]
+                    if hasattr(row,'ak4pfchsjet_count') else [])
+
+                # MET is a vector of size 1
+                self.met       = (PFMETTYPE1(row, 0)
+                    if hasattr(row,'pfmettype1_count') else [])
+
                 # load optional collections
                 self.photons   = ([Photon(row, i)
                     for i in range(row.photon_count)]
                     if hasattr(row,'photon_count') else [])
+
                 self.taus      = ([Tau(row, i)
                     for i in range(row.tau_count)]
                     if hasattr(row,'tau_count') else [])
-                self.jets      = ([Jet(row, i)
-                    for i in range(row.ak4pfchsjet_count)]
-                    if hasattr(row,'ak4pfchsjet_count') else [])
-                # MET is a vector of size 1
-                self.met       = (PFMETTYPE1(row, 0)
-                    if hasattr(row,'pfmettype1_count') else [])
 
                 # set up containers for good objects
                 self.good_vertices  = []
@@ -483,28 +526,25 @@ class AnalysisBase(object):
         if self.isdata: return EventWeight(1., 1., 1., 1., 1.)
 
         # lepton scale factors
-        base_event_weight = self.event.gen_weight()
+        #base_event_weight = self.event.gen_weight()
+        base_event_weight = 1. if self.event.gen_weight() > 0. else -1.
 
         pileup_factor = self.puweights.get_weight(
-            self.event.num_true_pileup_interactions(),
-            self.cuts['PU_scheme']
+            self.event.num_true_pileup_interactions()
         ) if self.do_pileup_reweighting else 1.
 
         trigger_factor = self.hltweights.get_scale(
-            self.good_muons,
-            self.cuts['SF_scheme']
+            self.good_muons
         ) if self.include_trigger_scale_factors else 1.
 
         lepton_factor = self.muonweights.get_id_scale(
             self.good_muons,
-            self.cuts['cMuID'],
-            self.cuts['SF_scheme']
+            self.cuts['cMuID']
         ) if self.include_lepton_scale_factors else 1.
         lepton_factor *= self.muonweights.get_iso_scale(
             self.good_muons, self.cuts['cMuID'],
             self.cuts['cMuIsoType'],
-            self.cuts['cMuIsoLevel'],
-            self.cuts['SF_scheme']
+            self.cuts['cMuIsoLevel']
         ) if self.include_lepton_scale_factors else 1.
 
         full = base_event_weight * pileup_factor * trigger_factor * lepton_factor
@@ -656,6 +696,9 @@ def parse_command_line(argv):
         help='List of input files (AC1B*.root)')
     parser.add_argument('-o', '--output_filename', type=str,
         help='Output file name')
+    #parser.add_argument('-r', '--run_period', type=str,
+    #    help='Single-letter run period',
+    #    choices=['MC','B','C','D','E','F','G','H'])
 
     # line below is an example of an optional argument
     parser.add_argument('-n', '--nevents', type=int, default=-1,

@@ -499,20 +499,20 @@ def fill_category_hists(analysis, eventweight, fillcontrol, thiscat, pairindex1,
     analysis.histograms_categories['hNumBJets_cat00'].Fill(len(analysis.good_bjets), eventweight)
 
     for jet in analysis.good_jets:
-        analysis.histograms_categories['hJetPt_'+this_cat].Fill(jet.pt(), eventweight)
-        analysis.histograms_categories['hJetPt_cat00'].Fill(jet.pt(), eventweight)
+        analysis.histograms_categories['hJetPt_'+this_cat].Fill(jet.pt(analysis.jet_shift), eventweight)
+        analysis.histograms_categories['hJetPt_cat00'].Fill(jet.pt(analysis.jet_shift), eventweight)
         analysis.histograms_categories['hJetEta_'+this_cat].Fill(jet.eta(), eventweight)
         analysis.histograms_categories['hJetEta_cat00'].Fill(jet.eta(), eventweight)
         analysis.histograms_categories['hJetPhi_'+this_cat].Fill(jet.phi(), eventweight)
         analysis.histograms_categories['hJetPhi_cat00'].Fill(jet.phi(), eventweight)
     # leading jet
     if jet1:
-        analysis.histograms_categories['hLeadJetPt_'+this_cat].Fill(jet1.pt(), eventweight)
-        analysis.histograms_categories['hLeadJetPt_cat00'].Fill(jet1.pt(), eventweight)
+        analysis.histograms_categories['hLeadJetPt_'+this_cat].Fill(jet1.pt(analysis.jet_shift), eventweight)
+        analysis.histograms_categories['hLeadJetPt_cat00'].Fill(jet1.pt(analysis.jet_shift), eventweight)
     # subleading jet
     if jet2:
-        analysis.histograms_categories['hSubLeadJetPt_'+this_cat].Fill(jet2.pt(), eventweight)
-        analysis.histograms_categories['hSubLeadJetPt_cat00'].Fill(jet2.pt(), eventweight)
+        analysis.histograms_categories['hSubLeadJetPt_'+this_cat].Fill(jet2.pt(analysis.jet_shift), eventweight)
+        analysis.histograms_categories['hSubLeadJetPt_cat00'].Fill(jet2.pt(analysis.jet_shift), eventweight)
 
     #############################
     # Dijet #####################
@@ -528,8 +528,8 @@ def fill_category_hists(analysis, eventweight, fillcontrol, thiscat, pairindex1,
 
         analysis.histograms_categories['hDiJetInvMass_'+this_cat].Fill(dijet.M(), eventweight)
         analysis.histograms_categories['hDiJetInvMass_cat00'].Fill(dijet.M(), eventweight)
-        analysis.histograms_categories['hDiJetDeltaPt_'+this_cat].Fill(jet1.pt() -  jet2.pt(), eventweight)
-        analysis.histograms_categories['hDiJetDeltaPt_cat00'].Fill(jet1.pt() -  jet2.pt(), eventweight)
+        analysis.histograms_categories['hDiJetDeltaPt_'+this_cat].Fill(jet1.pt(analysis.jet_shift) -  jet2.pt(analysis.jet_shift), eventweight)
+        analysis.histograms_categories['hDiJetDeltaPt_cat00'].Fill(jet1.pt(analysis.jet_shift) -  jet2.pt(analysis.jet_shift), eventweight)
         analysis.histograms_categories['hDiJetDeltaEta_'+this_cat].Fill(abs(jet1.eta() - jet2.eta()), eventweight)
         analysis.histograms_categories['hDiJetDeltaEta_cat00'].Fill(abs(jet1.eta() - jet2.eta()), eventweight)
         analysis.histograms_categories['hDiJetDeltaPhi_'+this_cat].Fill(abs(jet1.phi() - jet2.phi()), eventweight)

@@ -611,10 +611,35 @@ class Tau(JettyCand):
 ## ___________________________________________________________
 class Jet(JettyCand):
     # constructors/helpers
-    def __init__(self, tree, entry):
+    def __init__(self, tree, entry, shift, h_down, h_up):
        super(Jet, self).__init__(tree, 'ak4pfchsjet', entry)
 
+
     # methods
+    def pt(self, shift=''):
+        pt = self._get('pt')
+        if shift not in ['Up','Down']: return pt
+
+        # TODO stop hardcoding stuff
+        # make sure vals are in range
+        pt_  = max(10., min(9000., self._get('pt')))
+        eta_ = max(-5.399, min(5.399, self._get('eta')))
+        if shift=='Down':
+            if h_down:
+                s = h_down.GetBinContent(
+                    h_down.GetXaxis().FindBin(pt_),
+                    h_down.GetYaxis().FindBin(eta_) )
+                return pt * (1. - s)
+            else: return pt 
+        elif shift=='Up':
+            if h_up:
+                s = h_up.GetBinContent(
+                    h_up.GetXaxis().FindBin(pt_),
+                    h_up.GetYaxis().FindBin(eta_) )
+                return pt * (1. + s)
+            else: return pt 
+
+
     def area(self): return self._get('area')
     # energy
     def had_energy(self):         return self._get('hadronicenergy')

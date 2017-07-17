@@ -23,10 +23,10 @@ class ScaleFactor(object):
 ## _____________________________________________________________________________
 class PileupWeights(ScaleFactor):
     # constructors/helpers
-    def __init__(self, cmsswversion, datadir):
+    def __init__(self, cmsswversion, datadir, shift):
         super(PileupWeights, self).__init__(cmsswversion, datadir)
         self.error = False
-
+        self.shift = shift
         self.pileup_scale = []
         self.pileup_scale_up = []
         self.pileup_scale_down = []
@@ -54,10 +54,10 @@ class PileupWeights(ScaleFactor):
             #     to bin content of (b+1)th bin (0th bin is underflow)
             for b in range(scalehist_.GetNbinsX()):
                 self.pileup_scale.append(scalehist_.GetBinContent(b+1))
-            scalehist_ = pufile.Get('pileup_scale_up')
+            scalehist_ = pufile.Get('pileup_scale_Up')
             for b in range(scalehist_.GetNbinsX()):
                 self.pileup_scale_up.append(scalehist_.GetBinContent(b+1))
-            scalehist_ = pufile.Get('pileup_scale_down')
+            scalehist_ = pufile.Get('pileup_scale_Down')
             for b in range(scalehist_.GetNbinsX()):
                 self.pileup_scale_down.append(scalehist_.GetBinContent(b+1))
 
@@ -66,29 +66,15 @@ class PileupWeights(ScaleFactor):
 
     # methods
     ## _________________________________________________________________________
-    def get_weight(self, numtrueinteractions, sf_scheme):
+    def get_weight(self, numtrueinteractions):
         if self.error: return 1.
         thisindex = int(round(numtrueinteractions))
-        if len(self.pileup_scale) > thisindex:
-            return self.pileup_scale[thisindex]
+        if self.shift == 'Down':
+            return self.pileup_scale_down[thisindex] if len(self.pileup_scale_down) > thisindex else 0.
+        elif self.shift == 'Up':
+            return self.pileup_scale_up[thisindex]if len(self.pileup_scale_up) > thisindex else 0.
         else:
-            return 0.
-    ## _________________________________________________________________________
-    def get_weight_up(self, numtrueinteractions):
-        if self.error: return 1.
-        thisindex = int(round(numtrueinteractions))
-        if len(self.pileup_scale_up) > thisindex:
-            return self.pileup_scale_up[thisindex]
-        else:
-            return 0.
-    ## _________________________________________________________________________
-    def get_weight_down(self, numtrueinteractions):
-        if self.error: return 1.
-        thisindex = int(round(numtrueinteractions))
-        if len(self.pileup_scale_down) > thisindex:
-            return self.pileup_scale_down[thisindex]
-        else:
-            return 0.
+            return self.pileup_scale[thisindex] if len(self.pileup_scale) > thisindex else 0.
 
 
 ## _____________________________________________________________________________
@@ -149,9 +135,10 @@ class VariablePileupWeights(ScaleFactor):
 class HLTScaleFactors(ScaleFactor):
 # https://twiki.cern.ch/twiki/bin/view/CMS/MuonReferenceEffsRun2
     # constructors/helpers
-    def __init__(self, cmsswversion, datadir, hltrigger):
+    def __init__(self, cmsswversion, datadir, hltrigger, shift):
         super(HLTScaleFactors, self).__init__(cmsswversion, datadir)
         self.error = False
+        self.shift = shift
 
         # right now the only choice is single muon hlt
         if hltrigger=='IsoMu24_OR_IsoTkMu24':
@@ -182,12 +169,8 @@ class HLTScaleFactors(ScaleFactor):
         # the histograms in the file are named effMC and effDA,
         #     with x axis: Pt, y axis: AbsEta
         self.effhistDA_ = self.hltfile.Get('effDA')
-        self.effhistDA_BCDEF_ = self.hltfile.Get('effDA_BCDEF')
-        self.effhistDA_GH_ = self.hltfile.Get('effDA_GH')
 
         self.effhistMC_ = self.hltfile.Get('effMC')
-        self.effhistMC_BCDEF_ = self.hltfile.Get('effMC_BCDEF')
-        self.effhistMC_GH_ = self.hltfile.Get('effMC_GH')
 
         self.minpt = self.effhistDA_.GetXaxis().GetXmin() + 0.1
         self.maxpt = self.effhistDA_.GetXaxis().GetXmax() - 1.
@@ -195,14 +178,12 @@ class HLTScaleFactors(ScaleFactor):
 
 
     # methods
-    def get_scale(self, muons, sf_scheme):
+    def get_scale(self, muons):
         if self.error: return 1.
 
-        if sf_scheme in ['BCDEF', 'GH', 'none']:
-            scheme = '_' + sf_scheme if sf_scheme != '' else ''
-        else:
-            raise ValueError('HLT get_scale: SF scheme '
-                '"{0}" not recognised.'.format(sf_scheme))
+        s = 1.
+        if self.shift == 'Down': s = 0.995
+        elif self.shift == 'Up': s = 1.005
 
         xda = 1.
         xmc = 1.
@@ -211,31 +192,31 @@ class HLTScaleFactors(ScaleFactor):
             pt_  = min(self.maxpt, mu.pt())
             eta_ = min(self.maxeta, mu.abs_eta())
             # find efficiencies for this muon
-            if scheme=='BCDEF':
-                effda = self.effhistDA_BCDEF_.GetBinContent(
-                    self.effhistDA_BCDEF_.GetXaxis().FindBin(pt_),
-                    self.effhistDA_BCDEF_.GetYaxis().FindBin(eta_))
-                effmc = self.effhistMC_BCDEF_.GetBinContent(
-                    self.effhistMC_BCDEF_.GetXaxis().FindBin(pt_),
-                    self.effhistMC_BCDEF_.GetYaxis().FindBin(eta_))
-            elif scheme=='GH':
-                effda = self.effhistDA_GH_.GetBinContent(
-                    self.effhistDA_GH_.GetXaxis().FindBin(pt_),
-                    self.effhistDA_GH_.GetYaxis().FindBin(eta_))
-                effmc = self.effhistMC_GH_.GetBinContent(
-                    self.effhistMC_GH_.GetXaxis().FindBin(pt_),
-                    self.effhistMC_GH_.GetYaxis().FindBin(eta_))
-            else:
-                effda = self.effhistDA_.GetBinContent(
-                    self.effhistDA_.GetXaxis().FindBin(pt_),
-                    self.effhistDA_.GetYaxis().FindBin(eta_))
-                effmc = self.effhistMC_.GetBinContent(
-                    self.effhistMC_.GetXaxis().FindBin(pt_),
-                    self.effhistMC_.GetYaxis().FindBin(eta_))
+            #if scheme=='BCDEF':
+            #    effda = self.effhistDA_BCDEF_.GetBinContent(
+            #        self.effhistDA_BCDEF_.GetXaxis().FindBin(pt_),
+            #        self.effhistDA_BCDEF_.GetYaxis().FindBin(eta_))
+            #    effmc = self.effhistMC_BCDEF_.GetBinContent(
+            #        self.effhistMC_BCDEF_.GetXaxis().FindBin(pt_),
+            #        self.effhistMC_BCDEF_.GetYaxis().FindBin(eta_))
+            #elif scheme=='GH':
+            #    effda = self.effhistDA_GH_.GetBinContent(
+            #        self.effhistDA_GH_.GetXaxis().FindBin(pt_),
+            #        self.effhistDA_GH_.GetYaxis().FindBin(eta_))
+            #    effmc = self.effhistMC_GH_.GetBinContent(
+            #        self.effhistMC_GH_.GetXaxis().FindBin(pt_),
+            #        self.effhistMC_GH_.GetYaxis().FindBin(eta_))
+            #else:
+            effda = self.effhistDA_.GetBinContent(
+                self.effhistDA_.GetXaxis().FindBin(pt_),
+                self.effhistDA_.GetYaxis().FindBin(eta_))
+            effmc = self.effhistMC_.GetBinContent(
+                self.effhistMC_.GetXaxis().FindBin(pt_),
+                self.effhistMC_.GetYaxis().FindBin(eta_))
 
             # update total efficiency
-            xda *= (1. - effda)
-            xmc *= (1. - effmc)
+            xda *= (1. - effda*shift)
+            xmc *= (1. - effmc*shift)
 
         # calculate scale factor and return it
         return (1.-xda)/(1.-xmc) if xmc!= 1. else 1.
@@ -254,9 +235,11 @@ class HLTScaleFactors(ScaleFactor):
 class MuonScaleFactors(ScaleFactor):
 # https://twiki.cern.ch/twiki/bin/view/CMS/MuonReferenceEffsRun2
     # constructors/helpers
-    def __init__(self, cmsswversion, datadir):
+    def __init__(self, cmsswversion, datadir, shift):
         super(MuonScaleFactors, self).__init__(cmsswversion, datadir)
         self.error = False
+
+        self.shift = shift
 
         self.muonideffs = {
             'looseID' : {},
@@ -294,17 +277,9 @@ class MuonScaleFactors(ScaleFactor):
             for cut in self.muonideffs:
                 self.muonideffs[cut]['R'] = ROOT.TH2F(
                     self.mufile.Get(cut))
-                self.muonideffs[cut]['R_BCDEF'] = ROOT.TH2F(
-                    self.mufile.Get(cut+'_BCDEF'))
-                self.muonideffs[cut]['R_GH'] = ROOT.TH2F(
-                    self.mufile.Get(cut+'_GH'))
             for cut in self.muonisoeffs:
                 self.muonisoeffs[cut]['R'] = ROOT.TH2F(
                     self.mufile.Get(cut))
-                self.muonisoeffs[cut]['R_BCDEF'] = ROOT.TH2F(
-                    self.mufile.Get(cut+'_BCDEF'))
-                self.muonisoeffs[cut]['R_GH'] = ROOT.TH2F(
-                    self.mufile.Get(cut+'_GH'))
 
             self.maxpt = self.muonideffs['tightID']['R'].GetXaxis().GetXmax()-1.
             self.minpt = self.muonideffs['tightID']['R'].GetXaxis().GetXmin()+0.01
@@ -313,23 +288,22 @@ class MuonScaleFactors(ScaleFactor):
 
     # methods
     ## _________________________________________________________________________
-    def get_id_scale(self, muons, idcut, sf_scheme):
+    def get_id_scale(self, muons, idcut):
         '''
         Returns the total scale factor for a list of muons
         for ID cuts.
         '''
         if self.error: return 1.
 
+        s = 1.
+        if self.shift == 'Down': s = 0.99
+        elif self.shift == 'Up': s = 1.01
+
         if idcut in ['loose', 'medium', 'tight']:
             cut = '{0}ID'.format(idcut)
         else:
             raise ValueError('Muon get_id_scale: id '
                 '"{0}" not recognised.'.format(idcut))
-        if sf_scheme in ['BCDEF', 'GH', 'none']:
-            scheme = '_' + sf_scheme if sf_scheme != '' else ''
-        else:
-            raise ValueError('Muon get_id_scale: SF scheme '
-                '"{0}" not recognised.'.format(sf_scheme))
 
         sf = 1.
         for mu in muons:
@@ -346,13 +320,13 @@ class MuonScaleFactors(ScaleFactor):
             #        '{0} for mu pt = {1}, eta = {2}'.format(musf, pt_, eta_)
 
             # update total efficiency
-            sf *= musf
+            sf *= (musf*s)
 
         return sf
 
 
     ## _________________________________________________________________________
-    def get_iso_scale(self, muons, idcut, isotype, isocut, sf_scheme):
+    def get_iso_scale(self, muons, idcut, isotype, isocut):
         '''
         Returns the total scale factor for a list of muons
         for ID and isolation cuts. The efficiencies for these two cuts
@@ -360,6 +334,9 @@ class MuonScaleFactors(ScaleFactor):
         '''
         if self.error: return 1.
 
+        s = 1.
+        if self.shift == 'Down': s = 0.995
+        elif self.shift == 'Up': s = 1.005
 
         if isotype!='PF_dB':
             print ('WARNING: Scale factors are only available for PF_dB iso. '
@@ -384,11 +361,6 @@ class MuonScaleFactors(ScaleFactor):
         else:
             raise ValueError('Muon get_iso_scale: Iso '
                 '"{0}" not recognised.'.format(isocut))
-        if sf_scheme in ['BCDEF', 'GH', 'none']:
-            scheme = '_' + sf_scheme if sf_scheme != '' else ''
-        else:
-            raise ValueError('Muon get_iso_scale: SF scheme '
-                '"{0}" not recognised.'.format(sf_scheme))
 
         # find scale factor
         sf = 1.
@@ -398,15 +370,15 @@ class MuonScaleFactors(ScaleFactor):
             pt_ = max( self.minpt, min(self.maxpt, mu.pt()) )
             eta_ = min(self.maxeta, mu.abs_eta())
             # find efficiencies for this muon
-            musf = self.muonisoeffs[cut]['R'+scheme].GetBinContent(
-                self.muonisoeffs[cut]['R'+scheme].GetXaxis().FindBin(pt_),
-                self.muonisoeffs[cut]['R'+scheme].GetYaxis().FindBin(eta_) )
+            musf = self.muonisoeffs[cut]['R'].GetBinContent(
+                self.muonisoeffs[cut]['R'].GetXaxis().FindBin(pt_),
+                self.muonisoeffs[cut]['R'].GetYaxis().FindBin(eta_) )
             #if not musf: 
             #    print 'found Iso eff '
             #        '{0} for mu pt = {1}, eta = {2}'.format(musf, pt_, eta_)
 
             # update total efficiency
-            sf *= musf
+            sf *= (musf*s)
 
         return sf
 
