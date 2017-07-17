@@ -67,7 +67,7 @@ def main(argv=None):
     
     # read data
     #for datatype in ['','_up','_down','_69000','_71000']:
-    for datatype in ['','_up','_down']:
+    for datatype in ['','_Up','_Down']:
         data_filename = '{0}/PileUpData{1}{2}.root'.format(pileup_dir, cmsswversion, datatype)
         datafile = ROOT.TFile(data_filename)
         histdata = datafile.Get(histName)
@@ -88,7 +88,7 @@ def main(argv=None):
             histscale.SetBinContent(b+1,sf)
         histscale.Write()
     
-    rootfile.Write()
+    #rootfile.Write()
     print
     print 'Created the following file:\n{0}'.format(output_filename)
     rootfile.Close()

@@ -69,21 +69,21 @@ fi
 # make files
 xsec=$minbias
 echo "Making PU files for $v with min bias xsec ${minbias}."
-up=$(echo "$xsec*1.05" | bc)
-down=$(echo "$xsec*0.95" | bc)
+up=$(echo "$xsec*1.025" | bc)
+down=$(echo "$xsec*0.975" | bc)
 echo $xsec
-pileupCalc.py -i $lumimask --inputLumiJSON $pileupjson --calcMode true  --minBiasXsec $xsec --maxPileupBin ${maxpubin} --numPileupBins ${maxnumbins} $pileupdir/PileUpData${v}_${run}.root
-#echo "up = ${up}"
-#pileupCalc.py -i $lumimask --inputLumiJSON $pileupjson --calcMode true  --minBiasXsec $up   --maxPileupBin ${maxpubin} --numPileupBins ${maxnumbins} $pileupdir/PileUpData${v}_Up.root
-#echo "down = ${down}"
-#pileupCalc.py -i $lumimask --inputLumiJSON $pileupjson --calcMode true  --minBiasXsec $down --maxPileupBin ${maxpubin} --numPileupBins ${maxnumbins} $pileupdir/PileUpData${v}_Down.root
+pileupCalc.py -i $lumimask --inputLumiJSON $pileupjson --calcMode true  --minBiasXsec $xsec --maxPileupBin ${maxpubin} --numPileupBins ${maxnumbins} $pileupdir/PileUpData${v}.root
+echo "up = ${up}"
+pileupCalc.py -i $lumimask --inputLumiJSON $pileupjson --calcMode true  --minBiasXsec $up   --maxPileupBin ${maxpubin} --numPileupBins ${maxnumbins} $pileupdir/PileUpData${v}_Up.root
+echo "down = ${down}"
+pileupCalc.py -i $lumimask --inputLumiJSON $pileupjson --calcMode true  --minBiasXsec $down --maxPileupBin ${maxpubin} --numPileupBins ${maxnumbins} $pileupdir/PileUpData${v}_Down.root
 
 echo "done"
 echo
 echo "Created the following files:"
 echo "${pileupdir}/PileUpData${v}.root"
-#echo "${pileupdir}/PileUpData${v}_Up.root"
-#echo "${pileupdir}/PileUpData${v}_Down.root"
+echo "${pileupdir}/PileUpData${v}_Up.root"
+echo "${pileupdir}/PileUpData${v}_Down.root"
 echo
 echo "Now you can run the following command:"
 echo "    python generatePileupHist.py -version \"${v}\""
