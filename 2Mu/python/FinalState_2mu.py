@@ -37,13 +37,17 @@ class Ana2Mu(AnalysisBase):
         self.sigHigh = 130. # GeV
 
 
+        self.pu_shift = ''
+        self.hlt_shift = ''
+        self.sf_shift = ''
+        self.jet_shift = ''
 
         ##########################################################
         #                                                        #
         # Some run options (defaults are False)                  #
         #                                                        #
         ##########################################################
-        #self.do_pileup_reweighting = True
+        self.do_pileup_reweighting = True
         self.include_trigger_scale_factors = True
         self.include_lepton_scale_factors = True
 
@@ -108,63 +112,10 @@ class Ana2Mu(AnalysisBase):
 
         ##########################################################
         #                                                        #
-        # Book optimi. plot histograms                           #
-        #                                                        #
-        ##########################################################
-
-        self.opt_met   = [ 30.,  40.,  50.]
-        self.opt_djm   = [550., 650., 750.]
-        self.opt_dje   = [  3.,  3.5,   4.]
-        self.opt_djm_g = [200., 250., 300.]
-        self.opt_dm_pt = [ 40.,  50.,  60.]
-
-        # make control versions of new the plots - they won't all be filled though
-        self.histograms_opt = {}
-        #for name in self.histograms.keys():
-        #    self.histograms_ctrl[name+'_ctrl'] = self.histograms[name].Clone(
-        #        self.histograms[name].GetName()+'_ctrl')
-
-        #self.itergrid = [(c,v,w,x,y,z) \
-        #            for c in range(1,4) \
-        #            for v in range(len(self.opt_met)) \
-        #            for w in range(len(self.opt_djm)) \
-        #            for x in range(len(self.opt_dje)) \
-        #            for y in range(len(self.opt_djm_g)) \
-        #            for z in range(len(self.opt_dm_pt))]
-
-
-        #for c in xrange(1,4):
-        #    for v in xrange(1,1+len(self.opt_met)):
-        #        for w in xrange(1,1+len(self.opt_djm)):
-        #            for x in xrange(1,1+len(self.opt_dje)):
-        #                for y in xrange(1,1+len(self.opt_djm_g)):
-        #                    for z in xrange(1,1+len(self.opt_dm_pt)):
-        #for c, v, w, x, y, z in self.itergrid:
-        #    hn = ('hDiMuInvMass_{1}{2}{3}{4}{5}_cat0{0}').format(c,v,w,x,y,z)
-        #    self.histograms_opt[hn] = self.histograms['hDiMuInvMass'].Clone(hn)
-
-
-
-        # add it to the extra histogram map
-        #self.extra_histogram_map['opt'] = self.histograms_opt
-
-
-
-
-        ##########################################################
-        #                                                        #
         # Book category histograms                               #
         #                                                        #
         ##########################################################
 
-        #self.categories = [
-        #    'Category0_All',
-        #    'Category1_VBFTight',
-        #    'Category2_GGFTight',
-        #    'Category3_VBFLoose',
-        #    'Category4_01JetTight',
-        #    'Category5_01JetLoose',
-        #]
         self.fnumCat0 = 0
         self.fnumCat1 = 0
         self.fnumCat2 = 0
@@ -211,25 +162,6 @@ class Ana2Mu(AnalysisBase):
         self.extra_histogram_map['control'] = self.histograms_categories_ctrl
 
         ##########################################################
-        #                                                        #
-        # Set up trees for limit calculations                    #
-        #                                                        #
-        ##########################################################
-        self.tEventNr = array('L', [0])
-        self.tLumiNr  = array('L', [0])
-        self.tRunNr   = array('L', [0])
-        self.tInvMass = array('f', [0.])
-        self.tEventWt = array('f', [0.])
-
-        self.category_trees = []
-
-        for i, cat in enumerate(self.categories):
-            self.category_trees += [TTree(cat, cat)]
-            self.category_trees[i].Branch('tEventNr', self.tEventNr, 'tEventNr/l')
-            self.category_trees[i].Branch('tLumiNr', self.tLumiNr, 'tLumiNr/l')
-            self.category_trees[i].Branch('tRunNr', self.tRunNr, 'tRunNr/l')
-            self.category_trees[i].Branch('tInvMass', self.tInvMass, 'tInvMass/F')
-            self.category_trees[i].Branch('tEventWt', self.tEventWt, 'tEventWt/F')
 
 
     ## _______________________________________________________
@@ -281,9 +213,9 @@ class Ana2Mu(AnalysisBase):
 #
         mytInvMass = dimuonobj.M()
 #
-#        # decide whether to fill control plots
-#        fill_control_plots = mytInvMass > self.sigHigh or mytInvMass < self.sigLow
-        fill_control_plots = False
+        # decide whether to fill control plots
+        fill_control_plots = mytInvMass > self.sigHigh or mytInvMass < self.sigLow
+#        fill_control_plots = False
 
 
         ##########################################################
@@ -298,8 +230,8 @@ class Ana2Mu(AnalysisBase):
 
         # VBF tagged
         if (len(self.good_jets) > 1 
-            and self.good_jets[0].pt() > self.cuts['VBF_lead_jet_pt']
-            and self.good_jets[1].pt() > self.cuts['VBF_sublead_jet_pt']
+            and self.good_jets[0].pt(self.jet_shift) > self.cuts['VBF_lead_jet_pt']
+            and self.good_jets[1].pt(self.jet_shift) > self.cuts['VBF_sublead_jet_pt']
             and self.met.et() < self.cuts['VBF_met']):
 
 
@@ -370,76 +302,10 @@ class Ana2Mu(AnalysisBase):
         # fill base histograms
 #        fill_base_histograms(self, eventweight, fill_control_plots)
 
-#        # fill extra histograms
-#        fill_category_hists(self, eventweight, fill_control_plots, this_cat, pairindex1, pairindex2)
+        # fill extra histograms
+        fill_category_hists(self, eventweight, fill_control_plots, this_cat, pairindex1, pairindex2)
 #        #if len(self.good_muons)==3:
 #        #    self.histograms['hMetMtWithMu'].Fill(self.met.MtWith(mu), eventweight)
-
-
-
-
-
-        #twojetcondition = (len(self.good_jets) > 1 
-        #        and self.good_jets[0].pt() > self.cuts['VBF_lead_jet_pt']
-        #        and self.good_jets[1].pt() > self.cuts['VBF_sublead_jet_pt'])
-
-        #if twojetcondition:
-        #    thisdijetmass = (self.good_jets[0].p4() + self.good_jets[1].p4()).M()
-        #    thisdijetdeta = abs(self.good_jets[0].eta() - self.good_jets[1].eta())
-
-        #    for c, v, w, x, y, z in self.itergrid:
-        #        # vwxyz defines a unique opt scheme
-        #        this_opt_scheme = '{0}{1}{2}{3}{4}'.format(v,w,x,y,z)
-        #        if self.met.et() < self.opt_met[v]:
-        #            # VBFTight
-        #            if (thisdijetmass > self.opt_djm[w]
-        #                and thisdijetdeta > self.opt_dje[x]):
-        #                this_opt_cat = 'cat01'
-        #            # GGFTight
-        #            elif (thisdijetmass > self.opt_djm_g[y]
-        #                and thisdimupt > self.opt_dm_pt[z]):
-        #                this_opt_cat = 'cat02'
-        #            # VBFLoose
-        #            else: 
-        #                this_opt_cat = 'cat03'
-        #            this_opt_hn = 'hDiMuInvMass_{0}_{1}'.format(
-        #                this_opt_scheme, this_opt_cat)
-        #            self.histograms_opt[this_opt_hn].Fill(mytInvMass, eventweight)
-
-
-#
-#        twojetcondition = (len(self.good_jets) > 1 
-#            and self.good_jets[0].pt() > self.cuts['VBF_lead_jet_pt']
-#            and self.good_jets[1].pt() > self.cuts['VBF_sublead_jet_pt'])
-#
-#
-#        thisdijetmass = (self.good_jets[0].p4()
-#            + self.good_jets[1].p4()).M() if twojetcondition else 0.
-#        thisdijetdeta = abs(self.good_jets[0].eta()
-#            - self.good_jets[1].eta()) if twojetcondition else 0.
-#        thismet = self.met.et()
-#
-#        if twojetcondition and thismet < self.cuts['VBF_met']:
-#            for eta_p, eta_cut in self.etacutmap.iteritems():
-#                if thisdijetdeta > eta_cut:
-#                    self.histograms_opt['hDiJetInvMass_'
-#                        +eta_p].Fill(thisdijetmass, eventweight)
-#
-#        for met_p, met_cut in self.metcutmap.iteritems():
-#            if thismet < met_cut:
-#                self.histograms_opt['hNumJets_'
-#                    +met_p].Fill(len(self.good_jets), eventweight)
-#
-#
-#
-#        if twojetcondition:
-#            for eta_p, eta_cut in self.etacutmap.iteritems():
-#                for met_p, met_cut in self.metcutmap.iteritems():
-#                    if (thisdijetdeta > eta_cut and thismet < met_cut):
-#                        hname = 'hDiMuInvMass_eta'+eta_p+'_met'+met_p
-#                        self.histograms_opt[hname].Fill(mytInvMass, eventweight)
-#
-
 
 
 
@@ -449,19 +315,6 @@ class Ana2Mu(AnalysisBase):
             self.print_event_info(2)
         
 
-        #############################################################
-        ####                                                        #
-        #### Fill limit trees                                       #
-        ####                                                        #
-        #############################################################
-        ###self.tEventNr[0] = self.event.Number()
-        ###self.tLumiNr[0]  = self.event.LumiBlock()
-        ###self.tRunNr[0]   = self.event.Run()
-        ###self.tInvMass[0] = mytInvMass
-        ###self.tEventWt[0] = eventweight
-
-
-        ###if this_cat: self.category_trees[this_cat-1].Fill()
 
         ###for cat in self.categories:
         ###    if 'Category{0}'.format(this_cat) not in cat: continue
