@@ -1,6 +1,6 @@
 # AnalysisToolLight
 
-RECIPE
+Recipe:
 
     # set up scram area
     cmsrel CMSSW_7_6_5
