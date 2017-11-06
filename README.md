@@ -8,7 +8,7 @@ RECIPE
     cmsenv
     
     # check out code
-    git clone https://github.com/ekenn003/AnalysisToolLight.git 
+    git clone https://github.com/ektylr/AnalysisToolLight.git 
     
     # compile
     scram b -j 8
